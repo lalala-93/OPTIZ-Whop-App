@@ -10,6 +10,23 @@ interface LeaderboardScreenProps {
     userName?: string;
 }
 
+const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: { staggerChildren: 0.06, delayChildren: 0.3 },
+    },
+};
+
+const itemVariants = {
+    hidden: { opacity: 0, x: -16 },
+    visible: {
+        opacity: 1,
+        x: 0,
+        transition: { type: "spring" as const, stiffness: 300, damping: 25 },
+    },
+};
+
 export function LeaderboardScreen({ userXp, userLevel, userName = "You" }: LeaderboardScreenProps) {
     const [timeFilter, setTimeFilter] = useState<"today" | "weekly" | "all">("all");
 
@@ -31,6 +48,7 @@ export function LeaderboardScreen({ userXp, userLevel, userName = "You" }: Leade
             <motion.div
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
+                transition={{ type: "spring", stiffness: 300, damping: 25 }}
                 className="mb-5"
             >
                 <h2 className="text-xl font-bold text-gray-12 mb-3">Leaderboard</h2>
@@ -40,8 +58,8 @@ export function LeaderboardScreen({ userXp, userLevel, userName = "You" }: Leade
                             key={filter}
                             onClick={() => setTimeFilter(filter)}
                             className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all capitalize ${timeFilter === filter
-                                    ? "bg-gray-1 text-gray-12 shadow-sm border border-gray-5"
-                                    : "text-gray-9 hover:text-gray-11"
+                                ? "bg-gray-1 text-gray-12 shadow-sm border border-gray-5"
+                                : "text-gray-9 hover:text-gray-11"
                                 }`}
                         >
                             {filter === "all" ? "All Time" : filter === "weekly" ? "This Week" : "Today"}
@@ -55,7 +73,7 @@ export function LeaderboardScreen({ userXp, userLevel, userName = "You" }: Leade
                 className="flex items-end justify-center gap-3 mb-6 px-2"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.15 }}
+                transition={{ delay: 0.1, type: "spring", stiffness: 200, damping: 25 }}
             >
                 {podiumOrder.map((podiumIdx, visualIdx) => {
                     const user = top3[podiumIdx];
@@ -72,7 +90,7 @@ export function LeaderboardScreen({ userXp, userLevel, userName = "You" }: Leade
                             className="flex flex-col items-center flex-1"
                             initial={{ opacity: 0, y: 30 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.2 + visualIdx * 0.1 }}
+                            transition={{ delay: 0.15 + visualIdx * 0.08, type: "spring", stiffness: 250, damping: 20 }}
                         >
                             {/* Crown for #1 */}
                             {rank === 1 && (
@@ -88,8 +106,8 @@ export function LeaderboardScreen({ userXp, userLevel, userName = "You" }: Leade
                             {/* Avatar circle */}
                             <div
                                 className={`${sizes[visualIdx]} rounded-full flex items-center justify-center text-xl font-bold mb-2 ${isMe
-                                        ? "bg-[#E80000]/15 border-2 border-[#E80000] shadow-[0_0_15px_rgba(232,0,0,0.25)]"
-                                        : "bg-gray-3 border-2 border-gray-5"
+                                    ? "bg-[#E80000]/15 border-2 border-[#E80000] shadow-[0_0_15px_rgba(232,0,0,0.25)]"
+                                    : "bg-gray-3 border-2 border-gray-5"
                                     }`}
                             >
                                 {user.emoji}
@@ -114,14 +132,14 @@ export function LeaderboardScreen({ userXp, userLevel, userName = "You" }: Leade
                             {/* Podium bar */}
                             <motion.div
                                 className={`w-full mt-2 rounded-t-xl ${rank === 1
-                                        ? "optiz-gradient-bg"
-                                        : rank === 2
-                                            ? "bg-gray-4"
-                                            : "bg-gray-3"
+                                    ? "optiz-gradient-bg"
+                                    : rank === 2
+                                        ? "bg-gray-4"
+                                        : "bg-gray-3"
                                     }`}
                                 initial={{ height: 0 }}
                                 animate={{ height: heights[visualIdx] }}
-                                transition={{ delay: 0.4 + visualIdx * 0.1, duration: 0.5, ease: "easeOut" }}
+                                transition={{ delay: 0.3 + visualIdx * 0.08, duration: 0.6, type: "spring", stiffness: 120, damping: 15 }}
                             >
                                 <div className="flex items-start justify-center pt-3">
                                     <span className={`text-sm font-black ${rank === 1 ? "text-white" : "text-gray-10"
@@ -136,8 +154,13 @@ export function LeaderboardScreen({ userXp, userLevel, userName = "You" }: Leade
             </motion.div>
 
             {/* ── Rank list ── */}
-            <div className="space-y-2">
-                {rest.map((user, i) => {
+            <motion.div
+                className="space-y-2"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+            >
+                {rest.map((user) => {
                     const isMe = "isMe" in user && user.isMe;
                     const rankInfo = getRankForLevel(user.level);
 
@@ -145,16 +168,14 @@ export function LeaderboardScreen({ userXp, userLevel, userName = "You" }: Leade
                         <motion.div
                             key={user.name}
                             className={`flex items-center justify-between p-3.5 rounded-xl transition-all ${isMe
-                                    ? "optiz-surface border-[var(--optiz-border-active)] shadow-[0_0_16px_rgba(232,0,0,0.08)]"
-                                    : "optiz-surface"
+                                ? "bg-gray-3/50 border border-[var(--optiz-border-active)] shadow-[0_0_16px_rgba(232,0,0,0.08)]"
+                                : "bg-gray-3/30 border border-gray-5/50"
                                 }`}
-                            initial={{ opacity: 0, x: -12 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 0.5 + i * 0.06 }}
+                            variants={itemVariants}
                         >
                             <div className="flex items-center gap-3">
                                 {/* Rank number */}
-                                <div className="w-7 h-7 rounded-full bg-gray-3 border border-gray-5 flex items-center justify-center">
+                                <div className="w-7 h-7 rounded-full bg-gray-4 border border-gray-5 flex items-center justify-center">
                                     <span className="text-xs font-bold text-gray-10">{user.rank}</span>
                                 </div>
                                 {/* Emoji */}
@@ -176,7 +197,7 @@ export function LeaderboardScreen({ userXp, userLevel, userName = "You" }: Leade
                         </motion.div>
                     );
                 })}
-            </div>
+            </motion.div>
         </div>
     );
 }

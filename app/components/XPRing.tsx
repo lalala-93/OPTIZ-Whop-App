@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { RankBadge } from "./RankBadge";
+import { useState, useCallback } from "react";
 import type { RankTier } from "./rankSystem";
 
 interface XPRingProps {
@@ -27,8 +28,36 @@ export function XPRing({
     const offset = circumference - (progressPercent / 100) * circumference;
     const gradientId = `xp-ring-${tier.name}`;
 
+    // Cursor-following reflection
+    const [mousePos, setMousePos] = useState({ x: 0.5, y: 0.5 });
+
+    const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const x = (e.clientX - rect.left) / rect.width;
+        const y = (e.clientY - rect.top) / rect.height;
+        setMousePos({ x, y });
+    }, []);
+
+    const handleMouseLeave = useCallback(() => {
+        setMousePos({ x: 0.5, y: 0.5 });
+    }, []);
+
     return (
-        <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
+        <div
+            className="relative flex items-center justify-center"
+            style={{ width: size, height: size }}
+            onMouseMove={handleMouseMove}
+            onMouseLeave={handleMouseLeave}
+        >
+            {/* Specular reflection overlay */}
+            <div
+                className="absolute inset-0 rounded-full pointer-events-none z-10 transition-opacity duration-300"
+                style={{
+                    background: `radial-gradient(circle at ${mousePos.x * 100}% ${mousePos.y * 100}%, rgba(255,255,255,0.08) 0%, transparent 50%)`,
+                    opacity: mousePos.x === 0.5 && mousePos.y === 0.5 ? 0 : 1,
+                }}
+            />
+
             <svg viewBox="0 0 200 200" className="w-full h-full -rotate-90">
                 <defs>
                     <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="1">
@@ -82,6 +111,7 @@ export function XPRing({
                     colors={rankColors}
                     glowColor={tier.glowColor}
                     size={size * 0.42}
+                    mousePosition={mousePos}
                 />
                 <motion.p
                     className="text-xs font-semibold tabular-nums mt-1"

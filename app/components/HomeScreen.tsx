@@ -56,7 +56,7 @@ export function HomeScreen({
     };
 
     return (
-        <div className="flex flex-col items-center gap-5 pb-8 px-1">
+        <div className="flex flex-col items-center gap-6 pb-8 px-1">
             {/* ── XP Ring + Level ── */}
             <motion.div
                 className="flex flex-col items-center pt-2"
@@ -95,18 +95,20 @@ export function HomeScreen({
 
             {/* ── Motivational Quote ── */}
             <motion.div
-                className="w-full optiz-surface rounded-2xl p-4 sm:p-5"
+                className="w-full rounded-2xl p-4 sm:p-5 relative overflow-hidden bg-gray-3/40 border border-gray-5/50"
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 }}
             >
-                <div className="flex items-start gap-3">
-                    <span className="text-xl mt-0.5">💬</span>
+                {/* Left accent bar */}
+                <div className="absolute left-0 top-2 bottom-2 w-[3px] rounded-full optiz-gradient-bg" />
+
+                <div className="flex items-start gap-3 pl-3">
                     <div>
-                        <p className="text-sm text-gray-11 italic leading-relaxed">
+                        <p className="text-[13px] text-gray-11 italic leading-relaxed">
                             &ldquo;{quote.text}&rdquo;
                         </p>
-                        <p className="text-[11px] text-gray-8 mt-1.5 font-medium">
+                        <p className="text-[11px] text-gray-7 mt-1.5 font-medium">
                             — {quote.author}
                         </p>
                     </div>
@@ -137,6 +139,7 @@ export function HomeScreen({
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: "auto" }}
                         exit={{ opacity: 0, height: 0 }}
+                        transition={{ type: "spring", stiffness: 300, damping: 25 }}
                     >
                         <input
                             type="text"
@@ -167,21 +170,21 @@ export function HomeScreen({
                     {todos.map((todo, i) => (
                         <motion.div
                             key={todo.id}
-                            className={`flex items-center gap-3 p-3 rounded-xl transition-all group ${todo.completed
-                                    ? "bg-gray-2 opacity-60"
-                                    : "optiz-surface hover:bg-[var(--optiz-surface-hover)]"
+                            className={`flex items-center gap-3 p-3.5 rounded-xl transition-all group ${todo.completed
+                                ? "bg-gray-2 opacity-50"
+                                : "optiz-surface hover:bg-[var(--optiz-surface-hover)]"
                                 }`}
                             initial={{ opacity: 0, x: -12 }}
                             animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: i * 0.05 }}
+                            transition={{ delay: i * 0.04, type: "spring", stiffness: 300, damping: 25 }}
                             layout
                         >
                             {/* Checkbox */}
                             <button
                                 onClick={() => onToggleTodo(todo.id)}
-                                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${todo.completed
-                                        ? "bg-[#E80000] border-[#E80000]"
-                                        : "border-gray-6 hover:border-gray-8"
+                                className={`w-5.5 h-5.5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${todo.completed
+                                    ? "bg-[#E80000] border-[#E80000]"
+                                    : "border-gray-6 hover:border-gray-8"
                                     }`}
                             >
                                 {todo.completed && (
@@ -193,8 +196,8 @@ export function HomeScreen({
 
                             {/* Text */}
                             <span className={`flex-1 text-sm ${todo.completed
-                                    ? "line-through text-gray-8"
-                                    : "text-gray-12"
+                                ? "line-through text-gray-7"
+                                : "text-gray-12"
                                 }`}>
                                 {todo.text}
                             </span>
@@ -202,7 +205,7 @@ export function HomeScreen({
                             {/* Delete */}
                             <button
                                 onClick={() => onDeleteTodo(todo.id)}
-                                className="opacity-0 group-hover:opacity-100 text-gray-8 hover:text-red-400 transition-all p-0.5"
+                                className="opacity-0 group-hover:opacity-100 text-gray-8 hover:text-red-400 transition-all p-1 rounded-lg hover:bg-red-500/10"
                             >
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     <line x1="18" y1="6" x2="6" y2="18" />

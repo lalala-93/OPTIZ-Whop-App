@@ -87,12 +87,26 @@ export interface Challenge {
     longDescription: string;
     emoji: string;
     difficulty: "Easy" | "Medium" | "Hard" | "Extreme";
+    durationDays: number;
     participantCount: number;
     taskCount: number;
     totalXp: number;
     tasks: ChallengeTask[];
     joined: boolean;
 }
+
+// ── Task Descriptions (for TaskInfoModal) ──
+export const TASK_DESCRIPTIONS: Record<string, { benefit: string; tips: string }> = {
+    "t1": { benefit: "Cardio boosts heart health, torches calories, and releases endorphins that elevate your mood for the entire day.", tips: "Start slow and build up pace. Listen to music or a podcast to make it enjoyable." },
+    "t2": { benefit: "Push-ups build upper body strength, core stability, and muscular endurance. A full-body compound movement.", tips: "Break into sets of 20-25. Maintain proper form — chest to floor, back straight." },
+    "t3": { benefit: "Yoga improves flexibility, reduces stress hormones, and enhances mind-body connection for better recovery.", tips: "Focus on deep breathing. Hold each pose for 30s minimum. Don't rush." },
+    "t4": { benefit: "Proper hydration improves energy levels, brain function, skin health, and supports muscle recovery.", tips: "Carry a water bottle everywhere. Set reminders every hour. Add lemon for taste." },
+    "t5": { benefit: "Clean nutrition fuels performance, supports muscle growth, and reduces inflammation throughout your body.", tips: "Prep meals in advance. Focus on whole foods — lean protein, vegetables, complex carbs." },
+    "t6": { benefit: "Cold showers boost circulation, reduce muscle soreness, strengthen immunity, and build mental toughness.", tips: "Start with 30 seconds cold at the end of a warm shower. Gradually increase duration." },
+    "t7": { benefit: "Sit-ups strengthen your core, improve posture, and support better performance in every other exercise.", tips: "Break into sets of 40-50. Keep your core engaged. Don't pull on your neck." },
+    "t8": { benefit: "Meditation reduces stress, improves focus, and enhances emotional regulation for better decision-making.", tips: "Find a quiet spot. Focus on your breath. Start with guided meditations if new." },
+    "t9": { benefit: "Reading expands knowledge, improves focus, reduces stress, and stimulates creative thinking.", tips: "Read before bed instead of scrolling. Choose topics that inspire you." },
+};
 
 // ── Mock Data ──
 export const MOTIVATIONAL_QUOTES = [
@@ -113,6 +127,7 @@ export const OPTIZ_MAX_CHALLENGE: Challenge = {
     longDescription: "The ultimate 30-day transformation challenge. Complete daily tasks across cardio, strength, flexibility, and nutrition to earn XP, level up your rank, and compete on the global leaderboard. Designed for those who refuse to settle.",
     emoji: "🔥",
     difficulty: "Hard",
+    durationDays: 30,
     participantCount: 847,
     taskCount: 8,
     totalXp: 380,

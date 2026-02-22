@@ -1,6 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useState } from "react";
+import { TaskInfoModal } from "./TaskInfoModal";
 import type { ChallengeTask } from "./rankSystem";
 
 interface ChallengeProgramProps {
@@ -11,6 +13,23 @@ interface ChallengeProgramProps {
     onBack: () => void;
     completingTaskId: string | null;
 }
+
+const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: { staggerChildren: 0.05 },
+    },
+};
+
+const itemVariants = {
+    hidden: { opacity: 0, y: 10 },
+    visible: {
+        opacity: 1,
+        y: 0,
+        transition: { type: "spring" as const, stiffness: 300, damping: 25 },
+    },
+};
 
 export function ChallengeProgram({
     challengeTitle,
@@ -26,6 +45,9 @@ export function ChallengeProgram({
     const totalXpEarned = tasks.filter(t => t.completed).reduce((sum, t) => sum + t.xpReward, 0);
     const totalXpPossible = tasks.reduce((sum, t) => sum + t.xpReward, 0);
 
+    // Task info modal
+    const [taskInfoData, setTaskInfoData] = useState<ChallengeTask | null>(null);
+
     return (
         <div className="pb-8">
             {/* Back button */}
@@ -34,6 +56,7 @@ export function ChallengeProgram({
                 className="flex items-center gap-1.5 text-sm text-gray-9 hover:text-gray-12 transition-colors mb-4 -ml-1"
                 initial={{ opacity: 0, x: -8 }}
                 animate={{ opacity: 1, x: 0 }}
+                transition={{ type: "spring", stiffness: 300, damping: 25 }}
             >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="15 18 9 12 15 6" />
@@ -46,6 +69,7 @@ export function ChallengeProgram({
                 className="relative rounded-2xl overflow-hidden mb-5"
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
+                transition={{ type: "spring", stiffness: 300, damping: 25 }}
             >
                 {/* Gradient bg */}
                 <div className="absolute inset-0 bg-gradient-to-br from-[#E80000]/10 via-transparent to-[#E80000]/5" />
@@ -92,20 +116,23 @@ export function ChallengeProgram({
             {/* Task list */}
             <h3 className="text-sm font-bold text-gray-12 mb-3 uppercase tracking-wider">Today&apos;s Tasks</h3>
 
-            <div className="space-y-2.5">
-                {tasks.map((task, i) => {
+            <motion.div
+                className="space-y-2.5"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+            >
+                {tasks.map((task) => {
                     const isCompleting = completingTaskId === task.id;
 
                     return (
                         <motion.div
                             key={task.id}
                             className={`flex items-center gap-3 p-3.5 rounded-xl transition-all ${task.completed
-                                    ? "bg-gray-2 border border-gray-4"
-                                    : "optiz-surface hover:bg-[var(--optiz-surface-hover)]"
+                                ? "bg-gray-2 border border-gray-4"
+                                : "bg-gray-3/30 border border-gray-5/50 hover:border-gray-5"
                                 }`}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: i * 0.06 }}
+                            variants={itemVariants}
                             layout
                         >
                             {/* Completion circle */}
@@ -144,12 +171,24 @@ export function ChallengeProgram({
                                 </span>
                             </div>
 
+                            {/* Info button */}
+                            <button
+                                onClick={() => setTaskInfoData(task)}
+                                className="w-6 h-6 rounded-full flex items-center justify-center text-gray-7 hover:text-gray-11 hover:bg-gray-4 transition-all shrink-0"
+                            >
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <path d="M12 16v-4" />
+                                    <path d="M12 8h.01" />
+                                </svg>
+                            </button>
+
                             {/* Emoji + XP */}
                             <div className="flex items-center gap-2 shrink-0">
                                 <span className="text-base">{task.emoji}</span>
                                 <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${task.completed
-                                        ? "bg-gray-3 text-gray-7"
-                                        : "bg-[#E80000]/10 text-[#FF2D2D] border border-[#E80000]/15"
+                                    ? "bg-gray-3 text-gray-7"
+                                    : "bg-[#E80000]/10 text-[#FF2D2D] border border-[#E80000]/15"
                                     }`}>
                                     +{task.xpReward}
                                 </span>
@@ -157,12 +196,12 @@ export function ChallengeProgram({
                         </motion.div>
                     );
                 })}
-            </div>
+            </motion.div>
 
             {/* All done state */}
             {completed === total && total > 0 && (
                 <motion.div
-                    className="mt-6 text-center py-6 rounded-2xl optiz-surface"
+                    className="mt-6 text-center py-6 rounded-2xl bg-gray-3/30 border border-gray-5/50"
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.3 }}
@@ -180,6 +219,13 @@ export function ChallengeProgram({
                     </p>
                 </motion.div>
             )}
+
+            {/* Task Info Modal */}
+            <TaskInfoModal
+                isOpen={!!taskInfoData}
+                onClose={() => setTaskInfoData(null)}
+                task={taskInfoData}
+            />
         </div>
     );
 }

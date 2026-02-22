@@ -7,9 +7,10 @@ interface RankBadgeProps {
     glowColor: string;
     size?: number;
     className?: string;
+    mousePosition?: { x: number; y: number };
 }
 
-export function RankBadge({ colors, glowColor, size = 80, className = "" }: RankBadgeProps) {
+export function RankBadge({ colors, glowColor, size = 80, className = "", mousePosition }: RankBadgeProps) {
     const id = `badge-${colors[0].replace("#", "")}`;
 
     return (
@@ -20,6 +21,17 @@ export function RankBadge({ colors, glowColor, size = 80, className = "" }: Rank
             animate={{ scale: 1, opacity: 1 }}
             transition={{ type: "spring", stiffness: 250, damping: 20 }}
         >
+            {/* Cursor-following reflection on badge */}
+            {mousePosition && (
+                <div
+                    className="absolute inset-0 pointer-events-none z-10 rounded-full transition-opacity duration-300"
+                    style={{
+                        background: `radial-gradient(circle at ${mousePosition.x * 100}% ${mousePosition.y * 100}%, rgba(255,255,255,0.12) 0%, transparent 45%)`,
+                        opacity: mousePosition.x === 0.5 && mousePosition.y === 0.5 ? 0 : 1,
+                    }}
+                />
+            )}
+
             <svg viewBox="0 0 100 110" className="w-full h-full drop-shadow-lg animate-glow-pulse">
                 <defs>
                     <linearGradient id={`${id}-grad`} x1="0" y1="0" x2="1" y2="1">

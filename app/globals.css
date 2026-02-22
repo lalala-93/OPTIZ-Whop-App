@@ -308,7 +308,36 @@ body {
   }
 }
 
+@keyframes icon-bounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-2px) scale(1.1); }
+}
+
+@keyframes flame-flicker {
+  0%, 100% { transform: scale(1) rotate(0deg); filter: brightness(1); }
+  25% { transform: scale(1.05) rotate(-2deg); filter: brightness(1.15); }
+  50% { transform: scale(1.1) rotate(1deg); filter: brightness(1.25); }
+  75% { transform: scale(1.03) rotate(-1deg); filter: brightness(1.1); }
+}
+
+@keyframes bolt-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.15); opacity: 0.85; }
+}
+
 /* ── Animation Utilities ── */
+.optiz-icon-bounce {
+  animation: icon-bounce 2s ease-in-out infinite;
+}
+
+.optiz-flame-flicker {
+  animation: flame-flicker 1.5s ease-in-out infinite;
+}
+
+.optiz-bolt-pulse {
+  animation: bolt-pulse 2s ease-in-out infinite;
+}
+
 .optiz-pulse-glow {
   animation: pulse-glow 2.5s ease-in-out infinite;
 }

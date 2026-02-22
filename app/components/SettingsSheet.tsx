@@ -87,7 +87,7 @@ export function SettingsSheet({
                                     <p className="text-[10px] text-gray-8 font-medium uppercase tracking-wider">Level</p>
                                 </div>
                                 <div className="bg-gray-3 rounded-xl p-3 text-center border border-gray-5">
-                                    <p className="text-lg font-bold optiz-gradient-text">{totalXp.toLocaleString()}</p>
+                                    <p className="text-lg font-bold text-gray-12">{totalXp.toLocaleString()}</p>
                                     <p className="text-[10px] text-gray-8 font-medium uppercase tracking-wider">Total XP</p>
                                 </div>
                                 <div className="bg-gray-3 rounded-xl p-3 text-center border border-gray-5">
@@ -121,17 +121,16 @@ export function SettingsSheet({
                                 ))}
                             </div>
 
-                            {/* About */}
+                            {/* About — Logo only, no text */}
                             <div className="text-center pt-4 border-t border-gray-5/50">
-                                <div className="flex items-center justify-center gap-2 mb-1">
+                                <div className="flex items-center justify-center mb-1">
                                     <Image
                                         src="/Logo-optiz.png"
                                         alt="OPTIZ"
-                                        width={20}
-                                        height={20}
-                                        className="rounded"
+                                        width={24}
+                                        height={24}
+                                        className="rounded-md"
                                     />
-                                    <span className="text-sm font-bold text-gray-11">OPTIZ</span>
                                 </div>
                                 <p className="text-[10px] text-gray-7">v1.0.0 • 1% better every day</p>
                             </div>
