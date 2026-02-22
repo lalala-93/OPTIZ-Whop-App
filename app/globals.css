@@ -1,11 +1,68 @@
 @import "tailwindcss";
 @import "@whop/react/styles.css";
 
+/* Base Tailwind Layer configurations */
 @theme inline {
-  --font-sans: var(--font-geist-sans);
+  --color-optiz-dark: #0a0a0a;
+  --color-optiz-card: #141414;
+  --color-optiz-card-hover: #1f1f1f;
+  --color-optiz-red: #F05030;
+  --color-optiz-orange: #FF8A00;
+  --color-optiz-muted: #8E8E93;
+  --color-optiz-border: #2C2C2E;
+
+  --font-sans: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: var(--font-geist-mono);
 }
 
 body {
-  font-family: var(--font-sans), system-ui, sans-serif;
+  background-color: var(--color-optiz-dark);
+  color: #FFFFFF;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom Utilities for Premium iOS App Feel */
+@layer utilities {
+  .ios-glass {
+    @apply bg-black/40 backdrop-blur-xl border border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.5)];
+  }
+  
+  .optiz-gradient-text {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-[--color-optiz-red] to-[--color-optiz-orange];
+  }
+
+  /* Animated gradient border */
+  .optiz-animated-border {
+    position: relative;
+  }
+  .optiz-animated-border::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    padding: 2px;
+    background: linear-gradient(45deg, var(--color-optiz-red), var(--color-optiz-orange), transparent);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+}
+
+/* Base custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-optiz-border);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-optiz-muted);
 }
