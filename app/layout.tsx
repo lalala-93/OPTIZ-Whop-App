@@ -15,8 +15,11 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "OPTIZ",
-  description: "1% better every day",
+  description: "Level up your fitness — track workouts, earn XP, dominate the leaderboard.",
 };
+
+// Inline script to detect and set theme before React renders — prevents white flash
+const themeScript = `(function(){try{var c=document.cookie.match(/whop-frosted-theme=appearance:(?<a>light|dark)/);var t=c?c.groups.a:(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.classList.add(t);document.documentElement.style.colorScheme=t;if(t==='dark'){document.documentElement.style.backgroundColor='#111';}}catch(e){}})();`;
 
 export default function RootLayout({
   children,
@@ -25,11 +28,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        suppressHydrationWarning
       >
-        <WhopApp accentColor="blue" appearance="inherit">
+        <WhopApp accentColor="orange" appearance="inherit">
           {children}
         </WhopApp>
       </body>
