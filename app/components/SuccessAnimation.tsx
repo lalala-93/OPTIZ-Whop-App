@@ -49,7 +49,7 @@ export function SuccessAnimation({
               initial={{ scale: 0, opacity: 0.8 }}
               animate={{ scale: 3, opacity: 0 }}
               transition={{ duration: 1.2, ease: "easeOut" }}
-              className="absolute w-28 h-28 rounded-full border-2 border-[var(--optiz-red)]"
+              className="absolute w-24 h-24 rounded-full border-2 border-[#E80000]"
             />
 
             {/* Particles */}
@@ -70,7 +70,7 @@ export function SuccessAnimation({
                     delay: 0.2 + p.delay,
                     ease: "easeOut",
                   }}
-                  className="absolute w-2 h-2 rounded-full optiz-gradient-bg"
+                  className="absolute w-2 h-2 rounded-full bg-[#E80000]"
                 />
               );
             })}
@@ -89,7 +89,7 @@ export function SuccessAnimation({
                 stiffness: 250,
                 damping: 18,
               }}
-              className="w-28 h-28 optiz-gradient-bg rounded-full flex items-center justify-center text-5xl shadow-[var(--optiz-glow-strong)] border-2 border-white/15"
+              className="w-20 h-20 sm:w-24 sm:h-24 bg-[#E80000] rounded-full flex items-center justify-center text-4xl sm:text-5xl shadow-[0_0_40px_rgba(232,0,0,0.4)] border border-white/10"
             >
               🔥
             </motion.div>
@@ -101,14 +101,14 @@ export function SuccessAnimation({
               transition={{ delay: 0.35, duration: 0.4 }}
               className="mt-5 text-center"
             >
-              <h2 className="text-2xl font-black text-gray-12 tracking-wide uppercase">
+              <h2 className="text-xl sm:text-2xl font-black text-gray-12 tracking-wide uppercase">
                 Great Job!
               </h2>
               <motion.p
                 initial={{ scale: 0.5, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ delay: 0.55, type: "spring", stiffness: 300 }}
-                className="text-xl font-bold optiz-gradient-text mt-1.5 tabular-nums"
+                className="text-xl font-bold text-[#E80000] mt-1.5 tabular-nums"
               >
                 +{xpEarned} XP
               </motion.p>

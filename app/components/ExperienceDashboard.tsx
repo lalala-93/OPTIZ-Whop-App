@@ -111,9 +111,9 @@ export function ExperienceDashboard({ userId }: { userId: string }) {
   ].sort((a, b) => b.xp - a.xp);
 
   return (
-    <div className="min-h-screen bg-gray-1 text-gray-12 flex flex-col max-w-lg mx-auto relative">
+    <div className="min-h-screen bg-gray-1 text-gray-12 flex flex-col w-full relative">
       {/* ── Header ── */}
-      <header className="px-5 pt-6 pb-3 sticky top-0 bg-gray-1/80 backdrop-blur-xl z-30 border-b border-gray-4">
+      <header className="px-4 sm:px-6 pt-5 pb-3 sticky top-0 bg-gray-1/80 backdrop-blur-xl z-30 border-b border-[var(--optiz-border)]">
         <div className="flex justify-between items-center mb-5">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-full optiz-gradient-bg flex items-center justify-center text-white font-bold text-sm shadow-lg">
@@ -146,9 +146,9 @@ export function ExperienceDashboard({ userId }: { userId: string }) {
       </header>
 
       {/* ── Content ── */}
-      <main className="flex-1 overflow-y-auto px-5 py-6 scroll-smooth">
+      <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 scroll-smooth">
         {activeTab === "home" ? (
-          <div className="space-y-5 pb-20">
+          <div className="space-y-4 pb-6">
             {/* Section header */}
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-bold text-gray-12">Your Sports</h2>
@@ -160,7 +160,7 @@ export function ExperienceDashboard({ userId }: { userId: string }) {
             </div>
 
             {/* Avatar cards */}
-            <div className="flex flex-col gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {avatars.map((avatar) => (
                 <AvatarCard
                   key={avatar.id}
@@ -174,14 +174,14 @@ export function ExperienceDashboard({ userId }: { userId: string }) {
             {/* Add button */}
             <button
               onClick={handleAddClick}
-              className="w-full py-4 border-2 border-dashed border-gray-5 rounded-2xl text-gray-9 hover:text-gray-12 hover:border-gray-7 hover:bg-gray-3 transition-all font-semibold flex items-center justify-center gap-2"
+              className="w-full py-4 border-2 border-dashed border-[var(--optiz-border)] rounded-2xl text-gray-9 hover:text-gray-12 hover:border-[var(--optiz-border-hover)] hover:bg-gray-3 transition-all font-semibold flex items-center justify-center gap-2"
             >
               <span className="text-lg">+</span> Add Sport Avatar
             </button>
           </div>
         ) : (
           /* ── Leaderboard ── */
-          <div className="space-y-3 pb-20">
+          <div className="space-y-3 pb-6">
             <h2 className="text-xl font-bold text-gray-12 mb-4">
               Leaderboard
             </h2>
@@ -191,7 +191,7 @@ export function ExperienceDashboard({ userId }: { userId: string }) {
                 key={user.name}
                 className={`flex items-center justify-between p-4 rounded-2xl border transition-colors ${
                   user.isMe
-                    ? "bg-gray-3 border-[var(--optiz-red)]/30 shadow-[0_0_20px_rgba(239,68,68,0.08)]"
+                    ? "bg-gray-3 border-[#E80000]/25 shadow-[0_0_16px_rgba(232,0,0,0.1)]"
                     : "bg-gray-2 border-gray-4 hover:border-gray-6"
                 }`}
               >

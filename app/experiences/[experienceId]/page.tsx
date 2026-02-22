@@ -24,8 +24,6 @@ export default async function ExperiencePage({
   }
 
   return (
-    <div className="bg-black min-h-screen font-sans">
-      <ExperienceDashboard userId={userId} />
-    </div>
+    <ExperienceDashboard userId={userId} />
   );
 }

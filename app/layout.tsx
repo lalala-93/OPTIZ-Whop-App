@@ -34,7 +34,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <WhopApp accentColor="orange" appearance="inherit">
+        <WhopApp accentColor="red" appearance="inherit">
           {children}
         </WhopApp>
       </body>

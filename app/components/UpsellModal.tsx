@@ -3,96 +3,87 @@
 import { motion, AnimatePresence } from "framer-motion";
 
 interface UpsellModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    onUpgrade: () => void;
+  isOpen: boolean;
+  onClose: () => void;
+  onUpgrade: () => void;
 }
 
+const FEATURES = [
+  { emoji: "♾️", title: "Unlimited Avatars", desc: "Track more than 2 sports at once" },
+  { emoji: "📊", title: "Advanced Analytics", desc: "Deep dive into your performance" },
+  { emoji: "👑", title: "Pro Badge", desc: "Stand out on the leaderboard" },
+];
+
 export function UpsellModal({ isOpen, onClose, onUpgrade }: UpsellModalProps) {
-    if (!isOpen) return null;
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={onClose}
+          />
 
-    return (
-        <AnimatePresence>
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="absolute inset-0 bg-black/80 backdrop-blur-md"
-                    onClick={onClose}
-                />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+            transition={{ type: "spring", stiffness: 400, damping: 30 }}
+            className="relative w-full max-w-sm bg-gray-2 border border-[var(--optiz-border)] rounded-2xl overflow-hidden shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6">
+              {/* Icon + Title */}
+              <div className="text-center mb-5">
+                <div className="w-12 h-12 rounded-full bg-[#E80000]/10 border border-[#E80000]/20 flex items-center justify-center text-2xl mx-auto mb-3">
+                  🚀
+                </div>
+                <h2 className="text-lg font-bold text-gray-12">
+                  LevelUp Pro
+                </h2>
+                <p className="text-sm text-gray-9 mt-1">
+                  Unleash your full potential.
+                </p>
+              </div>
 
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                    className="relative w-full max-w-md bg-black border border-[--color-optiz-border] rounded-[2rem] overflow-hidden shadow-2xl"
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    {/* Animated Gradient Header */}
-                    <div className="h-32 w-full bg-gradient-to-br from-[--color-optiz-red] to-[--color-optiz-orange] relative overflow-hidden">
-                        <div className="absolute inset-0 bg-black/20" />
-                        <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-white/20 blur-3xl rounded-full" />
-                        <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="text-6xl filter drop-shadow-lg">🚀</span>
-                        </div>
+              {/* Features */}
+              <div className="space-y-2.5 mb-5">
+                {FEATURES.map((f) => (
+                  <div
+                    key={f.title}
+                    className="flex items-center gap-3 p-3 rounded-xl bg-[var(--optiz-surface)] border border-[var(--optiz-border)]"
+                  >
+                    <span className="text-lg shrink-0">{f.emoji}</span>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-gray-12">{f.title}</p>
+                      <p className="text-xs text-gray-9">{f.desc}</p>
                     </div>
+                  </div>
+                ))}
+              </div>
 
-                    <div className="p-8 text-center relative pointer-events-none">
-                        {/* The gradient border effect */}
-                        <div className="absolute inset-0 border-2 border-transparent rounded-[2rem] optiz-animated-border opacity-50 pointer-events-none" />
+              {/* CTA */}
+              <button
+                onClick={onUpgrade}
+                className="w-full py-3 rounded-xl font-bold text-sm text-white bg-[#E80000] hover:bg-[#FF2D2D] active:scale-[0.98] transition-all shadow-sm hover:shadow-[0_0_20px_rgba(232,0,0,0.2)]"
+              >
+                Unlock Pro — $9.99/mo
+              </button>
 
-                        <div className="pointer-events-auto">
-                            <h2 className="text-3xl font-black text-white italic tracking-wide uppercase mb-2">
-                                LevelUp Pro
-                            </h2>
-                            <p className="text-[--color-optiz-muted] mb-8 font-medium">
-                                Unleash your full potential. Track everything, conquer every goal.
-                            </p>
-
-                            <div className="space-y-4 mb-8 text-left">
-                                <div className="flex items-center gap-4 bg-[--color-optiz-card] p-4 rounded-2xl border border-white/5">
-                                    <div className="w-10 h-10 rounded-full bg-[--color-optiz-red]/20 flex items-center justify-center text-xl">♾️</div>
-                                    <div>
-                                        <h4 className="text-white font-bold">Unlimited Avatars</h4>
-                                        <p className="text-xs text-[--color-optiz-muted]">Track more than 2 sports at once</p>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center gap-4 bg-[--color-optiz-card] p-4 rounded-2xl border border-white/5">
-                                    <div className="w-10 h-10 rounded-full bg-[--color-optiz-orange]/20 flex items-center justify-center text-xl">📊</div>
-                                    <div>
-                                        <h4 className="text-white font-bold">Advanced Analytics</h4>
-                                        <p className="text-xs text-[--color-optiz-muted]">Deep dive into your performance</p>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center gap-4 bg-[--color-optiz-card] p-4 rounded-2xl border border-white/5">
-                                    <div className="w-10 h-10 rounded-full bg-yellow-500/20 flex items-center justify-center text-xl">👑</div>
-                                    <div>
-                                        <h4 className="text-white font-bold">Pro Badge</h4>
-                                        <p className="text-xs text-[--color-optiz-muted]">Stand out on the leaderboard</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <button
-                                onClick={onUpgrade}
-                                className="w-full py-4 rounded-2xl font-black text-lg text-white bg-gradient-to-r from-[--color-optiz-red] to-[--color-optiz-orange] hover:shadow-[0_0_20px_rgba(240,80,48,0.4)] transition-all transform active:scale-[0.98]"
-                            >
-                                Unlock Pro - $9.99/mo
-                            </button>
-
-                            <button
-                                onClick={onClose}
-                                className="mt-6 text-sm font-medium text-[--color-optiz-muted] hover:text-white transition-colors"
-                            >
-                                No thanks, I'll stay limited
-                            </button>
-                        </div>
-                    </div>
-                </motion.div>
+              <button
+                onClick={onClose}
+                className="w-full mt-3 py-2 text-xs font-medium text-gray-9 hover:text-gray-11 transition-colors"
+              >
+                No thanks
+              </button>
             </div>
-        </AnimatePresence>
-    );
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
 }

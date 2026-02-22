@@ -34,14 +34,19 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ── OPTIZ Design Tokens (gradient accent) ── */
+/* ── OPTIZ Design Tokens ── */
 :root {
-  --optiz-red: #ef4444;
-  --optiz-orange: #f97316;
-  --optiz-gradient: linear-gradient(135deg, #ef4444 0%, #f97316 100%);
-  --optiz-gradient-subtle: linear-gradient(135deg, rgba(239,68,68,0.12) 0%, rgba(249,115,22,0.12) 100%);
-  --optiz-glow: 0 0 30px rgba(239,68,68,0.2);
-  --optiz-glow-strong: 0 0 60px rgba(239,68,68,0.4);
+  --optiz-red: #E80000;
+  --optiz-red-light: #FF2D2D;
+  --optiz-gradient: linear-gradient(135deg, #E80000 0%, #FF2D2D 100%);
+  --optiz-gradient-subtle: linear-gradient(135deg, rgba(232,0,0,0.12) 0%, rgba(255,45,45,0.12) 100%);
+  --optiz-glow: 0 0 30px rgba(232,0,0,0.2);
+  --optiz-glow-strong: 0 0 60px rgba(232,0,0,0.4);
+  --optiz-surface: rgba(255,255,255,0.04);
+  --optiz-surface-hover: rgba(255,255,255,0.07);
+  --optiz-border: rgba(255,255,255,0.08);
+  --optiz-border-hover: rgba(255,255,255,0.14);
+  --optiz-text-muted: rgba(255,255,255,0.5);
 }
 
 /* ── Utility classes ── */
@@ -81,10 +86,37 @@ body {
 }
 
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 20px rgba(239,68,68,0.25); }
-  50% { box-shadow: 0 0 40px rgba(249,115,22,0.45); }
+  0%, 100% { box-shadow: 0 0 20px rgba(232,0,0,0.25); }
+  50% { box-shadow: 0 0 40px rgba(232,0,0,0.45); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(100%); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 .optiz-pulse-glow {
   animation: pulse-glow 2.5s ease-in-out infinite;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.2s ease-out forwards;
 }

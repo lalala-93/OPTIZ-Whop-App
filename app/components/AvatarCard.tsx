@@ -34,15 +34,15 @@ export function AvatarCard({
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ scale: 1.005 }}
       transition={{ duration: 0.3 }}
-      className="bg-gray-2 hover:bg-gray-3 transition-colors rounded-2xl p-5 border border-gray-4 hover:border-gray-6 flex flex-col gap-4 relative overflow-hidden"
+      className="bg-[var(--optiz-surface)] hover:bg-[var(--optiz-surface-hover)] transition-all duration-200 rounded-2xl p-4 sm:p-5 border border-[var(--optiz-border)] hover:border-[var(--optiz-border-hover)] flex flex-col gap-3 sm:gap-4 relative overflow-hidden"
     >
       {/* Card top: emoji + name + badges */}
       <div className="flex items-center gap-4">
-        <div className="w-14 h-14 rounded-xl bg-gray-3 border border-gray-5 flex items-center justify-center text-3xl">
+        <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-xl bg-gray-3 border border-gray-5 flex items-center justify-center text-2xl sm:text-3xl">
           {emoji}
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-base font-bold tracking-tight text-gray-12 truncate">
+          <h3 className="text-sm sm:text-base font-bold tracking-tight text-gray-12 truncate">
             {name}
           </h3>
           <div className="flex items-center gap-2 mt-1.5">
@@ -67,7 +67,7 @@ export function AvatarCard({
             <span className="text-gray-6">/</span> {goalXp} XP
           </span>
         </div>
-        <div className="h-2 w-full bg-gray-3 rounded-full overflow-hidden border border-gray-5">
+        <div className="h-1.5 sm:h-2 w-full bg-gray-3 rounded-full overflow-hidden">
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: `${progressPercent}%` }}
@@ -81,7 +81,7 @@ export function AvatarCard({
       <button
         onClick={() => onComplete(id)}
         disabled={isCompleting}
-        className="mt-1 w-full active:scale-[0.98] transition-all optiz-gradient-bg text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed group shadow-sm hover:shadow-md hover:shadow-[var(--optiz-red)]/10"
+        className="mt-1 w-full active:scale-[0.98] transition-all bg-[#E80000] hover:bg-[#FF2D2D] text-white font-semibold py-2.5 sm:py-3 rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed group shadow-sm hover:shadow-md hover:shadow-[#E80000]/15"
       >
         {isCompleting ? (
           <span className="animate-pulse text-sm">Tracking...</span>
