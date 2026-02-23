@@ -12,6 +12,7 @@ interface XPRingProps {
     tier: RankTier;
     rankColors: [string, string];
     size?: number;
+    onClick?: () => void;
 }
 
 export function XPRing({
@@ -21,40 +22,54 @@ export function XPRing({
     tier,
     rankColors,
     size = 200,
+    onClick,
 }: XPRingProps) {
     const strokeWidth = 8;
     const radius = 85;
     const circumference = 2 * Math.PI * radius;
     const offset = circumference - (progressPercent / 100) * circumference;
-    const gradientId = `xp-ring-${tier.name}`;
+    const gradientId = `xp-ring-${tier.name}-${size}`;
 
-    // Cursor-following reflection
+    // Cursor-following reflection — constrained within the ring
     const [mousePos, setMousePos] = useState({ x: 0.5, y: 0.5 });
+    const [isHovered, setIsHovered] = useState(false);
 
     const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
         const rect = e.currentTarget.getBoundingClientRect();
         const x = (e.clientX - rect.left) / rect.width;
         const y = (e.clientY - rect.top) / rect.height;
-        setMousePos({ x, y });
+        // Only update if within the circular boundary
+        const dx = x - 0.5;
+        const dy = y - 0.5;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist <= 0.5) {
+            setMousePos({ x, y });
+            setIsHovered(true);
+        }
     }, []);
 
     const handleMouseLeave = useCallback(() => {
         setMousePos({ x: 0.5, y: 0.5 });
+        setIsHovered(false);
     }, []);
 
     return (
         <div
-            className="relative flex items-center justify-center"
+            className={`relative flex items-center justify-center ${onClick ? "cursor-pointer" : ""}`}
             style={{ width: size, height: size }}
             onMouseMove={handleMouseMove}
             onMouseLeave={handleMouseLeave}
+            onClick={onClick}
         >
-            {/* Specular reflection overlay */}
+            {/* Specular reflection — clipped to circle, stays within ring */}
             <div
-                className="absolute inset-0 rounded-full pointer-events-none z-10 transition-opacity duration-300"
+                className="absolute rounded-full pointer-events-none z-10 transition-opacity duration-500"
                 style={{
-                    background: `radial-gradient(circle at ${mousePos.x * 100}% ${mousePos.y * 100}%, rgba(255,255,255,0.08) 0%, transparent 50%)`,
-                    opacity: mousePos.x === 0.5 && mousePos.y === 0.5 ? 0 : 1,
+                    width: size - 4,
+                    height: size - 4,
+                    background: `radial-gradient(circle at ${mousePos.x * 100}% ${mousePos.y * 100}%, rgba(255,255,255,0.06) 0%, transparent 35%)`,
+                    opacity: isHovered ? 1 : 0,
+                    overflow: "hidden",
                 }}
             />
 
@@ -92,36 +107,37 @@ export function XPRing({
                 />
 
                 {/* Glow dot at progress tip */}
-                {progressPercent > 2 && (
+                {progressPercent > 3 && (
                     <motion.circle
                         cx={100 + radius * Math.cos(((progressPercent / 100) * 2 * Math.PI) - Math.PI / 2)}
                         cy={100 + radius * Math.sin(((progressPercent / 100) * 2 * Math.PI) - Math.PI / 2)}
-                        r="4"
+                        r="3.5"
                         fill={rankColors[1]}
                         initial={{ opacity: 0 }}
-                        animate={{ opacity: [0.4, 1, 0.4] }}
-                        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                        animate={{ opacity: [0.5, 1, 0.5] }}
+                        transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
                     />
                 )}
             </svg>
 
             {/* Center content */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center rotate-0">
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <RankBadge
                     colors={rankColors}
                     glowColor={tier.glowColor}
-                    size={size * 0.42}
+                    tierName={tier.name}
+                    size={size * 0.4}
                     mousePosition={mousePos}
                 />
                 <motion.p
-                    className="text-xs font-semibold tabular-nums mt-1"
+                    className="text-[11px] font-semibold tabular-nums mt-0.5"
                     style={{ color: rankColors[1] }}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.6 }}
                 >
-                    {currentXp.toLocaleString()}/{xpForNextLevel.toLocaleString()}
-                    <span className="ml-0.5 text-[10px] opacity-70">XP</span>
+                    {currentXp}/{xpForNextLevel}
+                    <span className="ml-0.5 text-[9px] opacity-60">XP</span>
                 </motion.p>
             </div>
         </div>

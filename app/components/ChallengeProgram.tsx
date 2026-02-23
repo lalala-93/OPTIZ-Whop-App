@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Image from "next/image";
 import { useState } from "react";
 import { TaskInfoModal } from "./TaskInfoModal";
 import type { ChallengeTask } from "./rankSystem";
@@ -23,7 +24,7 @@ const containerVariants = {
 };
 
 const itemVariants = {
-    hidden: { opacity: 0, y: 10 },
+    hidden: { opacity: 0, y: 8 },
     visible: {
         opacity: 1,
         y: 0,
@@ -45,79 +46,68 @@ export function ChallengeProgram({
     const totalXpEarned = tasks.filter(t => t.completed).reduce((sum, t) => sum + t.xpReward, 0);
     const totalXpPossible = tasks.reduce((sum, t) => sum + t.xpReward, 0);
 
-    // Task info modal
     const [taskInfoData, setTaskInfoData] = useState<ChallengeTask | null>(null);
 
     return (
         <div className="pb-8">
-            {/* Back button */}
             <motion.button
                 onClick={onBack}
-                className="flex items-center gap-1.5 text-sm text-gray-9 hover:text-gray-12 transition-colors mb-4 -ml-1"
-                initial={{ opacity: 0, x: -8 }}
+                className="flex items-center gap-1 text-sm text-gray-8 hover:text-gray-12 transition-colors mb-4"
+                initial={{ opacity: 0, x: -6 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ type: "spring", stiffness: 300, damping: 25 }}
             >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="15 18 9 12 15 6" />
                 </svg>
-                Back to Challenges
+                Back
             </motion.button>
 
-            {/* Program header */}
+            {/* Header with image */}
             <motion.div
-                className="relative rounded-2xl overflow-hidden mb-5"
-                initial={{ opacity: 0, y: 12 }}
+                className="rounded-2xl overflow-hidden mb-5 border border-gray-5/30"
+                initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ type: "spring", stiffness: 300, damping: 25 }}
             >
-                {/* Gradient bg */}
-                <div className="absolute inset-0 bg-gradient-to-br from-[#E80000]/10 via-transparent to-[#E80000]/5" />
-                <div className="relative p-5">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="w-12 h-12 rounded-xl bg-[#E80000]/15 border border-[#E80000]/25 flex items-center justify-center text-2xl">
-                            {challengeEmoji}
-                        </div>
-                        <div>
-                            <h2 className="text-lg font-bold text-gray-12">{challengeTitle}</h2>
-                            <p className="text-xs text-gray-9 font-medium">Daily Program</p>
-                        </div>
+                <div className="relative h-32 w-full">
+                    <Image
+                        src="/Challenge1.jpeg"
+                        alt={challengeTitle}
+                        fill
+                        className="object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[var(--gray-2)] via-[var(--gray-2)]/50 to-transparent" />
+                    <div className="absolute bottom-3 left-4 right-4">
+                        <h2 className="text-lg font-bold text-white">{challengeTitle}</h2>
+                        <p className="text-[10px] text-white/60 font-medium">Daily Program</p>
                     </div>
+                </div>
 
-                    {/* Progress bar */}
-                    <div className="mb-3">
-                        <div className="flex justify-between text-xs mb-1.5">
-                            <span className="text-gray-9 font-medium">Progress</span>
-                            <span className="text-gray-11 font-bold tabular-nums">
-                                {completed}/{total} completed
-                            </span>
-                        </div>
-                        <div className="h-2 w-full bg-gray-3 rounded-full overflow-hidden border border-gray-5/50">
-                            <motion.div
-                                className="h-full rounded-full optiz-gradient-bg"
-                                initial={{ width: 0 }}
-                                animate={{ width: `${progressPercent}%` }}
-                                transition={{ duration: 0.8, ease: "easeOut" }}
-                            />
-                        </div>
+                <div className="p-4 bg-gray-3/30">
+                    <div className="flex justify-between text-xs mb-1.5">
+                        <span className="text-gray-8">Progress</span>
+                        <span className="text-gray-11 font-bold tabular-nums">{completed}/{total}</span>
                     </div>
-
-                    {/* XP earned */}
-                    <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-1.5 text-xs">
-                            <span className="text-base">⚡</span>
-                            <span className="font-bold text-gray-12 tabular-nums">{totalXpEarned}</span>
-                            <span className="text-gray-8">/ {totalXpPossible} XP earned</span>
-                        </div>
+                    <div className="h-1.5 w-full bg-gray-4/50 rounded-full overflow-hidden">
+                        <motion.div
+                            className="h-full rounded-full optiz-gradient-bg"
+                            initial={{ width: 0 }}
+                            animate={{ width: `${progressPercent}%` }}
+                            transition={{ duration: 0.6, ease: "easeOut" }}
+                        />
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-2 text-[10px] text-gray-8">
+                        <span>⚡</span>
+                        <span className="font-bold text-gray-11 tabular-nums">{totalXpEarned}</span>
+                        <span>/ {totalXpPossible} XP</span>
                     </div>
                 </div>
             </motion.div>
 
-            {/* Task list */}
-            <h3 className="text-sm font-bold text-gray-12 mb-3 uppercase tracking-wider">Today&apos;s Tasks</h3>
+            {/* Tasks */}
+            <h3 className="text-[10px] font-bold text-gray-7 mb-3 uppercase tracking-widest">Today&apos;s Tasks</h3>
 
             <motion.div
-                className="space-y-2.5"
+                className="space-y-2"
                 variants={containerVariants}
                 initial="hidden"
                 animate="visible"
@@ -128,22 +118,21 @@ export function ChallengeProgram({
                     return (
                         <motion.div
                             key={task.id}
-                            className={`flex items-center gap-3 p-3.5 rounded-xl transition-all ${task.completed
-                                ? "bg-gray-2 border border-gray-4"
-                                : "bg-gray-3/30 border border-gray-5/50 hover:border-gray-5"
+                            className={`flex items-center gap-3 p-3 rounded-xl transition-all ${task.completed
+                                    ? "bg-gray-2/60 opacity-50"
+                                    : "bg-gray-3/25 border border-gray-5/35"
                                 }`}
                             variants={itemVariants}
                             layout
                         >
-                            {/* Completion circle */}
                             {task.completed ? (
                                 <motion.div
-                                    className="w-6 h-6 rounded-full bg-[#E80000] flex items-center justify-center shrink-0"
+                                    className="w-5.5 h-5.5 rounded-full bg-[#E80000] flex items-center justify-center shrink-0"
                                     initial={{ scale: 0 }}
                                     animate={{ scale: 1 }}
                                     transition={{ type: "spring", stiffness: 400, damping: 15 }}
                                 >
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                                         <polyline points="20 6 9 17 4 12" />
                                     </svg>
                                 </motion.div>
@@ -151,44 +140,39 @@ export function ChallengeProgram({
                                 <button
                                     onClick={() => !isCompleting && onCompleteTask(task.id)}
                                     disabled={isCompleting}
-                                    className="w-6 h-6 rounded-full border-2 border-gray-6 hover:border-[#E80000]/50 transition-colors shrink-0 flex items-center justify-center"
+                                    className="w-5.5 h-5.5 rounded-full border-[1.5px] border-gray-6 hover:border-gray-8 transition-colors shrink-0 flex items-center justify-center"
                                 >
                                     {isCompleting && (
                                         <motion.div
-                                            className="w-3 h-3 rounded-full bg-[#E80000]"
+                                            className="w-2.5 h-2.5 rounded-full bg-[#E80000]"
                                             animate={{ scale: [1, 1.3, 1] }}
-                                            transition={{ duration: 0.6, repeat: Infinity }}
+                                            transition={{ duration: 0.5, repeat: Infinity }}
                                         />
                                     )}
                                 </button>
                             )}
 
-                            {/* Task info */}
-                            <div className="flex-1 min-w-0 flex items-center gap-3">
-                                <span className={`text-sm font-medium ${task.completed ? "line-through text-gray-8" : "text-gray-12"
-                                    }`}>
-                                    {task.name}
-                                </span>
-                            </div>
+                            <span className={`flex-1 text-sm font-medium ${task.completed ? "line-through text-gray-7" : "text-gray-12"
+                                }`}>
+                                {task.name}
+                            </span>
 
-                            {/* Info button */}
                             <button
                                 onClick={() => setTaskInfoData(task)}
-                                className="w-6 h-6 rounded-full flex items-center justify-center text-gray-7 hover:text-gray-11 hover:bg-gray-4 transition-all shrink-0"
+                                className="w-5 h-5 rounded-full flex items-center justify-center text-gray-6 hover:text-gray-10 transition-all shrink-0"
                             >
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     <circle cx="12" cy="12" r="10" />
                                     <path d="M12 16v-4" />
                                     <path d="M12 8h.01" />
                                 </svg>
                             </button>
 
-                            {/* Emoji + XP */}
-                            <div className="flex items-center gap-2 shrink-0">
-                                <span className="text-base">{task.emoji}</span>
-                                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${task.completed
-                                    ? "bg-gray-3 text-gray-7"
-                                    : "bg-[#E80000]/10 text-[#FF2D2D] border border-[#E80000]/15"
+                            <div className="flex items-center gap-1.5 shrink-0">
+                                <span className="text-sm">{task.emoji}</span>
+                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${task.completed
+                                        ? "bg-gray-3 text-gray-6"
+                                        : "bg-[#E80000]/8 text-[#FF2D2D] border border-[#E80000]/10"
                                     }`}>
                                     +{task.xpReward}
                                 </span>
@@ -198,29 +182,21 @@ export function ChallengeProgram({
                 })}
             </motion.div>
 
-            {/* All done state */}
             {completed === total && total > 0 && (
                 <motion.div
-                    className="mt-6 text-center py-6 rounded-2xl bg-gray-3/30 border border-gray-5/50"
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.3 }}
+                    className="mt-6 text-center py-5 rounded-2xl bg-gray-3/20 border border-gray-5/30"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.2 }}
                 >
-                    <motion.span
-                        className="text-4xl block mb-3"
-                        animate={{ scale: [1, 1.2, 1] }}
-                        transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-                    >
-                        🎉
-                    </motion.span>
-                    <h3 className="text-base font-bold text-gray-12 mb-1">All Tasks Complete!</h3>
-                    <p className="text-xs text-gray-9">
-                        You earned <span className="font-bold text-[#E80000]">{totalXpEarned} XP</span> today. Come back tomorrow!
+                    <span className="text-3xl block mb-2">🎉</span>
+                    <h3 className="text-sm font-bold text-gray-12">All Tasks Complete!</h3>
+                    <p className="text-[11px] text-gray-8 mt-1">
+                        +{totalXpEarned} XP earned. Come back tomorrow!
                     </p>
                 </motion.div>
             )}
 
-            {/* Task Info Modal */}
             <TaskInfoModal
                 isOpen={!!taskInfoData}
                 onClose={() => setTaskInfoData(null)}

@@ -1,6 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
 import type { Challenge } from "./rankSystem";
 
 interface ChallengeDetailModalProps {
@@ -10,19 +11,13 @@ interface ChallengeDetailModalProps {
     onJoin: (challengeId: string) => void;
 }
 
-export function ChallengeDetailModal({
-    challenge,
-    isOpen,
-    onClose,
-    onJoin,
-}: ChallengeDetailModalProps) {
+export function ChallengeDetailModal({ challenge, isOpen, onClose, onJoin }: ChallengeDetailModalProps) {
     if (!challenge) return null;
 
     return (
         <AnimatePresence>
             {isOpen && (
                 <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-                    {/* Backdrop */}
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -31,119 +26,88 @@ export function ChallengeDetailModal({
                         onClick={onClose}
                     />
 
-                    {/* Sheet */}
                     <motion.div
                         initial={{ opacity: 0, y: 60 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 60 }}
                         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                        className="relative w-full max-w-md bg-gray-2 border border-gray-4 rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl max-h-[85vh] overflow-y-auto"
+                        className="relative w-full max-w-md bg-gray-2 border border-gray-4 rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        {/* Drag handle */}
                         <div className="flex justify-center pt-3 pb-1 sm:hidden">
                             <div className="w-10 h-1 rounded-full bg-gray-6" />
                         </div>
 
-                        {/* Hero section */}
-                        <div className="relative p-6 pb-4">
-                            {/* Gradient bg */}
-                            <div className="absolute inset-0 bg-gradient-to-b from-[#E80000]/8 to-transparent" />
+                        {/* Challenge image — NO glow/shadow */}
+                        <div className="relative w-full h-44 overflow-hidden">
+                            <Image
+                                src="/Challenge1.jpeg"
+                                alt={challenge.title}
+                                fill
+                                className="object-cover"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-[var(--gray-2)] via-transparent to-transparent" />
 
-                            <div className="relative text-center">
-                                <motion.div
-                                    className="w-20 h-20 mx-auto rounded-2xl bg-[#E80000]/10 border border-[#E80000]/20 flex items-center justify-center text-4xl mb-4 shadow-[0_0_30px_rgba(232,0,0,0.1)]"
-                                    initial={{ scale: 0.8, opacity: 0 }}
-                                    animate={{ scale: 1, opacity: 1 }}
-                                    transition={{ delay: 0.1, type: "spring", stiffness: 300 }}
-                                >
-                                    {challenge.emoji}
-                                </motion.div>
-
-                                <h2 className="text-xl font-bold text-gray-12">{challenge.title}</h2>
-
-                                <div className="flex items-center justify-center gap-3 mt-2">
-                                    <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${challenge.difficulty === "Hard"
-                                            ? "bg-orange-500/15 text-orange-400 border border-orange-500/20"
-                                            : challenge.difficulty === "Extreme"
-                                                ? "bg-red-500/15 text-red-400 border border-red-500/20"
-                                                : "bg-yellow-500/15 text-yellow-400 border border-yellow-500/20"
-                                        }`}>
-                                        {challenge.difficulty}
-                                    </span>
-                                    <span className="text-xs text-gray-8">
-                                        {challenge.participantCount.toLocaleString()} joined
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Description */}
-                        <div className="px-6 pb-4">
-                            <p className="text-sm text-gray-10 leading-relaxed">
-                                {challenge.longDescription}
-                            </p>
-                        </div>
-
-                        {/* Stats */}
-                        <div className="px-6 pb-4">
-                            <div className="flex gap-3">
-                                <div className="flex-1 bg-gray-3 rounded-xl p-3 text-center border border-gray-5">
-                                    <p className="text-lg font-bold text-gray-12">{challenge.tasks.length}</p>
-                                    <p className="text-[10px] text-gray-8 font-medium uppercase tracking-wider">Tasks</p>
-                                </div>
-                                <div className="flex-1 bg-gray-3 rounded-xl p-3 text-center border border-gray-5">
-                                    <p className="text-lg font-bold optiz-gradient-text">{challenge.totalXp}</p>
-                                    <p className="text-[10px] text-gray-8 font-medium uppercase tracking-wider">Total XP</p>
-                                </div>
-                                <div className="flex-1 bg-gray-3 rounded-xl p-3 text-center border border-gray-5">
-                                    <p className="text-lg font-bold text-gray-12">30</p>
-                                    <p className="text-[10px] text-gray-8 font-medium uppercase tracking-wider">Days</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Tasks preview */}
-                        <div className="px-6 pb-4">
-                            <h3 className="text-sm font-bold text-gray-12 mb-2.5">Daily Tasks</h3>
-                            <div className="space-y-1.5">
-                                {challenge.tasks.slice(0, 4).map((task, i) => (
-                                    <div
-                                        key={task.id}
-                                        className="flex items-center justify-between py-2 px-3 rounded-lg bg-gray-3/50 border border-gray-5/50"
-                                    >
-                                        <div className="flex items-center gap-2.5">
-                                            <span className="text-base">{task.emoji}</span>
-                                            <span className="text-xs text-gray-11 font-medium">{task.name}</span>
-                                        </div>
-                                        <span className="text-[10px] font-bold text-[#E80000]">+{task.xpReward} XP</span>
-                                    </div>
-                                ))}
-                                {challenge.tasks.length > 4 && (
-                                    <p className="text-center text-xs text-gray-8 py-1">
-                                        +{challenge.tasks.length - 4} more tasks
-                                    </p>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* CTA */}
-                        <div className="px-6 pb-6 pt-2 flex gap-3">
                             <button
                                 onClick={onClose}
-                                className="flex-1 py-3 rounded-xl font-semibold text-sm bg-gray-4 hover:bg-gray-5 text-gray-11 transition-all"
+                                className="absolute top-4 right-4 w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm border border-white/10 flex items-center justify-center text-white/80 hover:text-white transition-all"
                             >
-                                Maybe Later
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="18" y1="6" x2="6" y2="18" />
+                                    <line x1="6" y1="6" x2="18" y2="18" />
+                                </svg>
                             </button>
-                            <button
-                                onClick={() => {
-                                    onJoin(challenge.id);
-                                    onClose();
-                                }}
-                                className="flex-1 py-3 rounded-xl font-bold text-sm optiz-gradient-bg text-white transition-all active:scale-[0.98] shadow-sm hover:shadow-[0_0_20px_rgba(232,0,0,0.2)]"
-                            >
-                                Join Challenge
-                            </button>
+                        </div>
+
+                        <div className="p-5 -mt-8 relative">
+                            <h2 className="text-xl font-bold text-gray-12 mb-1">{challenge.title}</h2>
+                            <p className="text-sm text-gray-9 mb-4 leading-relaxed">{challenge.description}</p>
+
+                            {/* Stats */}
+                            <div className="grid grid-cols-3 gap-2 mb-5">
+                                {[
+                                    { icon: "👥", label: "Joined", value: challenge.participantCount.toLocaleString() },
+                                    { icon: "⚡", label: "Total XP", value: String(challenge.totalXp) },
+                                    { icon: "📋", label: "Tasks", value: String(challenge.tasks.length) },
+                                ].map((s) => (
+                                    <div key={s.label} className="bg-gray-3/40 rounded-xl p-3 text-center border border-gray-5/30">
+                                        <p className="text-xs mb-0.5">{s.icon}</p>
+                                        <p className="text-sm font-bold text-gray-12">{s.value}</p>
+                                        <p className="text-[9px] text-gray-7 font-medium">{s.label}</p>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Difficulty badge */}
+                            <div className="flex items-center gap-2 mb-5">
+                                <span className="text-[10px] font-bold text-gray-8 uppercase tracking-wider">Difficulty</span>
+                                <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${challenge.difficulty === "Hard"
+                                        ? "bg-orange-500/12 text-orange-400 border border-orange-500/15"
+                                        : challenge.difficulty === "Extreme"
+                                            ? "bg-red-500/12 text-red-400 border border-red-500/15"
+                                            : challenge.difficulty === "Medium"
+                                                ? "bg-yellow-500/12 text-yellow-400 border border-yellow-500/15"
+                                                : "bg-green-500/12 text-green-400 border border-green-500/15"
+                                    }`}>
+                                    {challenge.difficulty}
+                                </span>
+                            </div>
+
+                            {/* Join button */}
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={onClose}
+                                    className="flex-1 py-3 rounded-xl font-semibold text-sm bg-gray-3 border border-gray-5 text-gray-12 hover:bg-gray-4 transition-all active:scale-[0.98]"
+                                >
+                                    Close
+                                </button>
+                                <button
+                                    onClick={() => { onJoin(challenge.id); onClose(); }}
+                                    className="flex-1 py-3 rounded-xl font-bold text-sm optiz-gradient-bg text-white transition-all active:scale-[0.98]"
+                                >
+                                    Join Challenge
+                                </button>
+                            </div>
                         </div>
                     </motion.div>
                 </div>

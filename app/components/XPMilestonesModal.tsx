@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { RANK_TIERS, getXpForLevel, getRankForLevel } from "./rankSystem";
+import { RankBadge } from "./RankBadge";
 import { useRef, useEffect } from "react";
 
 interface XPMilestonesModalProps {
@@ -14,22 +15,15 @@ interface XPMilestonesModalProps {
 export function XPMilestonesModal({ isOpen, onClose, currentLevel, totalXp }: XPMilestonesModalProps) {
     const currentRef = useRef<HTMLDivElement>(null);
 
-    // Build level list from 1 to max visible level (current + 10, max 50)
     const maxShow = Math.min(Math.max(currentLevel + 12, 20), 50);
     const levels = Array.from({ length: maxShow }, (_, i) => {
         const lvl = i + 1;
         const rank = getRankForLevel(lvl);
         const xpNeeded = getXpForLevel(lvl);
-        // Calculate cumulative XP needed to REACH this level
-        let cumulativeXp = 0;
-        for (let j = 1; j < lvl; j++) {
-            cumulativeXp += getXpForLevel(j);
-        }
         return {
             level: lvl,
             rank,
             xpNeeded,
-            cumulativeXp,
             isCurrent: lvl === currentLevel,
             isReached: lvl <= currentLevel,
         };
@@ -68,12 +62,12 @@ export function XPMilestonesModal({ isOpen, onClose, currentLevel, totalXp }: XP
                         </div>
 
                         {/* Header */}
-                        <div className="px-6 pt-4 pb-4 border-b border-gray-4 shrink-0">
+                        <div className="px-6 pt-4 pb-3 border-b border-gray-4/60 shrink-0">
                             <div className="flex items-center justify-between">
                                 <div>
                                     <h2 className="text-lg font-bold text-gray-12">Rank Milestones</h2>
-                                    <p className="text-xs text-gray-8 mt-0.5">
-                                        Level {currentLevel} • {totalXp.toLocaleString()} XP total
+                                    <p className="text-[11px] text-gray-8 mt-0.5">
+                                        Level {currentLevel} · {totalXp.toLocaleString()} XP total
                                     </p>
                                 </div>
                                 <button
@@ -89,97 +83,94 @@ export function XPMilestonesModal({ isOpen, onClose, currentLevel, totalXp }: XP
                         </div>
 
                         {/* Level list */}
-                        <div className="flex-1 overflow-y-auto px-4 py-3">
-                            <div className="relative">
-                                {/* Red progress line */}
-                                <div className="absolute left-[19px] top-0 bottom-0 w-0.5 bg-gray-5" />
+                        <div className="flex-1 overflow-y-auto px-5 py-4">
+                            <div className="relative ml-4">
+                                {/* Background track line */}
+                                <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-gray-5/40 rounded-full" />
+
+                                {/* Progress line */}
                                 <motion.div
-                                    className="absolute left-[19px] top-0 w-0.5 bg-[#E80000] origin-top"
+                                    className="absolute left-0 top-0 w-[2px] rounded-full"
+                                    style={{ background: "linear-gradient(to bottom, #E80000, #FF2D2D)" }}
                                     initial={{ height: 0 }}
-                                    animate={{ height: `${(currentLevel / maxShow) * 100}%` }}
-                                    transition={{ duration: 1.2, ease: "easeOut", delay: 0.3 }}
-                                    style={{ boxShadow: "0 0 8px rgba(232, 0, 0, 0.4)" }}
+                                    animate={{ height: `${Math.min((currentLevel / maxShow) * 100, 100)}%` }}
+                                    transition={{ duration: 1.2, ease: "easeOut", delay: 0.2 }}
                                 />
 
                                 {/* Level rows */}
-                                <div className="space-y-0.5">
+                                <div className="space-y-1">
                                     {levels.map((item, i) => {
-                                        const tierChanged = i === 0 || getRankForLevel(item.level).tier.name !== getRankForLevel(item.level - 1).tier.name;
+                                        const prevRank = i > 0 ? getRankForLevel(item.level - 1) : null;
+                                        const tierChanged = !prevRank || prevRank.tier.name !== item.rank.tier.name;
 
                                         return (
                                             <div key={item.level}>
-                                                {/* Tier separator */}
+                                                {/* Tier header */}
                                                 {tierChanged && (
-                                                    <div className="flex items-center gap-2 pl-10 py-2 mt-1">
+                                                    <div className="flex items-center gap-2 pl-6 pt-3 pb-1">
                                                         <span
                                                             className="text-[10px] font-bold uppercase tracking-widest"
                                                             style={{ color: item.rank.tier.color }}
                                                         >
                                                             {item.rank.tier.name}
                                                         </span>
-                                                        <div className="flex-1 h-px" style={{ background: `${item.rank.tier.color}30` }} />
+                                                        <div className="flex-1 h-px" style={{ background: `${item.rank.tier.color}20` }} />
                                                     </div>
                                                 )}
 
                                                 <div
                                                     ref={item.isCurrent ? currentRef : undefined}
-                                                    className={`flex items-center gap-3 py-2.5 px-2 rounded-xl transition-all ${item.isCurrent
-                                                            ? "bg-[#E80000]/8 border border-[#E80000]/20 shadow-[0_0_16px_rgba(232,0,0,0.08)]"
+                                                    className={`relative flex items-center gap-3 py-2.5 pl-6 pr-3 rounded-xl transition-all ${item.isCurrent
+                                                            ? "bg-[#E80000]/6 border border-[#E80000]/15"
                                                             : ""
                                                         }`}
                                                 >
-                                                    {/* Dot */}
-                                                    <div className={`w-[10px] h-[10px] rounded-full shrink-0 z-10 ${item.isCurrent
-                                                            ? "bg-[#E80000] shadow-[0_0_8px_rgba(232,0,0,0.5)] ring-2 ring-[#E80000]/30"
-                                                            : item.isReached
-                                                                ? "bg-[#E80000]"
-                                                                : "bg-gray-5 border border-gray-6"
-                                                        }`} />
-
-                                                    {/* Rank icon mini */}
+                                                    {/* Checkpoint dot — centered on the line */}
                                                     <div
-                                                        className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${item.isReached ? "" : "opacity-40 grayscale"
-                                                            }`}
-                                                        style={{
-                                                            background: `linear-gradient(135deg, ${item.rank.tier.gradient[0]}20, ${item.rank.tier.gradient[1]}10)`,
-                                                            border: `1px solid ${item.rank.tier.color}30`,
-                                                        }}
+                                                        className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 z-10"
                                                     >
-                                                        <svg viewBox="0 0 100 110" className="w-5 h-5">
-                                                            <path
-                                                                d="M50 4 L92 22 L86 82 L50 104 L14 82 L8 22 Z"
-                                                                fill={item.rank.tier.color}
-                                                                opacity={item.isReached ? 0.8 : 0.3}
-                                                            />
-                                                            <path
-                                                                d="M50 38 L53.1 47.5 L63 47.5 L55 53.5 L58 63 L50 57.5 L42 63 L45 53.5 L37 47.5 L46.9 47.5 Z"
-                                                                fill="rgba(255,255,255,0.8)"
-                                                            />
-                                                        </svg>
+                                                        <div className={`rounded-full ${item.isCurrent
+                                                                ? "w-3 h-3 bg-[#E80000] ring-[3px] ring-[#E80000]/25"
+                                                                : item.isReached
+                                                                    ? "w-2.5 h-2.5 bg-[#E80000]"
+                                                                    : "w-2 h-2 bg-gray-6 border border-gray-5"
+                                                            }`} />
+                                                    </div>
+
+                                                    {/* Mini rank badge */}
+                                                    <div className={`shrink-0 ${item.isReached ? "" : "opacity-30 grayscale"}`}>
+                                                        <RankBadge
+                                                            colors={item.rank.tier.gradient}
+                                                            glowColor={item.rank.tier.glowColor}
+                                                            tierName={item.rank.tier.name}
+                                                            size={28}
+                                                        />
                                                     </div>
 
                                                     {/* Info */}
                                                     <div className="flex-1 min-w-0">
-                                                        <div className="flex items-baseline gap-1.5">
+                                                        <div className="flex items-center gap-1.5">
                                                             <span className={`text-sm font-bold ${item.isCurrent ? "text-gray-12" : item.isReached ? "text-gray-11" : "text-gray-8"
                                                                 }`}>
-                                                                Level {item.level}
+                                                                Lvl {item.level}
                                                             </span>
                                                             {item.isCurrent && (
-                                                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#E80000]/15 text-[#FF2D2D] uppercase tracking-wider">
+                                                                <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-[#E80000]/12 text-[#FF2D2D] uppercase tracking-wider">
                                                                     You
                                                                 </span>
                                                             )}
                                                         </div>
-                                                        <p className="text-[11px] font-medium" style={{ color: item.isReached ? item.rank.tier.color : "var(--gray-7)" }}>
+                                                        <p className="text-[10px] font-medium" style={{
+                                                            color: item.isReached ? item.rank.tier.color : "var(--gray-7)"
+                                                        }}>
                                                             {item.rank.fullName}
                                                         </p>
                                                     </div>
 
                                                     {/* XP */}
-                                                    <span className={`text-xs tabular-nums font-medium ${item.isReached ? "text-gray-10" : "text-gray-7"
+                                                    <span className={`text-[11px] tabular-nums font-medium ${item.isReached ? "text-gray-10" : "text-gray-7"
                                                         }`}>
-                                                        {item.xpNeeded.toLocaleString()} <span className="text-[10px] opacity-60">XP</span>
+                                                        {item.xpNeeded}
                                                     </span>
                                                 </div>
                                             </div>

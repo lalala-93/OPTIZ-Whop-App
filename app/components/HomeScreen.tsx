@@ -1,9 +1,9 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 import { XPRing } from "./XPRing";
 import { StreakDisplay } from "./StreakDisplay";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import type { RankTier, TodoItem } from "./rankSystem";
 import { MOTIVATIONAL_QUOTES } from "./rankSystem";
 
@@ -22,6 +22,7 @@ interface HomeScreenProps {
     onToggleTodo: (id: string) => void;
     onAddTodo: (text: string) => void;
     onDeleteTodo: (id: string) => void;
+    onXpRingClick?: () => void;
 }
 
 export function HomeScreen({
@@ -39,30 +40,42 @@ export function HomeScreen({
     onToggleTodo,
     onAddTodo,
     onDeleteTodo,
+    onXpRingClick,
 }: HomeScreenProps) {
     const [newTodo, setNewTodo] = useState("");
     const [showInput, setShowInput] = useState(false);
+    const [quoteIndex, setQuoteIndex] = useState(() =>
+        Math.floor(Date.now() / 86400000) % MOTIVATIONAL_QUOTES.length
+    );
 
-    const quote = useMemo(() => {
-        const dayIndex = Math.floor(Date.now() / 86400000) % MOTIVATIONAL_QUOTES.length;
-        return MOTIVATIONAL_QUOTES[dayIndex];
-    }, []);
+    const quote = MOTIVATIONAL_QUOTES[quoteIndex];
 
-    const handleAddTodo = () => {
+    const handleAddTodo = useCallback(() => {
         if (!newTodo.trim()) return;
         onAddTodo(newTodo.trim());
         setNewTodo("");
-        setShowInput(false);
-    };
+    }, [newTodo, onAddTodo]);
+
+    const refreshQuote = useCallback(() => {
+        setQuoteIndex(prev => (prev + 1) % MOTIVATIONAL_QUOTES.length);
+    }, []);
+
+    // Sort: incomplete first, completed last
+    const sortedTodos = useMemo(() => {
+        return [...todos].sort((a, b) => {
+            if (a.completed === b.completed) return 0;
+            return a.completed ? 1 : -1;
+        });
+    }, [todos]);
 
     return (
         <div className="flex flex-col items-center gap-6 pb-8 px-1">
             {/* ── XP Ring + Level ── */}
             <motion.div
                 className="flex flex-col items-center pt-2"
-                initial={{ opacity: 0, scale: 0.9 }}
+                initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.6, ease: "easeOut" }}
+                transition={{ duration: 0.5, ease: "easeOut" }}
             >
                 <XPRing
                     progressPercent={progressPercent}
@@ -71,13 +84,14 @@ export function HomeScreen({
                     tier={tier}
                     rankColors={rankColors}
                     size={190}
+                    onClick={onXpRingClick}
                 />
 
                 <motion.div
                     className="text-center mt-3"
-                    initial={{ opacity: 0, y: 10 }}
+                    initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4 }}
+                    transition={{ delay: 0.3 }}
                 >
                     <h2 className="text-3xl font-black text-gray-12 tracking-tight">
                         Level <span style={{ color: rankColors[1] }}>{level}</span>
@@ -95,126 +109,157 @@ export function HomeScreen({
 
             {/* ── Motivational Quote ── */}
             <motion.div
-                className="w-full rounded-2xl p-4 sm:p-5 relative overflow-hidden bg-gray-3/40 border border-gray-5/50"
-                initial={{ opacity: 0, y: 12 }}
+                className="w-full rounded-2xl overflow-hidden bg-gray-3/30 border border-gray-5/40"
+                initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 }}
+                transition={{ delay: 0.4 }}
             >
-                {/* Left accent bar */}
-                <div className="absolute left-0 top-2 bottom-2 w-[3px] rounded-full optiz-gradient-bg" />
+                <div className="flex items-start gap-3 p-4">
+                    {/* Left accent line */}
+                    <div className="w-[2.5px] shrink-0 self-stretch rounded-full optiz-gradient-bg opacity-60" />
 
-                <div className="flex items-start gap-3 pl-3">
-                    <div>
+                    <div className="flex-1 min-w-0">
                         <p className="text-[13px] text-gray-11 italic leading-relaxed">
                             &ldquo;{quote.text}&rdquo;
                         </p>
-                        <p className="text-[11px] text-gray-7 mt-1.5 font-medium">
+                        <p className="text-[10px] text-gray-7 mt-1 font-medium">
                             — {quote.author}
                         </p>
                     </div>
+
+                    {/* Refresh button */}
+                    <button
+                        onClick={refreshQuote}
+                        className="w-7 h-7 rounded-lg bg-gray-4/50 border border-gray-5/40 flex items-center justify-center text-gray-7 hover:text-gray-11 hover:bg-gray-4 transition-all active:scale-90 shrink-0 mt-0.5"
+                    >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 2v6h-6" />
+                            <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+                            <path d="M3 22v-6h6" />
+                            <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+                        </svg>
+                    </button>
                 </div>
             </motion.div>
 
-            {/* ── Simple Todo List ── */}
+            {/* ── Todo List ── */}
             <motion.div
                 className="w-full"
-                initial={{ opacity: 0, y: 12 }}
+                initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6 }}
+                transition={{ delay: 0.5 }}
             >
                 <div className="flex items-center justify-between mb-3">
                     <h3 className="text-base font-bold text-gray-12">My To-do</h3>
                     <button
-                        onClick={() => setShowInput(!showInput)}
-                        className="text-xs font-semibold px-3 py-1.5 rounded-full bg-gray-3 border border-gray-5 text-gray-11 hover:bg-gray-4 hover:border-gray-6 transition-all active:scale-95"
+                        onClick={() => {
+                            setShowInput(!showInput);
+                            if (showInput) setNewTodo("");
+                        }}
+                        className={`text-xs font-semibold px-3 py-1.5 rounded-full border transition-all active:scale-95 ${showInput
+                                ? "bg-gray-4 border-gray-6 text-gray-12"
+                                : "bg-gray-3 border-gray-5 text-gray-11 hover:bg-gray-4"
+                            }`}
                     >
-                        + Add
+                        {showInput ? "Close" : "+ Add"}
                     </button>
                 </div>
 
-                {/* Add input */}
-                {showInput && (
-                    <motion.div
-                        className="flex gap-2 mb-3"
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                    >
-                        <input
-                            type="text"
-                            value={newTodo}
-                            onChange={(e) => setNewTodo(e.target.value)}
-                            onKeyDown={(e) => e.key === "Enter" && handleAddTodo()}
-                            placeholder="What needs to be done?"
-                            autoFocus
-                            className="flex-1 bg-gray-3 border border-gray-5 rounded-xl px-3.5 py-2.5 text-sm text-gray-12 placeholder:text-gray-8 focus:outline-none focus:border-[var(--optiz-red)]/50 focus:ring-1 focus:ring-[var(--optiz-red)]/20 transition-all"
-                        />
-                        <button
-                            onClick={handleAddTodo}
-                            disabled={!newTodo.trim()}
-                            className="px-4 py-2.5 rounded-xl text-sm font-semibold optiz-gradient-bg text-white disabled:opacity-30 transition-all active:scale-95 shrink-0"
-                        >
-                            Add
-                        </button>
-                    </motion.div>
-                )}
-
-                {/* Todo items */}
-                <div className="space-y-2">
-                    {todos.length === 0 && !showInput && (
-                        <p className="text-center text-sm text-gray-8 py-6">
-                            No tasks yet. Tap + Add to get started.
-                        </p>
-                    )}
-                    {todos.map((todo, i) => (
+                {/* Input field */}
+                <AnimatePresence>
+                    {showInput && (
                         <motion.div
-                            key={todo.id}
-                            className={`flex items-center gap-3 p-3.5 rounded-xl transition-all group ${todo.completed
-                                ? "bg-gray-2 opacity-50"
-                                : "optiz-surface hover:bg-[var(--optiz-surface-hover)]"
-                                }`}
-                            initial={{ opacity: 0, x: -12 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: i * 0.04, type: "spring", stiffness: 300, damping: 25 }}
-                            layout
+                            className="flex gap-2 mb-3 overflow-hidden"
+                            initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+                            animate={{ opacity: 1, height: "auto", marginBottom: 12 }}
+                            exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                            transition={{ type: "spring", stiffness: 400, damping: 30 }}
                         >
-                            {/* Checkbox */}
+                            <input
+                                type="text"
+                                value={newTodo}
+                                onChange={(e) => setNewTodo(e.target.value)}
+                                onKeyDown={(e) => e.key === "Enter" && handleAddTodo()}
+                                placeholder="What needs to be done?"
+                                autoFocus
+                                className="flex-1 bg-gray-3 border border-gray-5 rounded-xl px-3.5 py-2.5 text-sm text-gray-12 placeholder:text-gray-8 focus:outline-none focus:border-gray-6 transition-all"
+                            />
                             <button
-                                onClick={() => onToggleTodo(todo.id)}
-                                className={`w-5.5 h-5.5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${todo.completed
-                                    ? "bg-[#E80000] border-[#E80000]"
-                                    : "border-gray-6 hover:border-gray-8"
-                                    }`}
+                                onClick={handleAddTodo}
+                                disabled={!newTodo.trim()}
+                                className="px-4 py-2.5 rounded-xl text-sm font-semibold optiz-gradient-bg text-white disabled:opacity-30 transition-all active:scale-95 shrink-0"
                             >
-                                {todo.completed && (
-                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                                        <polyline points="20 6 9 17 4 12" />
-                                    </svg>
-                                )}
-                            </button>
-
-                            {/* Text */}
-                            <span className={`flex-1 text-sm ${todo.completed
-                                ? "line-through text-gray-7"
-                                : "text-gray-12"
-                                }`}>
-                                {todo.text}
-                            </span>
-
-                            {/* Delete */}
-                            <button
-                                onClick={() => onDeleteTodo(todo.id)}
-                                className="opacity-0 group-hover:opacity-100 text-gray-8 hover:text-red-400 transition-all p-1 rounded-lg hover:bg-red-500/10"
-                            >
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <line x1="18" y1="6" x2="6" y2="18" />
-                                    <line x1="6" y1="6" x2="18" y2="18" />
-                                </svg>
+                                Add
                             </button>
                         </motion.div>
-                    ))}
-                </div>
+                    )}
+                </AnimatePresence>
+
+                {/* Todo items — sorted: incomplete first, completed last */}
+                <LayoutGroup>
+                    <div className="space-y-1.5">
+                        <AnimatePresence mode="popLayout">
+                            {sortedTodos.length === 0 && !showInput && (
+                                <motion.p
+                                    key="empty"
+                                    className="text-center text-sm text-gray-8 py-6"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                >
+                                    No tasks yet. Tap + Add to get started.
+                                </motion.p>
+                            )}
+                            {sortedTodos.map((todo) => (
+                                <motion.div
+                                    key={todo.id}
+                                    layout
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.9, height: 0, marginTop: 0 }}
+                                    transition={{
+                                        layout: { type: "spring", stiffness: 350, damping: 30 },
+                                        opacity: { duration: 0.2 },
+                                        scale: { duration: 0.2 },
+                                    }}
+                                    className={`flex items-center gap-3 p-3 rounded-xl group ${todo.completed
+                                            ? "bg-gray-2/60 opacity-45"
+                                            : "bg-gray-3/30 border border-gray-5/40"
+                                        }`}
+                                >
+                                    <button
+                                        onClick={() => onToggleTodo(todo.id)}
+                                        className={`w-5 h-5 rounded-full border-[1.5px] flex items-center justify-center shrink-0 transition-all ${todo.completed
+                                                ? "bg-[#E80000] border-[#E80000]"
+                                                : "border-gray-6 hover:border-gray-8"
+                                            }`}
+                                    >
+                                        {todo.completed && (
+                                            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                                                <polyline points="20 6 9 17 4 12" />
+                                            </svg>
+                                        )}
+                                    </button>
+
+                                    <span className={`flex-1 text-sm ${todo.completed ? "line-through text-gray-7" : "text-gray-12"
+                                        }`}>
+                                        {todo.text}
+                                    </span>
+
+                                    <button
+                                        onClick={() => onDeleteTodo(todo.id)}
+                                        className="opacity-0 group-hover:opacity-100 text-gray-7 hover:text-red-400 transition-all p-1"
+                                    >
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <line x1="18" y1="6" x2="6" y2="18" />
+                                            <line x1="6" y1="6" x2="18" y2="18" />
+                                        </svg>
+                                    </button>
+                                </motion.div>
+                            ))}
+                        </AnimatePresence>
+                    </div>
+                </LayoutGroup>
             </motion.div>
         </div>
     );

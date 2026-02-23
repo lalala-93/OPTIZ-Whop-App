@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Tabs } from "@whop/react/components";
 import { HomeScreen } from "./HomeScreen";
 import { ChallengesScreen } from "./ChallengesScreen";
@@ -30,13 +30,17 @@ export function ExperienceDashboard({ userId }: { userId: string }) {
   const [activeTab, setActiveTab] = useState<TabType>("home");
   const [viewingProgram, setViewingProgram] = useState<string | null>(null);
 
+  // ── User Profile ──
+  const [userName, setUserName] = useState("User");
+  const [userPhoto, setUserPhoto] = useState<string | null>(null);
+
   // ── User Progress ──
   const [totalXp, setTotalXp] = useState(250);
   const [streakDays, setStreakDays] = useState(3);
   const [weeklyProgress, setWeeklyProgress] = useState([true, true, true, false, false, false, false]);
   const [totalTasksCompleted, setTotalTasksCompleted] = useState(4);
 
-  // ── Todos (no XP) ──
+  // ── Todos ──
   const [todos, setTodos] = useState<TodoItem[]>([
     { id: "todo-1", text: "Drink 2L water", completed: true },
     { id: "todo-2", text: "Read 10 pages", completed: false },
@@ -79,11 +83,11 @@ export function ExperienceDashboard({ userId }: { userId: string }) {
   }, []);
 
   const handleAddTodo = useCallback((text: string) => {
-    setTodos(prev => [...prev, {
+    setTodos(prev => [{
       id: `todo-${Date.now()}`,
       text,
       completed: false,
-    }]);
+    }, ...prev]);
   }, []);
 
   const handleDeleteTodo = useCallback((id: string) => {
@@ -110,7 +114,6 @@ export function ExperienceDashboard({ userId }: { userId: string }) {
       const newTotalXp = totalXp + task.xpReward;
       const newLevelData = getLevelProgress(newTotalXp);
 
-      // Update challenge task
       const updatedChallenges = challenges.map(c => ({
         ...c,
         tasks: c.tasks.map(t =>
@@ -123,7 +126,6 @@ export function ExperienceDashboard({ userId }: { userId: string }) {
       setTotalTasksCompleted(prev => prev + 1);
       setCompletingTaskId(null);
 
-      // Update streak
       const today = new Date().getDay();
       const dayIdx = today === 0 ? 6 : today - 1;
       setWeeklyProgress(prev => {
@@ -135,17 +137,14 @@ export function ExperienceDashboard({ userId }: { userId: string }) {
         return next;
       });
 
-      // Show task complete animation
       setTaskCompleteAnim({ visible: true, xp: task.xpReward });
 
-      // Check level up
       if (newLevelData.level > prevLevel) {
         setTimeout(() => {
           setLevelUpAnim({ visible: true, newLevel: newLevelData.level });
         }, 2400);
       }
 
-      // Check all-tasks-complete for this challenge
       const updatedChallenge = updatedChallenges.find(c => c.id === challenge.id);
       if (updatedChallenge) {
         const allDone = updatedChallenge.tasks.every(t => t.completed);
@@ -165,36 +164,31 @@ export function ExperienceDashboard({ userId }: { userId: string }) {
     }, 600);
   }, [challenges, totalXp]);
 
-  // ── Active challenge program ──
   const activeChallenge = viewingProgram
     ? challenges.find(c => c.id === viewingProgram)
     : null;
-
-  // ── Challenge join count ──
   const joinedCount = challenges.filter(c => c.joined).length;
 
   return (
     <div className="min-h-screen bg-gray-1 text-gray-12 flex flex-col w-full relative">
-      {/* ══════════════════════════════════════════ */}
-      {/* ── Sticky Header ──                       */}
-      {/* ══════════════════════════════════════════ */}
+      {/* ── Header ── */}
       <header className="px-4 sm:px-6 pt-4 pb-3 sticky top-0 bg-gray-1/85 backdrop-blur-xl z-30 border-b border-[var(--optiz-border)]">
         <div className="flex items-center justify-between mb-3">
-          {/* Logo only — no text */}
-          <div className="flex items-center gap-2">
+          {/* Logo — NO rounded mask, bigger */}
+          <div className="flex items-center gap-2.5">
             <Image
               src="/Logo-optiz.png"
               alt="OPTIZ"
-              width={36}
-              height={36}
-              className="rounded-xl"
+              width={42}
+              height={42}
+              className="object-contain"
+              style={{ borderRadius: 0 }}
             />
-            {/* Info button */}
             <button
               onClick={() => setIsInfoOpen(true)}
-              className="w-7 h-7 rounded-full bg-gray-3 border border-gray-5 flex items-center justify-center text-gray-8 hover:text-gray-12 hover:bg-gray-4 transition-all active:scale-95"
+              className="w-6 h-6 rounded-full bg-gray-3/80 border border-gray-5/60 flex items-center justify-center text-gray-7 hover:text-gray-11 hover:bg-gray-4 transition-all active:scale-90"
             >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="10" />
                 <path d="M12 16v-4" />
                 <path d="M12 8h.01" />
@@ -204,19 +198,17 @@ export function ExperienceDashboard({ userId }: { userId: string }) {
 
           {/* Right counters + profile */}
           <div className="flex items-center gap-1.5">
-            {/* Streak counter — tappable */}
             <button
               onClick={() => setIsStreakModalOpen(true)}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-gray-3 border border-gray-5 hover:bg-gray-4 hover:border-gray-6 transition-all active:scale-95"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-gray-3 border border-gray-5 hover:bg-gray-4 transition-all active:scale-95"
             >
               <span className="text-sm optiz-flame-flicker">🔥</span>
               <span className="text-xs font-bold text-gray-12 tabular-nums">{streakDays}</span>
             </button>
 
-            {/* XP counter — tappable, WHITE text */}
             <button
               onClick={() => setIsXpModalOpen(true)}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-gray-3 border border-gray-5 hover:bg-gray-4 hover:border-gray-6 transition-all active:scale-95"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-gray-3 border border-gray-5 hover:bg-gray-4 transition-all active:scale-95"
             >
               <span className="text-sm optiz-bolt-pulse">⚡</span>
               <span className="text-xs font-bold text-gray-12 tabular-nums">
@@ -224,24 +216,31 @@ export function ExperienceDashboard({ userId }: { userId: string }) {
               </span>
             </button>
 
-            {/* Profile button — matching counter size */}
+            {/* Profile icon (no photo from Whop) */}
             <button
               onClick={() => setIsSettingsOpen(true)}
-              className="w-[34px] h-[34px] rounded-full bg-gray-3 border border-gray-5 flex items-center justify-center overflow-hidden hover:bg-gray-4 hover:border-gray-6 transition-all active:scale-95"
+              className="w-[34px] h-[34px] rounded-full bg-gray-3 border border-gray-5 flex items-center justify-center text-gray-9 hover:bg-gray-4 hover:text-gray-12 transition-all active:scale-95"
             >
-              <Image
-                src={`https://ui-avatars.com/api/?name=${userId.slice(0, 2)}&background=E80000&color=fff&size=68&bold=true&format=svg`}
-                alt="Profile"
-                width={34}
-                height={34}
-                className="rounded-full object-cover"
-                unoptimized
-              />
+              {userPhoto ? (
+                <Image
+                  src={userPhoto}
+                  alt="Profile"
+                  width={34}
+                  height={34}
+                  className="rounded-full object-cover"
+                  unoptimized
+                />
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+              )}
             </button>
           </div>
         </div>
 
-        {/* ── Frosted Tabs ── */}
+        {/* Tabs */}
         {!viewingProgram && (
           <Tabs.Root
             value={activeTab}
@@ -256,9 +255,7 @@ export function ExperienceDashboard({ userId }: { userId: string }) {
         )}
       </header>
 
-      {/* ══════════════════════════════════════════ */}
-      {/* ── Content ──                             */}
-      {/* ══════════════════════════════════════════ */}
+      {/* ── Content ── */}
       <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 scroll-smooth">
         {viewingProgram && activeChallenge ? (
           <ChallengeProgram
@@ -285,6 +282,7 @@ export function ExperienceDashboard({ userId }: { userId: string }) {
             onToggleTodo={handleToggleTodo}
             onAddTodo={handleAddTodo}
             onDeleteTodo={handleDeleteTodo}
+            onXpRingClick={() => setIsXpModalOpen(true)}
           />
         ) : activeTab === "challenges" ? (
           <ChallengesScreen
@@ -296,20 +294,19 @@ export function ExperienceDashboard({ userId }: { userId: string }) {
           <LeaderboardScreen
             userXp={totalXp}
             userLevel={levelData.level}
+            userName={userName}
+            userPhoto={userPhoto}
           />
         )}
       </main>
 
-      {/* ══════════════════════════════════════════ */}
-      {/* ── Modals & Animations ──                 */}
-      {/* ══════════════════════════════════════════ */}
+      {/* ── Modals ── */}
       <ChallengeDetailModal
         challenge={challengeModalData}
         isOpen={!!challengeModalData}
         onClose={() => setChallengeModalData(null)}
         onJoin={handleJoinChallenge}
       />
-
       <SettingsSheet
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
@@ -320,27 +317,24 @@ export function ExperienceDashboard({ userId }: { userId: string }) {
         streakDays={streakDays}
         tasksCompleted={totalTasksCompleted}
         challengesJoined={joinedCount}
+        userName={userName}
+        userPhoto={userPhoto}
+        onUpdateName={setUserName}
+        onUpdatePhoto={setUserPhoto}
       />
-
-      <InfoModal
-        isOpen={isInfoOpen}
-        onClose={() => setIsInfoOpen(false)}
-      />
-
+      <InfoModal isOpen={isInfoOpen} onClose={() => setIsInfoOpen(false)} />
       <StreakModal
         isOpen={isStreakModalOpen}
         onClose={() => setIsStreakModalOpen(false)}
         streakDays={streakDays}
         weeklyProgress={weeklyProgress}
       />
-
       <XPMilestonesModal
         isOpen={isXpModalOpen}
         onClose={() => setIsXpModalOpen(false)}
         currentLevel={levelData.level}
         totalXp={totalXp}
       />
-
       <ChallengeCompleteModal
         isOpen={challengeCompleteData.visible}
         onClose={() => setChallengeCompleteData(prev => ({ ...prev, visible: false }))}
@@ -349,13 +343,11 @@ export function ExperienceDashboard({ userId }: { userId: string }) {
         totalXpEarned={challengeCompleteData.xp}
         tasksCompleted={challengeCompleteData.tasks}
       />
-
       <TaskCompleteAnimation
         isVisible={taskCompleteAnim.visible}
         onComplete={() => setTaskCompleteAnim({ ...taskCompleteAnim, visible: false })}
         xpEarned={taskCompleteAnim.xp}
       />
-
       <LevelUpAnimation
         isVisible={levelUpAnim.visible}
         onComplete={() => setLevelUpAnim({ ...levelUpAnim, visible: false })}
