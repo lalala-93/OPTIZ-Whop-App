@@ -15,7 +15,9 @@ import { InfoModal } from "./InfoModal";
 import { StreakModal } from "./StreakModal";
 import { XPMilestonesModal } from "./XPMilestonesModal";
 import { ChallengeCompleteModal } from "./ChallengeCompleteModal";
+import { StreakEarnedAnimation } from "./StreakEarnedAnimation";
 import { AnimatedFireIcon, AnimatedBoltIcon } from "./AnimatedIcons";
+import { I18nProvider, useI18n } from "./i18n";
 import {
   getLevelProgress,
   getRankForLevel,
@@ -27,7 +29,8 @@ import Image from "next/image";
 
 type TabType = "home" | "challenges" | "leaderboard";
 
-export function ExperienceDashboard({ userId }: { userId: string }) {
+function DashboardInner({ userId }: { userId: string }) {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<TabType>("home");
   const [viewingProgram, setViewingProgram] = useState<string | null>(null);
 
@@ -54,6 +57,7 @@ export function ExperienceDashboard({ userId }: { userId: string }) {
   const [isInfoOpen, setIsInfoOpen] = useState(false);
   const [isStreakModalOpen, setIsStreakModalOpen] = useState(false);
   const [isXpModalOpen, setIsXpModalOpen] = useState(false);
+  const [streakAnim, setStreakAnim] = useState(false);
   const [challengeCompleteData, setChallengeCompleteData] = useState<{
     visible: boolean; title: string; emoji: string; xp: number; tasks: number;
   }>({ visible: false, title: "", emoji: "", xp: 0, tasks: 0 });
@@ -65,9 +69,35 @@ export function ExperienceDashboard({ userId }: { userId: string }) {
   const levelData = getLevelProgress(totalXp);
   const rankData = getRankForLevel(levelData.level);
 
-  const handleToggleTodo = useCallback((id: string) => {
-    setTodos(prev => prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
+  // Streak bonus: +50 XP when streak is maintained
+  const handleStreakBonus = useCallback(() => {
+    setStreakAnim(true);
+    setTotalXp(prev => prev + 50);
   }, []);
+
+  const handleToggleTodo = useCallback((id: string) => {
+    setTodos(prev => {
+      const todo = prev.find(t => t.id === id);
+      if (todo && !todo.completed) {
+        // Completing a todo — also triggers streak check
+        const today = new Date().getDay();
+        const dayIdx = today === 0 ? 6 : today - 1;
+        setWeeklyProgress(wp => {
+          const next = [...wp];
+          if (!next[dayIdx]) {
+            next[dayIdx] = true;
+            setStreakDays(s => s + 1);
+            // Streak bonus!
+            handleStreakBonus();
+          }
+          return next;
+        });
+        setTotalTasksCompleted(tc => tc + 1);
+        setTotalXp(xp => xp + 10); // base 10 XP for todo
+      }
+      return prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t);
+    });
+  }, [handleStreakBonus]);
 
   const handleAddTodo = useCallback((text: string) => {
     setTodos(prev => [{ id: `todo-${Date.now()}`, text, completed: false }, ...prev]);
@@ -101,11 +131,16 @@ export function ExperienceDashboard({ userId }: { userId: string }) {
       setTotalTasksCompleted(prev => prev + 1);
       setCompletingTaskId(null);
 
+      // Streak check for challenge tasks too
       const today = new Date().getDay();
       const dayIdx = today === 0 ? 6 : today - 1;
       setWeeklyProgress(prev => {
         const next = [...prev];
-        if (!next[dayIdx]) { next[dayIdx] = true; setStreakDays(s => s + 1); }
+        if (!next[dayIdx]) {
+          next[dayIdx] = true;
+          setStreakDays(s => s + 1);
+          handleStreakBonus();
+        }
         return next;
       });
 
@@ -129,7 +164,7 @@ export function ExperienceDashboard({ userId }: { userId: string }) {
         }
       }
     }, 600);
-  }, [challenges, totalXp]);
+  }, [challenges, totalXp, handleStreakBonus]);
 
   const activeChallenge = viewingProgram ? challenges.find(c => c.id === viewingProgram) : null;
   const joinedCount = challenges.filter(c => c.joined).length;
@@ -138,26 +173,26 @@ export function ExperienceDashboard({ userId }: { userId: string }) {
     <div className="min-h-screen bg-gray-1 text-gray-12 flex flex-col w-full relative">
       {/* ── Header ── */}
       <header className="px-4 sm:px-6 pt-4 pb-3 sticky top-0 bg-gray-1/90 backdrop-blur-2xl z-30 border-b border-[var(--optiz-border)]">
-        <div className="flex items-center justify-between mb-3">
-          {/* Left: Logo + info — vertically centered with right counters */}
-          <div className="flex items-center gap-2 h-[38px]">
+        <div className="flex items-center justify-between mb-2.5">
+          {/* Left: Logo + info — aligned to row height */}
+          <div className="flex items-center gap-2.5 h-10">
             <motion.div whileTap={{ scale: 0.95 }} className="flex items-center">
               <Image
                 src="/Logo-optiz.png"
                 alt="OPTIZ"
-                width={48}
-                height={48}
-                className="object-contain"
+                width={52}
+                height={52}
+                className="object-contain -mt-0.5"
                 style={{ borderRadius: 0 }}
               />
             </motion.div>
             <motion.button
               onClick={() => setIsInfoOpen(true)}
-              className="w-7 h-7 rounded-full bg-gray-3/80 border border-gray-5/60 flex items-center justify-center text-gray-7 hover:text-gray-11 hover:bg-gray-4 transition-all"
+              className="w-10 h-10 rounded-full bg-gray-3/80 border border-gray-5/60 flex items-center justify-center text-gray-7 hover:text-gray-11 hover:bg-gray-4 transition-all"
               whileTap={{ scale: 0.88 }}
               whileHover={{ backgroundColor: "rgba(255,255,255,0.08)" }}
             >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="10" />
                 <path d="M12 16v-4" />
                 <path d="M12 8h.01" />
@@ -165,48 +200,47 @@ export function ExperienceDashboard({ userId }: { userId: string }) {
             </motion.button>
           </div>
 
-          {/* Right: counters + profile — same height as left */}
-          <div className="flex items-center gap-1.5 h-[38px]">
+          {/* Right: counters + profile — same 40px height */}
+          <div className="flex items-center gap-1.5 h-10">
             {/* Streak counter */}
             <motion.button
               onClick={() => setIsStreakModalOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-gray-3/80 border border-gray-5/50 hover:bg-gray-4 transition-all"
+              className="flex items-center gap-1.5 px-3 h-10 rounded-full bg-gray-3/80 border border-gray-5/50 hover:bg-gray-4 transition-all"
               whileTap={{ scale: 0.93 }}
               whileHover={{ borderColor: "rgba(255,107,0,0.3)" }}
             >
-              <AnimatedFireIcon size={15} />
-              <span className="text-xs font-bold text-gray-12 tabular-nums">{streakDays}</span>
+              <AnimatedFireIcon size={18} />
+              <span className="text-sm font-bold text-gray-12 tabular-nums">{streakDays}</span>
             </motion.button>
 
-            {/* XP counter — with red "XP" label */}
+            {/* XP counter — red label */}
             <motion.button
               onClick={() => setIsXpModalOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-gray-3/80 border border-gray-5/50 hover:bg-gray-4 transition-all"
+              className="flex items-center gap-1.5 px-3 h-10 rounded-full bg-gray-3/80 border border-gray-5/50 hover:bg-gray-4 transition-all"
               whileTap={{ scale: 0.93 }}
               whileHover={{ borderColor: "rgba(232,0,0,0.3)" }}
             >
-              <AnimatedBoltIcon size={15} />
-              <span className="text-xs font-bold text-gray-12 tabular-nums">
+              <AnimatedBoltIcon size={18} />
+              <span className="text-sm font-bold text-gray-12 tabular-nums">
                 {totalXp.toLocaleString()}
               </span>
-              <span className="text-[9px] font-extrabold text-[#E80000] ml-[-2px]">XP</span>
+              <span className="text-[10px] font-extrabold text-[#E80000]">{t("xpLabel")}</span>
             </motion.button>
 
-            {/* Profile icon — properly circular clipped */}
+            {/* Profile icon — circular clipped, no red border */}
             <motion.button
               onClick={() => setIsSettingsOpen(true)}
-              className="w-[38px] h-[38px] rounded-full overflow-hidden bg-gray-3/80 border border-gray-5/50 flex items-center justify-center text-gray-9 hover:brightness-125 transition-all shrink-0"
+              className="w-10 h-10 rounded-full overflow-hidden bg-gray-3/80 border border-gray-5/50 flex items-center justify-center text-gray-9 hover:brightness-125 transition-all shrink-0"
               whileTap={{ scale: 0.9 }}
             >
               {userPhoto ? (
                 <img
                   src={userPhoto}
                   alt="Profile"
-                  className="w-full h-full object-cover rounded-full"
-                  style={{ display: "block" }}
+                  className="w-full h-full object-cover rounded-full block"
                 />
               ) : (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                   <circle cx="12" cy="7" r="4" />
                 </svg>
@@ -215,13 +249,13 @@ export function ExperienceDashboard({ userId }: { userId: string }) {
           </div>
         </div>
 
-        {/* Tabs */}
+        {/* Tabs with more vivid red indicator */}
         {!viewingProgram && (
           <Tabs.Root value={activeTab} onValueChange={(v) => setActiveTab(v as TabType)}>
-            <Tabs.List>
-              <Tabs.Trigger value="home">Home</Tabs.Trigger>
-              <Tabs.Trigger value="challenges">Challenges</Tabs.Trigger>
-              <Tabs.Trigger value="leaderboard">Leaderboard</Tabs.Trigger>
+            <Tabs.List className="[&_[data-state=active]]:!border-b-[#E80000] [&_[data-state=active]]:!border-b-2 [&_[data-state=active]]:!text-gray-12">
+              <Tabs.Trigger value="home">{t("home")}</Tabs.Trigger>
+              <Tabs.Trigger value="challenges">{t("challenges")}</Tabs.Trigger>
+              <Tabs.Trigger value="leaderboard">{t("leaderboard")}</Tabs.Trigger>
             </Tabs.List>
           </Tabs.Root>
         )}
@@ -272,7 +306,7 @@ export function ExperienceDashboard({ userId }: { userId: string }) {
         )}
       </main>
 
-      {/* ── Modals ── */}
+      {/* ── Modals + Animations ── */}
       <ChallengeDetailModal challenge={challengeModalData} isOpen={!!challengeModalData} onClose={() => setChallengeModalData(null)} onJoin={handleJoinChallenge} />
       <SettingsSheet
         isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)}
@@ -291,6 +325,15 @@ export function ExperienceDashboard({ userId }: { userId: string }) {
       />
       <TaskCompleteAnimation isVisible={taskCompleteAnim.visible} onComplete={() => setTaskCompleteAnim({ ...taskCompleteAnim, visible: false })} xpEarned={taskCompleteAnim.xp} />
       <LevelUpAnimation isVisible={levelUpAnim.visible} onComplete={() => setLevelUpAnim({ ...levelUpAnim, visible: false })} newLevel={levelUpAnim.newLevel} />
+      <StreakEarnedAnimation isVisible={streakAnim} onComplete={() => setStreakAnim(false)} />
     </div>
+  );
+}
+
+export function ExperienceDashboard({ userId }: { userId: string }) {
+  return (
+    <I18nProvider>
+      <DashboardInner userId={userId} />
+    </I18nProvider>
   );
 }

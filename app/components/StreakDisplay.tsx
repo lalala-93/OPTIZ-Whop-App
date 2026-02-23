@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { AnimatedFireIcon } from "./AnimatedIcons";
+import { useI18n } from "./i18n";
 
 interface StreakDisplayProps {
     streakDays: number;
@@ -11,6 +12,8 @@ interface StreakDisplayProps {
 const DAY_LABELS = ["M", "T", "W", "T", "F", "S", "S"];
 
 export function StreakDisplay({ streakDays, weeklyProgress }: StreakDisplayProps) {
+    const { t } = useI18n();
+
     return (
         <motion.div
             className="rounded-2xl p-4 bg-gray-3/30 border border-gray-5/40"
@@ -18,18 +21,20 @@ export function StreakDisplay({ streakDays, weeklyProgress }: StreakDisplayProps
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.25 }}
         >
-            {/* Header — all on one line */}
-            <div className="flex items-center gap-2 mb-4">
-                <AnimatedFireIcon size={18} />
+            {/* Header */}
+            <div className="flex items-center gap-2.5 mb-4">
+                <div className="flex items-center justify-center w-7 h-7">
+                    <AnimatedFireIcon size={22} />
+                </div>
                 <p className="text-sm font-bold text-gray-12">
-                    {streakDays} day streak
+                    {t("dayStreak", { n: streakDays })}
                 </p>
                 <span className="text-[10px] text-gray-7 font-medium">
-                    · Complete a task every 24h
+                    · {t("streakSubtitle")}
                 </span>
                 {streakDays >= 7 && (
                     <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-orange-500/12 text-orange-400 border border-orange-500/15 uppercase tracking-wider">
-                        On fire
+                        {t("onFire")}
                     </span>
                 )}
             </div>
