@@ -12,22 +12,30 @@ export async function loadUserData(userId: string) {
     const db = createServerSupabase();
 
     // Ensure profile exists (auto-create on first visit)
-    let { data: profile, error } = await db
-        .from("user_profiles")
-        .select("*")
-        .eq("whop_user_id", userId)
-        .single();
-
-    if (error && error.code === "PGRST116") {
-        const { data: newProfile } = await db
+    let profile: { total_xp: number | null; streak_days: number | null; display_name: string | null; avatar_url: string | null; locale: string | null } | null = null;
+    try {
+        const { data, error } = await db
             .from("user_profiles")
-            .insert({ whop_user_id: userId })
-            .select()
+            .select("total_xp, streak_days, display_name, avatar_url, locale")
+            .eq("whop_user_id", userId)
             .single();
-        profile = newProfile;
+
+        if (error && error.code === "PGRST116") {
+            // No row found — auto-create
+            const { data: newProfile } = await db
+                .from("user_profiles")
+                .insert({ whop_user_id: userId })
+                .select("total_xp, streak_days, display_name, avatar_url, locale")
+                .single();
+            profile = newProfile;
+        } else {
+            profile = data;
+        }
+    } catch (err) {
+        console.error("[OPTIZ] Profile load error:", err);
     }
 
-    // Parallel fetch: todos, challenges, tasks, joined, streak, completions
+    // Parallel fetch with individual error handling
     const today = new Date().toISOString().split("T")[0];
 
     const [todosRes, challengesRes, tasksRes, joinedRes, streakRes, completionsRes, participantsRes] = await Promise.all([
@@ -42,33 +50,33 @@ export async function loadUserData(userId: string) {
 
     // Compute participant counts
     const participantCounts: Record<string, number> = {};
-    (participantsRes.data || []).forEach(p => {
+    (participantsRes.data || []).forEach((p: { challenge_id: string }) => {
         participantCounts[p.challenge_id] = (participantCounts[p.challenge_id] || 0) + 1;
     });
 
-    const joinedIds = new Set((joinedRes.data || []).map(j => j.challenge_id));
-    const completedTaskIds = new Set((completionsRes.data || []).map(c => c.task_id));
+    const joinedIds = new Set((joinedRes.data || []).map((j: { challenge_id: string }) => j.challenge_id));
+    const completedTaskIds = new Set((completionsRes.data || []).map((c: { task_id: string }) => c.task_id));
 
     // Assemble challenges with tasks
-    const challenges = (challengesRes.data || []).map(c => {
-        const tasks = (tasksRes.data || []).filter(t => t.challenge_id === c.id);
+    const challenges = (challengesRes.data || []).map((c: Record<string, unknown>) => {
+        const tasks = (tasksRes.data || []).filter((t: Record<string, unknown>) => t.challenge_id === c.id);
         return {
-            id: c.id,
-            title: c.title,
-            description: c.description || "",
-            longDescription: c.long_desc || "",
-            emoji: c.emoji || "🔥",
-            difficulty: c.difficulty || "Medium",
-            durationDays: c.duration_days || 30,
-            participantCount: participantCounts[c.id] || 0,
-            totalXp: c.total_xp || 0,
-            joined: joinedIds.has(c.id),
-            tasks: tasks.map(t => ({
-                id: t.id,
-                name: t.name,
-                emoji: t.emoji || "⚡",
-                xpReward: t.xp_reward ?? 10,
-                completed: completedTaskIds.has(t.id),
+            id: c.id as string,
+            title: c.title as string,
+            description: (c.description as string) || "",
+            longDescription: (c.long_desc as string) || "",
+            emoji: (c.emoji as string) || "🔥",
+            difficulty: (c.difficulty as string) || "Medium",
+            durationDays: (c.duration_days as number) || 30,
+            participantCount: participantCounts[c.id as string] || 0,
+            totalXp: (c.total_xp as number) || 0,
+            joined: joinedIds.has(c.id as string),
+            tasks: tasks.map((t: Record<string, unknown>) => ({
+                id: t.id as string,
+                name: t.name as string,
+                emoji: (t.emoji as string) || "⚡",
+                xpReward: (t.xp_reward as number) ?? 10,
+                completed: completedTaskIds.has(t.id as string),
             })),
         };
     });
@@ -81,7 +89,7 @@ export async function loadUserData(userId: string) {
     monday.setHours(0, 0, 0, 0);
 
     const weeklyProgress = [false, false, false, false, false, false, false];
-    for (const s of streakRes.data || []) {
+    for (const s of (streakRes.data || []) as { streak_date: string | null }[]) {
         if (!s.streak_date) continue;
         const d = new Date(s.streak_date + "T00:00:00");
         if (d >= monday) {
@@ -90,7 +98,7 @@ export async function loadUserData(userId: string) {
         }
     }
 
-    const completedTodos = (todosRes.data || []).filter(t => t.completed).length;
+    const completedTodos = (todosRes.data || []).filter((t: { completed: boolean | null }) => t.completed).length;
 
     return {
         profile: profile ? {
@@ -100,7 +108,7 @@ export async function loadUserData(userId: string) {
             avatarUrl: profile.avatar_url || null,
             locale: profile.locale || null,
         } : { totalXp: 0, streakDays: 0, displayName: "User", avatarUrl: null, locale: null },
-        todos: (todosRes.data || []).map(t => ({
+        todos: (todosRes.data || []).map((t: { id: string; text: string; completed: boolean | null }) => ({
             id: t.id,
             text: t.text,
             completed: t.completed ?? false,
@@ -155,7 +163,10 @@ export async function awardXp(userId: string, xp: number, source: "todo" | "chal
         .eq("whop_user_id", userId)
         .single();
 
-    if (!profile) throw new Error("User not found");
+    if (!profile) {
+        console.error("[OPTIZ] awardXp: User not found", userId);
+        return { totalXp: xp, streakDays: 0, streakBonusXp: 0, streakEarned: false };
+    }
 
     const newTotalXp = (profile.total_xp ?? 0) + xp;
     const now = new Date();
@@ -217,8 +228,7 @@ export async function awardXp(userId: string, xp: number, source: "todo" | "chal
         });
     }
 
-    // Refresh leaderboard
-    db.rpc("refresh_leaderboard").then(() => { });
+    // Leaderboard uses direct queries so no refresh needed
 
     return {
         totalXp: newTotalXp + streakBonusXp,
@@ -238,45 +248,50 @@ export async function joinChallenge(userId: string, challengeId: string) {
 
 /** Get leaderboard data */
 export async function getLeaderboard(userId: string) {
-    const db = createServerSupabase();
+    try {
+        const db = createServerSupabase();
 
-    const { data: users } = await db
-        .from("user_profiles")
-        .select("whop_user_id, display_name, avatar_url, total_xp, streak_days")
-        .gt("total_xp", 0)
-        .order("total_xp", { ascending: false })
-        .limit(100);
-
-    const leaderboard = (users || []).map((u, i) => ({
-        whop_user_id: u.whop_user_id,
-        display_name: u.display_name,
-        avatar_url: u.avatar_url,
-        total_xp: u.total_xp,
-        streak_days: u.streak_days,
-        position: i + 1,
-    }));
-
-    // Find user's position
-    const userEntry = leaderboard.find(e => e.whop_user_id === userId);
-    let userPosition = userEntry?.position ?? null;
-
-    if (!userEntry) {
-        const { data: userProfile } = await db
+        const { data: users } = await db
             .from("user_profiles")
-            .select("total_xp")
-            .eq("whop_user_id", userId)
-            .single();
+            .select("whop_user_id, display_name, avatar_url, total_xp, streak_days")
+            .gt("total_xp", 0)
+            .order("total_xp", { ascending: false })
+            .limit(100);
 
-        if (userProfile && (userProfile.total_xp ?? 0) > 0) {
-            const { count } = await db
+        const leaderboard = (users || []).map((u, i) => ({
+            whop_user_id: u.whop_user_id,
+            display_name: u.display_name,
+            avatar_url: u.avatar_url,
+            total_xp: u.total_xp,
+            streak_days: u.streak_days,
+            position: i + 1,
+        }));
+
+        // Find user's position — use maybeSingle to avoid crash on no rows
+        const userEntry = leaderboard.find(e => e.whop_user_id === userId);
+        let userPosition = userEntry?.position ?? null;
+
+        if (!userEntry) {
+            const { data: userProfile } = await db
                 .from("user_profiles")
-                .select("*", { count: "exact", head: true })
-                .gt("total_xp", userProfile.total_xp ?? 0);
-            userPosition = (count || 0) + 1;
-        }
-    }
+                .select("total_xp")
+                .eq("whop_user_id", userId)
+                .maybeSingle();
 
-    return { leaderboard, userPosition };
+            if (userProfile && (userProfile.total_xp ?? 0) > 0) {
+                const { count } = await db
+                    .from("user_profiles")
+                    .select("*", { count: "exact", head: true })
+                    .gt("total_xp", userProfile.total_xp ?? 0);
+                userPosition = (count || 0) + 1;
+            }
+        }
+
+        return { leaderboard, userPosition };
+    } catch (err) {
+        console.error("[OPTIZ] getLeaderboard error:", err);
+        return { leaderboard: [], userPosition: null };
+    }
 }
 
 /** Update profile fields */
