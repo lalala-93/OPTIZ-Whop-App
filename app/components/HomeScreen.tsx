@@ -3,7 +3,7 @@
 import { motion, AnimatePresence, LayoutGroup, useMotionValue, useTransform } from "framer-motion";
 import { XPRing } from "./XPRing";
 import { StreakDisplay } from "./StreakDisplay";
-import { useState, useMemo, useCallback, useRef } from "react";
+import { useState, useMemo, useCallback } from "react";
 import type { RankTier, TodoItem } from "./rankSystem";
 import { MOTIVATIONAL_QUOTES } from "./rankSystem";
 import { useI18n } from "./i18n";
@@ -26,70 +26,69 @@ interface HomeScreenProps {
     onXpRingClick?: () => void;
 }
 
-// Mobile swipe-to-delete todo item
+// Helper: detect if we're on a touch device (mobile/phone only)
+function useIsTouchPhone() {
+    if (typeof window === "undefined") return false;
+    const isTouch = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+    const isPhone = window.innerWidth < 640; // sm breakpoint — phone only
+    return isTouch && isPhone;
+}
+
 function SwipeableTodoItem({
-    todo,
-    onToggle,
-    onDelete,
+    todo, onToggle, onDelete, enableSwipe,
 }: {
-    todo: TodoItem;
-    onToggle: () => void;
-    onDelete: () => void;
+    todo: TodoItem; onToggle: () => void; onDelete: () => void; enableSwipe: boolean;
 }) {
     const x = useMotionValue(0);
-    const deleteOpacity = useTransform(x, [-100, -50, 0], [1, 0.7, 0]);
-    const bgColor = useTransform(x, [-100, -50, 0], [
-        "rgba(232,0,0,0.2)",
-        "rgba(232,0,0,0.1)",
-        "transparent",
+    const deleteBg = useTransform(x, [-100, -40, 0], [
+        "rgba(200,30,30,0.25)", "rgba(200,30,30,0.1)", "transparent",
     ]);
-    const [swiping, setSwiping] = useState(false);
+    const deleteTextOpacity = useTransform(x, [-90, -40, 0], [1, 0.5, 0]);
+    const [isSwiping, setIsSwiping] = useState(false);
 
     return (
         <motion.div
             layout
-            initial={{ opacity: 0, scale: 0.95 }}
+            initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9, height: 0, marginTop: 0 }}
-            transition={{
-                layout: { type: "spring", stiffness: 350, damping: 30 },
-                opacity: { duration: 0.2 },
-            }}
+            exit={{ opacity: 0, scale: 0.92, height: 0, marginTop: 0 }}
+            transition={{ layout: { type: "spring", stiffness: 350, damping: 30 }, opacity: { duration: 0.2 } }}
             className="relative overflow-hidden rounded-xl"
         >
-            {/* Delete underlay */}
-            <motion.div
-                className="absolute inset-0 flex items-center justify-end px-4 rounded-xl"
-                style={{ backgroundColor: bgColor }}
-            >
-                <motion.div style={{ opacity: deleteOpacity }} className="flex items-center gap-1 text-red-400">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="3 6 5 6 21 6" /><path d="M19 6l-2 14H7L5 6" /><path d="M10 11v6" /><path d="M14 11v6" />
-                    </svg>
-                    <span className="text-xs font-semibold">Delete</span>
+            {/* Delete underlay — phone only */}
+            {enableSwipe && (
+                <motion.div
+                    className="absolute inset-0 flex items-center justify-end px-4 rounded-xl"
+                    style={{ backgroundColor: deleteBg }}
+                >
+                    <motion.div style={{ opacity: deleteTextOpacity }} className="flex items-center gap-1 text-red-400/80">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="3 6 5 6 21 6" /><path d="M19 6l-2 14H7L5 6" />
+                        </svg>
+                        <span className="text-[10px] font-semibold">Delete</span>
+                    </motion.div>
                 </motion.div>
-            </motion.div>
+            )}
 
             {/* Swipeable foreground */}
             <motion.div
-                className={`flex items-center gap-3 p-3 rounded-xl relative z-10 ${todo.completed
-                        ? "bg-gray-2/60 opacity-45"
+                className={`flex items-center gap-3 p-3 rounded-xl relative z-10 group ${todo.completed
+                        ? "bg-gray-3/25 border border-gray-5/20"
                         : "bg-gray-3/30 border border-gray-5/40"
                     }`}
-                style={{ x, touchAction: "pan-y" }}
-                drag="x"
-                dragConstraints={{ left: -100, right: 0 }}
+                style={enableSwipe ? { x, touchAction: "pan-y" } : {}}
+                drag={enableSwipe ? "x" : false}
+                dragConstraints={enableSwipe ? { left: -100, right: 0 } : undefined}
                 dragElastic={0.1}
-                onDragStart={() => setSwiping(true)}
+                onDragStart={() => setIsSwiping(true)}
                 onDragEnd={(_, info) => {
-                    setSwiping(false);
-                    if (info.offset.x < -70) {
-                        onDelete();
-                    }
+                    setIsSwiping(false);
+                    if (info.offset.x < -65) onDelete();
                 }}
             >
+                {/* Checkbox */}
                 <motion.button
-                    onClick={() => { if (!swiping) onToggle(); }}
+                    onClick={() => { if (!isSwiping) onToggle(); }}
                     className={`w-5 h-5 rounded-full border-[1.5px] flex items-center justify-center shrink-0 transition-all ${todo.completed
                             ? "bg-[#E80000] border-[#E80000]"
                             : "border-gray-6 hover:border-gray-8"
@@ -99,8 +98,7 @@ function SwipeableTodoItem({
                     {todo.completed && (
                         <motion.svg
                             width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"
-                            initial={{ pathLength: 0 }}
-                            animate={{ pathLength: 1 }}
+                            initial={{ pathLength: 0 }} animate={{ pathLength: 1 }}
                             transition={{ duration: 0.3 }}
                         >
                             <polyline points="20 6 9 17 4 12" />
@@ -108,21 +106,24 @@ function SwipeableTodoItem({
                     )}
                 </motion.button>
 
-                <span className={`flex-1 text-sm transition-colors duration-300 ${todo.completed ? "line-through text-gray-7" : "text-gray-12"
+                {/* Text — completed tasks readable, not invisible */}
+                <span className={`flex-1 text-sm transition-colors duration-300 ${todo.completed ? "line-through text-gray-8" : "text-gray-12"
                     }`}>
                     {todo.text}
                 </span>
 
-                {/* Desktop: show X on hover */}
-                <motion.button
-                    onClick={onDelete}
-                    className="hidden sm:flex opacity-0 group-hover:opacity-100 text-gray-7 hover:text-red-400 transition-all p-1"
-                    whileTap={{ scale: 0.75 }}
-                >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
-                </motion.button>
+                {/* Desktop/tablet delete: X button on hover */}
+                {!enableSwipe && (
+                    <motion.button
+                        onClick={onDelete}
+                        className="opacity-0 group-hover:opacity-100 text-gray-7 hover:text-red-400 transition-all p-1"
+                        whileTap={{ scale: 0.75 }}
+                    >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                    </motion.button>
+                )}
             </motion.div>
         </motion.div>
     );
@@ -140,6 +141,7 @@ export function HomeScreen({
         Math.floor(Date.now() / 86400000) % MOTIVATIONAL_QUOTES.length
     );
 
+    const isPhone = useIsTouchPhone();
     const quote = MOTIVATIONAL_QUOTES[quoteIndex];
 
     const handleAddTodo = useCallback(() => {
@@ -179,8 +181,7 @@ export function HomeScreen({
                 />
                 <motion.div
                     className="text-center mt-3"
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
+                    initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 }}
                 >
                     <h2 className="text-3xl font-black text-gray-12 tracking-tight">
@@ -200,8 +201,7 @@ export function HomeScreen({
             {/* Quote */}
             <motion.div
                 className="w-full rounded-2xl overflow-hidden bg-gray-3/30 border border-gray-5/40"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
                 whileHover={{ borderColor: "rgba(232,0,0,0.15)" }}
             >
@@ -211,9 +211,7 @@ export function HomeScreen({
                         <AnimatePresence mode="wait">
                             <motion.div
                                 key={quoteIndex}
-                                initial={{ opacity: 0, y: 4 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -4 }}
+                                initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
                                 transition={{ duration: 0.25 }}
                             >
                                 <p className="text-[13px] text-gray-11 italic leading-relaxed">
@@ -242,8 +240,7 @@ export function HomeScreen({
             {/* Todos */}
             <motion.div
                 className="w-full"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 }}
             >
                 <div className="flex items-center justify-between mb-3">
@@ -264,23 +261,18 @@ export function HomeScreen({
                     {showInput && (
                         <motion.div
                             className="flex gap-2 mb-3 overflow-hidden"
-                            initial={{ opacity: 0, height: 0, marginBottom: 0 }}
-                            animate={{ opacity: 1, height: "auto", marginBottom: 12 }}
+                            initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto", marginBottom: 12 }}
                             exit={{ opacity: 0, height: 0, marginBottom: 0 }}
                             transition={{ type: "spring", stiffness: 400, damping: 30 }}
                         >
                             <input
-                                type="text"
-                                value={newTodo}
-                                onChange={(e) => setNewTodo(e.target.value)}
+                                type="text" value={newTodo} onChange={(e) => setNewTodo(e.target.value)}
                                 onKeyDown={(e) => e.key === "Enter" && handleAddTodo()}
-                                placeholder={t("todoPlaceholder")}
-                                autoFocus
+                                placeholder={t("todoPlaceholder")} autoFocus
                                 className="flex-1 bg-gray-3 border border-gray-5 rounded-xl px-3.5 py-2.5 text-sm text-gray-12 placeholder:text-gray-8 focus:outline-none focus:border-[#E80000]/30 focus:ring-1 focus:ring-[#E80000]/10 transition-all"
                             />
                             <motion.button
-                                onClick={handleAddTodo}
-                                disabled={!newTodo.trim()}
+                                onClick={handleAddTodo} disabled={!newTodo.trim()}
                                 className="px-4 py-2.5 rounded-xl text-sm font-semibold optiz-gradient-bg text-white disabled:opacity-30 transition-all shrink-0"
                                 whileTap={{ scale: 0.93 }}
                             >
@@ -294,13 +286,7 @@ export function HomeScreen({
                     <div className="space-y-1.5">
                         <AnimatePresence mode="popLayout">
                             {sortedTodos.length === 0 && !showInput && (
-                                <motion.p
-                                    key="empty"
-                                    className="text-center text-sm text-gray-8 py-6"
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    exit={{ opacity: 0 }}
-                                >
+                                <motion.p key="empty" className="text-center text-sm text-gray-8 py-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                                     {t("noTasks")}
                                 </motion.p>
                             )}
@@ -310,16 +296,17 @@ export function HomeScreen({
                                     todo={todo}
                                     onToggle={() => onToggleTodo(todo.id)}
                                     onDelete={() => onDeleteTodo(todo.id)}
+                                    enableSwipe={isPhone}
                                 />
                             ))}
                         </AnimatePresence>
                     </div>
                 </LayoutGroup>
 
-                {/* Mobile hint */}
-                {sortedTodos.length > 0 && (
-                    <p className="text-[9px] text-gray-6 text-center mt-3 sm:hidden">
-                        ← Swipe left to delete
+                {/* Mobile hint — phone only */}
+                {sortedTodos.length > 0 && isPhone && (
+                    <p className="text-[9px] text-gray-6 text-center mt-3">
+                        ← Swipe to delete
                     </p>
                 )}
             </motion.div>

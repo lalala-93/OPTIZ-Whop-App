@@ -207,9 +207,8 @@ function DashboardInner({ userId }: { userId: string }) {
               onClick={() => setIsStreakModalOpen(true)}
               className="flex items-center gap-1.5 px-3 h-10 rounded-full bg-gray-3/80 border border-gray-5/50 hover:bg-gray-4 transition-all"
               whileTap={{ scale: 0.93 }}
-              whileHover={{ borderColor: "rgba(255,107,0,0.3)" }}
             >
-              <AnimatedFireIcon size={18} />
+              <AnimatedFireIcon size={22} />
               <span className="text-sm font-bold text-gray-12 tabular-nums">{streakDays}</span>
             </motion.button>
 
@@ -218,7 +217,6 @@ function DashboardInner({ userId }: { userId: string }) {
               onClick={() => setIsXpModalOpen(true)}
               className="flex items-center gap-1.5 px-3 h-10 rounded-full bg-gray-3/80 border border-gray-5/50 hover:bg-gray-4 transition-all"
               whileTap={{ scale: 0.93 }}
-              whileHover={{ borderColor: "rgba(232,0,0,0.3)" }}
             >
               <AnimatedBoltIcon size={18} />
               <span className="text-sm font-bold text-gray-12 tabular-nums">
@@ -307,7 +305,7 @@ function DashboardInner({ userId }: { userId: string }) {
       </main>
 
       {/* ── Modals + Animations ── */}
-      <ChallengeDetailModal challenge={challengeModalData} isOpen={!!challengeModalData} onClose={() => setChallengeModalData(null)} onJoin={handleJoinChallenge} />
+      <ChallengeDetailModal challenge={challengeModalData} isOpen={!!challengeModalData} onClose={() => setChallengeModalData(null)} onJoin={handleJoinChallenge} onGoToProgram={(id) => { setActiveTab("challenges"); setViewingProgram(id); }} />
       <SettingsSheet
         isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)}
         level={levelData.level} totalXp={totalXp} rankFullName={rankData.fullName}

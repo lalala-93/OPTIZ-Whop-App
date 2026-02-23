@@ -3,33 +3,40 @@
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import type { Challenge } from "./rankSystem";
+import { useI18n } from "./i18n";
 
 interface ChallengeDetailModalProps {
     challenge: Challenge | null;
     isOpen: boolean;
     onClose: () => void;
     onJoin: (challengeId: string) => void;
+    onGoToProgram?: (challengeId: string) => void;
 }
 
-export function ChallengeDetailModal({ challenge, isOpen, onClose, onJoin }: ChallengeDetailModalProps) {
+export function ChallengeDetailModal({ challenge, isOpen, onClose, onJoin, onGoToProgram }: ChallengeDetailModalProps) {
+    const { t } = useI18n();
     if (!challenge) return null;
+
+    const handleJoin = () => {
+        onJoin(challenge.id);
+        onClose();
+        // Redirect to program after joining
+        if (onGoToProgram) {
+            setTimeout(() => onGoToProgram(challenge.id), 150);
+        }
+    };
 
     return (
         <AnimatePresence>
             {isOpen && (
                 <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
                     <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
                         onClick={onClose}
                     />
-
                     <motion.div
-                        initial={{ opacity: 0, y: 60 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 60 }}
+                        initial={{ opacity: 0, y: 60 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 60 }}
                         transition={{ type: "spring", stiffness: 300, damping: 30 }}
                         className="relative w-full max-w-md bg-gray-2 border border-gray-4 rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl"
                         onClick={(e) => e.stopPropagation()}
@@ -38,13 +45,14 @@ export function ChallengeDetailModal({ challenge, isOpen, onClose, onJoin }: Cha
                             <div className="w-10 h-1 rounded-full bg-gray-6" />
                         </div>
 
-                        {/* Challenge image — NO glow/shadow */}
-                        <div className="relative w-full h-44 overflow-hidden">
+                        {/* Illustration — taller for full visibility */}
+                        <div className="relative w-full aspect-[4/3] overflow-hidden">
                             <Image
-                                src="/Challenge1.jpeg"
+                                src="/Illustration1.png"
                                 alt={challenge.title}
                                 fill
-                                className="object-cover"
+                                className="object-cover object-top"
+                                sizes="(max-width: 768px) 100vw, 500px"
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-[var(--gray-2)] via-transparent to-transparent" />
 
@@ -53,8 +61,7 @@ export function ChallengeDetailModal({ challenge, isOpen, onClose, onJoin }: Cha
                                 className="absolute top-4 right-4 w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm border border-white/10 flex items-center justify-center text-white/80 hover:text-white transition-all"
                             >
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                    <line x1="18" y1="6" x2="6" y2="18" />
-                                    <line x1="6" y1="6" x2="18" y2="18" />
+                                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
                                 </svg>
                             </button>
                         </div>
@@ -66,9 +73,9 @@ export function ChallengeDetailModal({ challenge, isOpen, onClose, onJoin }: Cha
                             {/* Stats */}
                             <div className="grid grid-cols-3 gap-2 mb-5">
                                 {[
-                                    { icon: "👥", label: "Joined", value: challenge.participantCount.toLocaleString() },
-                                    { icon: "⚡", label: "Total XP", value: String(challenge.totalXp) },
-                                    { icon: "📋", label: "Tasks", value: String(challenge.tasks.length) },
+                                    { icon: "👥", label: t("members"), value: challenge.participantCount.toLocaleString() },
+                                    { icon: "⚡", label: t("xpLabel"), value: String(challenge.totalXp) },
+                                    { icon: "📋", label: t("tasks"), value: String(challenge.tasks.length) },
                                 ].map((s) => (
                                     <div key={s.label} className="bg-gray-3/40 rounded-xl p-3 text-center border border-gray-5/30">
                                         <p className="text-xs mb-0.5">{s.icon}</p>
@@ -78,9 +85,9 @@ export function ChallengeDetailModal({ challenge, isOpen, onClose, onJoin }: Cha
                                 ))}
                             </div>
 
-                            {/* Difficulty badge */}
+                            {/* Difficulty */}
                             <div className="flex items-center gap-2 mb-5">
-                                <span className="text-[10px] font-bold text-gray-8 uppercase tracking-wider">Difficulty</span>
+                                <span className="text-[10px] font-bold text-gray-8 uppercase tracking-wider">{t("difficulty")}</span>
                                 <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${challenge.difficulty === "Hard"
                                         ? "bg-orange-500/12 text-orange-400 border border-orange-500/15"
                                         : challenge.difficulty === "Extreme"
@@ -93,19 +100,19 @@ export function ChallengeDetailModal({ challenge, isOpen, onClose, onJoin }: Cha
                                 </span>
                             </div>
 
-                            {/* Join button */}
+                            {/* Buttons */}
                             <div className="flex gap-2">
                                 <button
                                     onClick={onClose}
                                     className="flex-1 py-3 rounded-xl font-semibold text-sm bg-gray-3 border border-gray-5 text-gray-12 hover:bg-gray-4 transition-all active:scale-[0.98]"
                                 >
-                                    Close
+                                    {t("closeCta")}
                                 </button>
                                 <button
-                                    onClick={() => { onJoin(challenge.id); onClose(); }}
+                                    onClick={handleJoin}
                                     className="flex-1 py-3 rounded-xl font-bold text-sm optiz-gradient-bg text-white transition-all active:scale-[0.98]"
                                 >
-                                    Join Challenge
+                                    {t("joinChallenge")}
                                 </button>
                             </div>
                         </div>

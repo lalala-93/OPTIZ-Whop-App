@@ -20,11 +20,11 @@ export function ChallengesScreen({
 
     return (
         <div className="pb-8">
-            {/* Header with staggered intro */}
+            {/* Header — natural fade in */}
             <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ type: "spring", stiffness: 260, damping: 22 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.4 }}
             >
                 <h2 className="text-xl font-bold text-gray-12 mb-1">{t("challengesTitle")}</h2>
                 <p className="text-sm text-gray-8 mb-5">{t("challengesSub")}</p>
@@ -42,35 +42,28 @@ export function ChallengesScreen({
                                     ? "bg-gray-3/40 border border-gray-5/60"
                                     : "bg-gray-3/25 border border-gray-5/35 hover:border-gray-5/60"
                                 }`}
-                            initial={{ opacity: 0, y: 20, scale: 0.97 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            transition={{ type: "spring", stiffness: 300, damping: 26, delay: 0.1 + i * 0.08 }}
+                            initial={{ opacity: 0, y: 12 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.5, delay: 0.08 + i * 0.06, ease: [0.25, 0.1, 0.25, 1] }}
                             whileTap={{ scale: 0.985 }}
-                            whileHover={{ y: -1 }}
                         >
-                            {/* Hero image — larger, well-framed */}
-                            <motion.div
-                                className="w-full aspect-[2.8/1] overflow-hidden relative"
-                                initial={{ opacity: 0, scale: 1.05 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                transition={{ duration: 0.6, delay: 0.15 + i * 0.08 }}
-                            >
+                            {/* Hero image with Illustration1 */}
+                            <div className="w-full aspect-[2.4/1] overflow-hidden relative">
                                 <Image
-                                    src="/Challenge1.jpeg"
+                                    src="/Illustration1.png"
                                     alt={challenge.title}
                                     fill
-                                    className="object-cover object-center"
+                                    className="object-cover object-top"
                                     sizes="(max-width: 768px) 100vw, 500px"
                                 />
-                                {/* Gradient overlay for readability */}
-                                <div className="absolute inset-0 bg-gradient-to-t from-gray-1/90 via-gray-1/30 to-transparent" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-gray-1/90 via-gray-1/20 to-transparent" />
 
-                                {/* Member count overlay */}
+                                {/* Member count */}
                                 <motion.div
                                     className="absolute bottom-3 left-3 flex items-center gap-1.5 bg-black/50 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10"
-                                    initial={{ opacity: 0, x: -8 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ delay: 0.35 + i * 0.08 }}
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ delay: 0.3 + i * 0.06 }}
                                 >
                                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-10">
                                         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -81,12 +74,10 @@ export function ChallengesScreen({
                                     <span className="text-[10px] font-bold text-white tabular-nums">
                                         {challenge.participantCount.toLocaleString()}
                                     </span>
-                                    <span className="text-[9px] text-gray-10 font-medium">
-                                        {t("members")}
-                                    </span>
+                                    <span className="text-[9px] text-gray-10 font-medium">{t("members")}</span>
                                 </motion.div>
 
-                                {/* Difficulty badge overlay */}
+                                {/* Difficulty badge */}
                                 <div className="absolute top-3 right-3">
                                     <span className={`text-[9px] font-bold px-2 py-1 rounded-full uppercase tracking-wider backdrop-blur-md border ${challenge.difficulty === "Hard"
                                             ? "bg-orange-500/20 text-orange-300 border-orange-500/20"
@@ -99,15 +90,13 @@ export function ChallengesScreen({
                                         {challenge.difficulty}
                                     </span>
                                 </div>
-                            </motion.div>
+                            </div>
 
-                            {/* Content area */}
+                            {/* Content */}
                             <div className="p-3.5 pt-2.5">
                                 <div className="flex items-center justify-between">
                                     <div className="flex-1 min-w-0">
-                                        <h3 className="text-[14px] font-bold text-gray-12 truncate">
-                                            {challenge.title}
-                                        </h3>
+                                        <h3 className="text-[14px] font-bold text-gray-12 truncate">{challenge.title}</h3>
                                         <div className="flex items-center gap-2 mt-1 text-[10px] text-gray-7 font-medium">
                                             <span className="flex items-center gap-0.5">
                                                 <span className="text-[#E80000] font-bold">{challenge.totalXp}</span>
@@ -165,7 +154,7 @@ export function ChallengesScreen({
                 className="mt-6 text-center"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: 0.4 }}
+                transition={{ delay: 0.5 }}
             >
                 <div className="rounded-2xl p-5 border border-dashed border-gray-5/30 bg-gray-3/15">
                     <p className="text-sm text-gray-7 font-medium">{t("moreComingSoon")}</p>
