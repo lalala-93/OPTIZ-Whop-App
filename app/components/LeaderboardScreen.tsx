@@ -3,8 +3,9 @@
 import { motion } from "framer-motion";
 import { getLevelProgress, getRankForLevel } from "./rankSystem";
 import { RankBadge } from "./RankBadge";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { useI18n } from "./i18n";
+import { getLeaderboard } from "@/lib/actions";
 
 interface LeaderboardEntry {
     whop_user_id: string;
@@ -17,42 +18,38 @@ interface LeaderboardEntry {
 }
 
 interface LeaderboardScreenProps {
+    userId: string;
     userXp: number;
     userLevel: number;
     userName?: string;
     userPhoto?: string | null;
 }
 
-export function LeaderboardScreen({ userXp, userLevel, userName = "You", userPhoto }: LeaderboardScreenProps) {
+export function LeaderboardScreen({ userId, userXp, userLevel, userName = "You", userPhoto }: LeaderboardScreenProps) {
     const { t } = useI18n();
     const [timeFilter, setTimeFilter] = useState<"today" | "weekly" | "all">("all");
     const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [, startTransition] = useTransition();
 
-    // Fetch leaderboard from API
+    // Fetch leaderboard via Server Action
     useEffect(() => {
         let cancelled = false;
 
-        async function fetchLeaderboard() {
+        startTransition(async () => {
             try {
-                const res = await fetch("/api/leaderboard");
-                if (!res.ok) throw new Error("Failed to fetch leaderboard");
-                const data = await res.json();
-
+                const data = await getLeaderboard(userId);
                 if (cancelled) return;
 
-                const lb: LeaderboardEntry[] = (data.leaderboard || []).map((e: LeaderboardEntry) => ({
+                const lb: LeaderboardEntry[] = (data.leaderboard || []).map((e) => ({
                     ...e,
-                    isMe: false,
+                    isMe: e.whop_user_id === userId,
                 }));
 
-                // Check if user is already in leaderboard
-                const userInLb = lb.some(e => e.position === data.userPosition && e.total_xp === userXp);
-
-                if (!userInLb && userXp > 0) {
-                    // Add current user
+                // If user not in leaderboard, add them
+                if (!lb.some(e => e.isMe) && userXp > 0) {
                     lb.push({
-                        whop_user_id: "me",
+                        whop_user_id: userId,
                         display_name: userName,
                         avatar_url: userPhoto || null,
                         total_xp: userXp,
@@ -60,23 +57,15 @@ export function LeaderboardScreen({ userXp, userLevel, userName = "You", userPho
                         position: data.userPosition || lb.length + 1,
                         isMe: true,
                     });
-
-                    // Re-sort and re-rank
                     lb.sort((a, b) => (b.total_xp ?? 0) - (a.total_xp ?? 0));
                     lb.forEach((e, i) => { e.position = i + 1; });
-                } else {
-                    // Mark the user in the list
-                    lb.forEach(e => {
-                        if (e.position === data.userPosition) e.isMe = true;
-                    });
                 }
 
                 setEntries(lb);
             } catch (err) {
-                console.error("[OPTIZ] Leaderboard fetch error:", err);
-                // If no DB data, show just the user
+                console.error("[OPTIZ] Leaderboard error:", err);
                 setEntries([{
-                    whop_user_id: "me",
+                    whop_user_id: userId,
                     display_name: userName,
                     avatar_url: userPhoto || null,
                     total_xp: userXp,
@@ -87,11 +76,10 @@ export function LeaderboardScreen({ userXp, userLevel, userName = "You", userPho
             } finally {
                 if (!cancelled) setIsLoading(false);
             }
-        }
+        });
 
-        fetchLeaderboard();
         return () => { cancelled = true; };
-    }, [userXp, userName, userPhoto]);
+    }, [userId, userXp, userName, userPhoto, startTransition]);
 
     const FILTERS = [
         { key: "today" as const, label: t("today") },
@@ -105,7 +93,6 @@ export function LeaderboardScreen({ userXp, userLevel, userName = "You", userPho
 
     return (
         <div className="pb-8">
-            {/* Header */}
             <motion.div
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -114,7 +101,6 @@ export function LeaderboardScreen({ userXp, userLevel, userName = "You", userPho
             >
                 <h2 className="text-xl font-bold text-gray-12 mb-3">{t("leaderboardTitle")}</h2>
 
-                {/* Filter buttons */}
                 <div className="relative flex p-1 bg-gray-3/50 rounded-xl border border-gray-5/30">
                     <motion.div
                         className="absolute top-1 bottom-1 rounded-lg bg-gray-1 border border-gray-5/50 shadow-sm"
@@ -138,7 +124,6 @@ export function LeaderboardScreen({ userXp, userLevel, userName = "You", userPho
                 </div>
             </motion.div>
 
-            {/* Loading */}
             {isLoading ? (
                 <div className="flex items-center justify-center py-20">
                     <motion.div
@@ -155,7 +140,6 @@ export function LeaderboardScreen({ userXp, userLevel, userName = "You", userPho
                 </div>
             ) : (
                 <>
-                    {/* Podium */}
                     {top3.length >= 3 && (
                         <motion.div
                             className="flex items-end justify-center gap-2.5 mb-6 px-1"
@@ -241,7 +225,6 @@ export function LeaderboardScreen({ userXp, userLevel, userName = "You", userPho
                         </motion.div>
                     )}
 
-                    {/* List */}
                     <div className="space-y-1">
                         {rest.map((user, idx) => {
                             const isMe = user.isMe;

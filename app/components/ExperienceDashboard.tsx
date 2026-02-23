@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useTransition } from "react";
 import { motion } from "framer-motion";
 import { Tabs } from "@whop/react/components";
 import { HomeScreen } from "./HomeScreen";
@@ -21,34 +21,77 @@ import { I18nProvider, useI18n } from "./i18n";
 import {
   getLevelProgress,
   getRankForLevel,
-  OPTIZ_MAX_CHALLENGE,
   type TodoItem,
   type Challenge,
 } from "./rankSystem";
 import Image from "next/image";
+import {
+  addTodo as serverAddTodo,
+  toggleTodo as serverToggleTodo,
+  deleteTodo as serverDeleteTodo,
+  awardXp as serverAwardXp,
+  joinChallenge as serverJoinChallenge,
+  updateProfile as serverUpdateProfile,
+} from "@/lib/actions";
 
 type TabType = "home" | "challenges" | "leaderboard";
 
-function DashboardInner({ userId }: { userId: string }) {
+/** Shape of SSR-loaded initial data from lib/actions.ts loadUserData() */
+export interface InitialData {
+  profile: {
+    totalXp: number;
+    streakDays: number;
+    displayName: string;
+    avatarUrl: string | null;
+    locale: string | null;
+  };
+  todos: TodoItem[];
+  challenges: {
+    id: string;
+    title: string;
+    description: string;
+    longDescription: string;
+    emoji: string;
+    difficulty: string;
+    durationDays: number;
+    participantCount: number;
+    totalXp: number;
+    joined: boolean;
+    tasks: { id: string; name: string; emoji: string; xpReward: number; completed: boolean }[];
+  }[];
+  weeklyProgress: boolean[];
+  totalTasksCompleted: number;
+}
+
+function DashboardInner({ userId, initialData }: { userId: string; initialData: InitialData }) {
   const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<TabType>("home");
   const [viewingProgram, setViewingProgram] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [, startTransition] = useTransition();
 
-  const [userName, setUserName] = useState("User");
-  const [userPhoto, setUserPhoto] = useState<string | null>(null);
+  // Profile state — initialized from SSR data
+  const [userName, setUserName] = useState(initialData.profile.displayName);
+  const [userPhoto, setUserPhoto] = useState<string | null>(initialData.profile.avatarUrl);
 
-  const [totalXp, setTotalXp] = useState(0);
-  const [streakDays, setStreakDays] = useState(0);
-  const [weeklyProgress, setWeeklyProgress] = useState([false, false, false, false, false, false, false]);
-  const [totalTasksCompleted, setTotalTasksCompleted] = useState(0);
+  // XP and streak — from SSR
+  const [totalXp, setTotalXp] = useState(initialData.profile.totalXp);
+  const [streakDays, setStreakDays] = useState(initialData.profile.streakDays);
+  const [weeklyProgress, setWeeklyProgress] = useState(initialData.weeklyProgress);
+  const [totalTasksCompleted, setTotalTasksCompleted] = useState(initialData.totalTasksCompleted);
 
-  const [todos, setTodos] = useState<TodoItem[]>([]);
+  // Todos — from SSR
+  const [todos, setTodos] = useState<TodoItem[]>(initialData.todos);
 
-  const [challenges, setChallenges] = useState<Challenge[]>([
-    { ...OPTIZ_MAX_CHALLENGE },
-  ]);
+  // Challenges — from SSR
+  const [challenges, setChallenges] = useState<Challenge[]>(
+    initialData.challenges.map(c => ({
+      ...c,
+      difficulty: c.difficulty as Challenge["difficulty"],
+      taskCount: c.tasks.length,
+    }))
+  );
 
+  // UI state
   const [challengeModalData, setChallengeModalData] = useState<Challenge | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isInfoOpen, setIsInfoOpen] = useState(false);
@@ -68,116 +111,8 @@ function DashboardInner({ userId }: { userId: string }) {
   const rankData = getRankForLevel(levelData.level);
 
   // ═══════════════════════════════════════
-  // DATA LOADING — fetch from Supabase API
+  // HANDLERS — Server Action backed mutations
   // ═══════════════════════════════════════
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadData() {
-      try {
-        // 1. User profile + todos + joined challenges + streak
-        const profileRes = await fetch("/api/user/profile");
-        if (!profileRes.ok) throw new Error("Profile fetch failed");
-        const profileData = await profileRes.json();
-
-        if (cancelled) return;
-
-        const p = profileData.profile;
-        if (p) {
-          setTotalXp(p.total_xp ?? 0);
-          setStreakDays(p.streak_days ?? 0);
-          setUserName(p.display_name || "User");
-          setUserPhoto(p.avatar_url || null);
-        }
-
-        // Todos from DB
-        if (profileData.todos && profileData.todos.length > 0) {
-          setTodos(profileData.todos.map((t: { id: string; text: string; completed: boolean | null }) => ({
-            id: t.id,
-            text: t.text,
-            completed: t.completed ?? false,
-          })));
-        }
-
-        // Weekly streak progress from streak dates
-        if (profileData.streakDates) {
-          const today = new Date();
-          const currentDow = today.getDay();
-          const monday = new Date(today);
-          monday.setDate(today.getDate() - (currentDow === 0 ? 6 : currentDow - 1));
-          monday.setHours(0, 0, 0, 0);
-
-          const wp = [false, false, false, false, false, false, false];
-          for (const dateStr of profileData.streakDates as string[]) {
-            const d = new Date(dateStr + "T00:00:00");
-            if (d >= monday) {
-              const dow = d.getDay();
-              const idx = dow === 0 ? 6 : dow - 1;
-              wp[idx] = true;
-            }
-          }
-          setWeeklyProgress(wp);
-        }
-
-        // 2. Challenges from DB
-        const challengeRes = await fetch("/api/challenges");
-        if (challengeRes.ok) {
-          const cData = await challengeRes.json();
-          if (cancelled) return;
-
-          if (cData.challenges && cData.challenges.length > 0) {
-            setChallenges(cData.challenges.map((c: {
-              id: string; title: string; description: string | null;
-              longDescription: string | null; emoji: string | null;
-              difficulty: string | null; durationDays: number | null;
-              participantCount: number; totalXp: number | null;
-              joined: boolean;
-              tasks: { id: string; name: string; emoji: string; xpReward: number; completed: boolean }[];
-            }) => ({
-              id: c.id,
-              title: c.title,
-              description: c.description || "",
-              longDescription: c.longDescription || "",
-              emoji: c.emoji || "🔥",
-              difficulty: (c.difficulty || "Medium") as Challenge["difficulty"],
-              durationDays: c.durationDays || 30,
-              participantCount: c.participantCount,
-              taskCount: c.tasks?.length || 0,
-              totalXp: c.totalXp || 0,
-              joined: c.joined,
-              tasks: (c.tasks || []).map(t => ({
-                id: t.id,
-                name: t.name,
-                emoji: t.emoji,
-                xpReward: t.xpReward,
-                completed: t.completed,
-              })),
-            })));
-          }
-        }
-
-        // Count completed tasks
-        const completedTodos = (profileData.todos || []).filter((t: { completed: boolean | null }) => t.completed).length;
-        setTotalTasksCompleted(completedTodos);
-      } catch (err) {
-        console.error("[OPTIZ] Failed to load data:", err);
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
-    }
-
-    loadData();
-    return () => { cancelled = true; };
-  }, []);
-
-  // ═══════════════════════════════════════
-  // HANDLERS — API-backed mutations
-  // ═══════════════════════════════════════
-
-  const handleStreakBonus = useCallback(() => {
-    setStreakAnim(true);
-    // Streak XP is handled server-side via /api/user/xp
-  }, []);
 
   const handleToggleTodo = useCallback((id: string) => {
     setTodos(prev => {
@@ -185,84 +120,60 @@ function DashboardInner({ userId }: { userId: string }) {
       if (!todo) return prev;
 
       if (!todo.completed) {
-        // Completing a todo
         const TODO_XP = 3;
         const prevLevel = getLevelProgress(totalXp).level;
         const newTotalXp = totalXp + TODO_XP;
         const newLevelData = getLevelProgress(newTotalXp);
 
-        // Optimistic: update UI immediately
+        // Optimistic UI update
         setTotalTasksCompleted(tc => tc + 1);
         setTotalXp(newTotalXp);
         setTodoXpAnim({ id, xp: TODO_XP });
         setTimeout(() => setTodoXpAnim(null), 1200);
 
-        // Level-up check
         if (newLevelData.level > prevLevel) {
           setTimeout(() => setLevelUpAnim({ visible: true, newLevel: newLevelData.level }), 1000);
         }
 
-        // API: toggle todo + award XP + streak
-        fetch(`/api/todos/${id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ completed: true }),
-        });
-
-        fetch("/api/user/xp", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ xp: TODO_XP, source: "todo" }),
-        }).then(async (res) => {
-          if (res.ok) {
-            const data = await res.json();
-            // Sync server values
-            setTotalXp(data.totalXp);
-            setStreakDays(data.streakDays);
-            if (data.streakEarned) {
-              handleStreakBonus();
-            }
+        // Server: toggle todo + award XP
+        startTransition(async () => {
+          await serverToggleTodo(userId, id, true);
+          const result = await serverAwardXp(userId, TODO_XP, "todo");
+          // Sync server values
+          setTotalXp(result.totalXp);
+          setStreakDays(result.streakDays);
+          if (result.streakEarned) {
+            setStreakAnim(true);
           }
         });
       }
       return prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t);
     });
-  }, [handleStreakBonus, totalXp]);
+  }, [totalXp, userId]);
 
   const handleAddTodo = useCallback((text: string) => {
-    // Optimistic: add immediately with temp ID
     const tempId = `temp-${Date.now()}`;
     setTodos(prev => [{ id: tempId, text, completed: false }, ...prev]);
 
-    // API: create in DB
-    fetch("/api/todos", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text }),
-    }).then(async (res) => {
-      if (res.ok) {
-        const data = await res.json();
-        // Replace temp ID with real ID
-        setTodos(prev => prev.map(t => t.id === tempId ? { ...t, id: data.todo.id } : t));
-      }
+    startTransition(async () => {
+      const newTodo = await serverAddTodo(userId, text);
+      setTodos(prev => prev.map(t => t.id === tempId ? { ...t, id: newTodo.id } : t));
     });
-  }, []);
+  }, [userId]);
 
   const handleDeleteTodo = useCallback((id: string) => {
-    // Optimistic: remove immediately
     setTodos(prev => prev.filter(t => t.id !== id));
-
-    // API: delete from DB
-    fetch(`/api/todos/${id}`, { method: "DELETE" });
-  }, []);
+    startTransition(async () => {
+      await serverDeleteTodo(userId, id);
+    });
+  }, [userId]);
 
   const handleJoinChallenge = useCallback((challengeId: string) => {
-    // Optimistic update
     setChallenges(prev => prev.map(c => c.id === challengeId ? { ...c, joined: true } : c));
-
-    // API: join in DB
-    fetch(`/api/challenges/${challengeId}/join`, { method: "POST" });
-  }, []);
+    startTransition(async () => {
+      await serverJoinChallenge(userId, challengeId);
+    });
+  }, [userId]);
 
   const handleCompleteTask = useCallback((taskId: string) => {
     const challenge = challenges.find(c => c.tasks.some(t => t.id === taskId));
@@ -286,18 +197,12 @@ function DashboardInner({ userId }: { userId: string }) {
 
       setTaskCompleteAnim({ visible: true, xp: task.xpReward });
 
-      // API: award XP + streak
-      fetch("/api/user/xp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ xp: task.xpReward, source: "challenge", taskId }),
-      }).then(async (res) => {
-        if (res.ok) {
-          const data = await res.json();
-          setTotalXp(data.totalXp);
-          setStreakDays(data.streakDays);
-          if (data.streakEarned) handleStreakBonus();
-        }
+      // Server: award XP
+      startTransition(async () => {
+        const result = await serverAwardXp(userId, task.xpReward, "challenge", taskId);
+        setTotalXp(result.totalXp);
+        setStreakDays(result.streakDays);
+        if (result.streakEarned) setStreakAnim(true);
       });
 
       if (newLevelData.level > prevLevel) {
@@ -318,59 +223,32 @@ function DashboardInner({ userId }: { userId: string }) {
         }
       }
     }, 600);
-  }, [challenges, totalXp, handleStreakBonus]);
+  }, [challenges, totalXp, userId]);
 
-  // Settings API: save name/photo/locale to DB
   const handleUpdateName = useCallback((name: string) => {
     setUserName(name);
-    fetch("/api/user/profile", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ display_name: name }),
+    startTransition(async () => {
+      await serverUpdateProfile(userId, { display_name: name });
     });
-  }, []);
+  }, [userId]);
 
   const handleUpdatePhoto = useCallback((photo: string | null) => {
     setUserPhoto(photo);
     if (photo) {
-      fetch("/api/user/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ avatar_url: photo }),
+      startTransition(async () => {
+        await serverUpdateProfile(userId, { avatar_url: photo });
       });
     }
-  }, []);
+  }, [userId]);
 
   const activeChallenge = viewingProgram ? challenges.find(c => c.id === viewingProgram) : null;
   const joinedCount = challenges.filter(c => c.joined).length;
-
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-1 flex items-center justify-center">
-        <motion.div
-          className="flex flex-col items-center gap-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3 }}
-        >
-          <motion.div
-            className="w-8 h-8 rounded-full border-2 border-[#E80000] border-t-transparent"
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          />
-          <span className="text-sm text-gray-8 font-medium">loading…</span>
-        </motion.div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-1 text-gray-12 flex flex-col w-full relative">
       {/* ── Header ── */}
       <header className="px-4 sm:px-6 pt-4 pb-3 sticky top-0 bg-gray-1/90 backdrop-blur-2xl z-30 border-b border-[var(--optiz-border)]">
         <div className="flex items-center justify-between mb-2.5">
-          {/* Left: Logo + info */}
           <div className="flex items-center gap-2.5 h-10">
             <motion.div whileTap={{ scale: 0.95 }} className="flex items-center">
               <Image
@@ -396,9 +274,7 @@ function DashboardInner({ userId }: { userId: string }) {
             </motion.button>
           </div>
 
-          {/* Right: counters + profile */}
           <div className="flex items-center gap-1.5 h-10">
-            {/* Streak counter */}
             <motion.button
               onClick={() => setIsStreakModalOpen(true)}
               className="flex items-center gap-1.5 px-3 h-10 rounded-full bg-gray-3/80 border border-gray-5/50 hover:bg-gray-4 transition-all"
@@ -408,7 +284,6 @@ function DashboardInner({ userId }: { userId: string }) {
               <span className="text-sm font-bold text-gray-12 tabular-nums">{streakDays}</span>
             </motion.button>
 
-            {/* XP counter */}
             <motion.button
               onClick={() => setIsXpModalOpen(true)}
               className="flex items-center gap-1.5 px-3 h-10 rounded-full bg-gray-3/80 border border-gray-5/50 hover:bg-gray-4 transition-all"
@@ -421,18 +296,13 @@ function DashboardInner({ userId }: { userId: string }) {
               <span className="text-[10px] font-extrabold text-[#E80000]">{t("xpLabel")}</span>
             </motion.button>
 
-            {/* Profile */}
             <motion.button
               onClick={() => setIsSettingsOpen(true)}
               className="w-10 h-10 rounded-full overflow-hidden bg-gray-3/80 border border-gray-5/50 flex items-center justify-center text-gray-9 hover:brightness-125 transition-all shrink-0"
               whileTap={{ scale: 0.9 }}
             >
               {userPhoto ? (
-                <img
-                  src={userPhoto}
-                  alt="Profile"
-                  className="w-full h-full object-cover rounded-full block"
-                />
+                <img src={userPhoto} alt="Profile" className="w-full h-full object-cover rounded-full block" />
               ) : (
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
@@ -443,7 +313,6 @@ function DashboardInner({ userId }: { userId: string }) {
           </div>
         </div>
 
-        {/* Tabs */}
         {!viewingProgram && (
           <Tabs.Root value={activeTab} onValueChange={(v) => setActiveTab(v as TabType)}>
             <Tabs.List className="[&_[data-state=active]]:!border-b-[#E80000] [&_[data-state=active]]:!border-b-2 [&_[data-state=active]]:!text-gray-12">
@@ -455,7 +324,6 @@ function DashboardInner({ userId }: { userId: string }) {
         )}
       </header>
 
-      {/* ── Content ── */}
       <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 scroll-smooth">
         {viewingProgram && activeChallenge ? (
           <ChallengeProgram
@@ -493,6 +361,7 @@ function DashboardInner({ userId }: { userId: string }) {
           />
         ) : (
           <LeaderboardScreen
+            userId={userId}
             userXp={totalXp}
             userLevel={levelData.level}
             userName={userName}
@@ -501,7 +370,6 @@ function DashboardInner({ userId }: { userId: string }) {
         )}
       </main>
 
-      {/* ── Modals + Animations ── */}
       <ChallengeDetailModal challenge={challengeModalData} isOpen={!!challengeModalData} onClose={() => setChallengeModalData(null)} onJoin={handleJoinChallenge} onGoToProgram={(id) => { setActiveTab("challenges"); setViewingProgram(id); }} />
       <SettingsSheet
         isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)}
@@ -525,10 +393,10 @@ function DashboardInner({ userId }: { userId: string }) {
   );
 }
 
-export function ExperienceDashboard({ userId }: { userId: string }) {
+export function ExperienceDashboard({ userId, initialData }: { userId: string; initialData: InitialData }) {
   return (
     <I18nProvider>
-      <DashboardInner userId={userId} />
+      <DashboardInner userId={userId} initialData={initialData} />
     </I18nProvider>
   );
 }
