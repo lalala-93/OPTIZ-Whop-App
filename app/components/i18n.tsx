@@ -190,8 +190,8 @@ export function I18nProvider({ children }: { children: ReactNode }) {
         }
     }, []);
 
-    const t = useCallback((key: TranslationKey, params?: Record<string, string | number>) => {
-        let str = translations[locale]?.[key] || translations.en[key] || key;
+    const t = useCallback((key: TranslationKey, params?: Record<string, string | number>): string => {
+        let str: string = translations[locale]?.[key] || translations.en[key] || key;
         if (params) {
             Object.entries(params).forEach(([k, v]) => {
                 str = str.replace(`{${k}}`, String(v));

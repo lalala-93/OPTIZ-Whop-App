@@ -3,7 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { RankBadge } from "./RankBadge";
 import type { RankTier } from "./rankSystem";
-import { AnimatedFireIcon } from "./AnimatedIcons";
+import { useI18n, type Locale } from "./i18n";
 import Image from "next/image";
 import { useState, useRef } from "react";
 
@@ -23,56 +23,45 @@ interface SettingsSheetProps {
     onUpdatePhoto: (url: string | null) => void;
 }
 
+const LANGUAGE_OPTIONS: { code: Locale; label: string; flag: string }[] = [
+    { code: "en", label: "English", flag: "🇬🇧" },
+    { code: "fr", label: "Français", flag: "🇫🇷" },
+];
+
 export function SettingsSheet({
-    isOpen,
-    onClose,
-    level,
-    totalXp,
-    rankFullName,
-    tier,
-    streakDays,
-    tasksCompleted,
-    challengesJoined,
-    userName,
-    userPhoto,
-    onUpdateName,
-    onUpdatePhoto,
+    isOpen, onClose, level, totalXp, rankFullName, tier,
+    streakDays, tasksCompleted, challengesJoined, userName, userPhoto,
+    onUpdateName, onUpdatePhoto,
 }: SettingsSheetProps) {
+    const { t, locale, setLocale } = useI18n();
     const [editingName, setEditingName] = useState(false);
     const [tempName, setTempName] = useState(userName);
+    const [showLanguagePicker, setShowLanguagePicker] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleSaveName = () => {
-        if (tempName.trim()) {
-            onUpdateName(tempName.trim());
-        }
+        if (tempName.trim()) onUpdateName(tempName.trim());
         setEditingName(false);
     };
 
     const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (file) {
-            const url = URL.createObjectURL(file);
-            onUpdatePhoto(url);
-        }
+        if (file) onUpdatePhoto(URL.createObjectURL(file));
     };
+
+    const currentLang = LANGUAGE_OPTIONS.find(l => l.code === locale) || LANGUAGE_OPTIONS[0];
 
     return (
         <AnimatePresence>
             {isOpen && (
                 <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
                     <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
                         onClick={onClose}
                     />
-
                     <motion.div
-                        initial={{ opacity: 0, y: 60 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 60 }}
+                        initial={{ opacity: 0, y: 60 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 60 }}
                         transition={{ type: "spring", stiffness: 300, damping: 30 }}
                         className="relative w-full max-w-md bg-gray-2 border border-gray-4 rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl max-h-[85vh] overflow-y-auto"
                         onClick={(e) => e.stopPropagation()}
@@ -82,59 +71,42 @@ export function SettingsSheet({
                         </div>
 
                         <div className="p-6">
-                            <button
+                            <motion.button
                                 onClick={onClose}
                                 className="absolute top-4 right-4 w-8 h-8 rounded-full bg-gray-4 border border-gray-5 flex items-center justify-center text-gray-9 hover:bg-gray-5 hover:text-gray-12 transition-all"
+                                whileTap={{ scale: 0.85 }}
                             >
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                    <line x1="18" y1="6" x2="6" y2="18" />
-                                    <line x1="6" y1="6" x2="18" y2="18" />
+                                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
                                 </svg>
-                            </button>
+                            </motion.button>
 
-                            {/* Profile section with photo edit */}
+                            {/* Profile */}
                             <div className="flex flex-col items-center mb-5">
-                                {/* Photo */}
                                 <button
                                     onClick={() => fileInputRef.current?.click()}
                                     className="relative w-16 h-16 rounded-full bg-gray-3 border border-gray-5 flex items-center justify-center overflow-hidden mb-3 group"
                                 >
                                     {userPhoto ? (
-                                        <img
-                                            src={userPhoto}
-                                            alt="Profile"
-                                            className="w-full h-full object-cover rounded-full block"
-                                        />
+                                        <img src={userPhoto} alt="Profile" className="w-full h-full object-cover rounded-full block" />
                                     ) : (
                                         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-8">
-                                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                                            <circle cx="12" cy="7" r="4" />
+                                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
                                         </svg>
                                     )}
                                     <div className="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-                                            <circle cx="12" cy="13" r="4" />
+                                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" />
                                         </svg>
                                     </div>
-                                    <input
-                                        ref={fileInputRef}
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={handlePhotoUpload}
-                                        className="hidden"
-                                    />
+                                    <input ref={fileInputRef} type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" />
                                 </button>
 
-                                {/* Name — editable */}
                                 {editingName ? (
                                     <div className="flex items-center gap-2">
                                         <input
-                                            type="text"
-                                            value={tempName}
-                                            onChange={(e) => setTempName(e.target.value)}
-                                            onKeyDown={(e) => e.key === "Enter" && handleSaveName()}
-                                            autoFocus
+                                            type="text" value={tempName} onChange={(e) => setTempName(e.target.value)}
+                                            onKeyDown={(e) => e.key === "Enter" && handleSaveName()} autoFocus
                                             className="bg-gray-3 border border-gray-5 rounded-lg px-3 py-1.5 text-sm text-gray-12 text-center focus:outline-none focus:border-gray-6 w-32"
                                         />
                                         <button onClick={handleSaveName} className="text-xs font-semibold text-[#E80000]">Save</button>
@@ -151,18 +123,16 @@ export function SettingsSheet({
                                         </svg>
                                     </button>
                                 )}
-                                <p className="text-xs font-medium mt-1" style={{ color: tier.color }}>
-                                    {rankFullName}
-                                </p>
+                                <p className="text-xs font-medium mt-1" style={{ color: tier.color }}>{rankFullName}</p>
                             </div>
 
-                            {/* Stats grid */}
+                            {/* Stats */}
                             <div className="grid grid-cols-2 gap-2 mb-5">
                                 {[
-                                    { label: "Level", value: String(level) },
-                                    { label: "Total XP", value: totalXp.toLocaleString() },
-                                    { label: "Streak", value: `${streakDays} days` },
-                                    { label: "Tasks Done", value: String(tasksCompleted) },
+                                    { label: t("level"), value: String(level) },
+                                    { label: t("totalXP"), value: totalXp.toLocaleString() },
+                                    { label: t("streak"), value: `${streakDays} ${streakDays === 1 ? t("day") : t("days")}` },
+                                    { label: t("tasksDone"), value: String(tasksCompleted) },
                                 ].map((s) => (
                                     <div key={s.label} className="bg-gray-3/60 rounded-xl p-3 text-center border border-gray-5/40">
                                         <p className="text-base font-bold text-gray-12">{s.value}</p>
@@ -173,23 +143,92 @@ export function SettingsSheet({
 
                             {/* Settings */}
                             <div className="space-y-1 mb-4">
-                                <h3 className="text-[10px] font-bold text-gray-7 uppercase tracking-wider mb-2 px-1">Settings</h3>
-                                {[
-                                    { icon: "🔔", label: "Notifications", value: "On" },
-                                    { icon: "🎨", label: "Theme", value: "Dark" },
-                                    { icon: "🌍", label: "Language", value: "EN" },
-                                ].map((item) => (
-                                    <div key={item.label} className="flex items-center justify-between p-3 rounded-xl bg-gray-3/40 border border-gray-5/30 cursor-pointer">
-                                        <div className="flex items-center gap-2.5">
-                                            <span className="text-sm">{item.icon}</span>
-                                            <span className="text-sm text-gray-12 font-medium">{item.label}</span>
-                                        </div>
-                                        <span className="text-xs text-gray-8">{item.value}</span>
+                                <h3 className="text-[10px] font-bold text-gray-7 uppercase tracking-wider mb-2 px-1">{t("settings")}</h3>
+
+                                {/* Notifications */}
+                                <div className="flex items-center justify-between p-3 rounded-xl bg-gray-3/40 border border-gray-5/30">
+                                    <div className="flex items-center gap-2.5">
+                                        <span className="text-sm">🔔</span>
+                                        <span className="text-sm text-gray-12 font-medium">{t("notifications")}</span>
                                     </div>
-                                ))}
+                                    <span className="text-xs text-gray-8">{t("on")}</span>
+                                </div>
+
+                                {/* Theme */}
+                                <div className="flex items-center justify-between p-3 rounded-xl bg-gray-3/40 border border-gray-5/30">
+                                    <div className="flex items-center gap-2.5">
+                                        <span className="text-sm">🎨</span>
+                                        <span className="text-sm text-gray-12 font-medium">{t("theme")}</span>
+                                    </div>
+                                    <span className="text-xs text-gray-8">{t("dark")}</span>
+                                </div>
+
+                                {/* Language — interactive picker */}
+                                <div className="relative">
+                                    <motion.button
+                                        onClick={() => setShowLanguagePicker(!showLanguagePicker)}
+                                        className="flex items-center justify-between p-3 rounded-xl bg-gray-3/40 border border-gray-5/30 w-full cursor-pointer hover:bg-gray-3/60 transition-all"
+                                        whileTap={{ scale: 0.98 }}
+                                    >
+                                        <div className="flex items-center gap-2.5">
+                                            <span className="text-sm">🌍</span>
+                                            <span className="text-sm text-gray-12 font-medium">{t("language")}</span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="text-xs">{currentLang.flag}</span>
+                                            <span className="text-xs text-gray-8 font-medium">{currentLang.label}</span>
+                                            <svg
+                                                width="10" height="10" viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                                                className={`text-gray-7 transition-transform duration-200 ${showLanguagePicker ? "rotate-180" : ""}`}
+                                            >
+                                                <polyline points="6 9 12 15 18 9" />
+                                            </svg>
+                                        </div>
+                                    </motion.button>
+
+                                    <AnimatePresence>
+                                        {showLanguagePicker && (
+                                            <motion.div
+                                                className="mt-1 rounded-xl bg-gray-3 border border-gray-5/50 overflow-hidden shadow-lg"
+                                                initial={{ opacity: 0, height: 0 }}
+                                                animate={{ opacity: 1, height: "auto" }}
+                                                exit={{ opacity: 0, height: 0 }}
+                                                transition={{ duration: 0.2, ease: "easeOut" }}
+                                            >
+                                                {LANGUAGE_OPTIONS.map((lang) => (
+                                                    <motion.button
+                                                        key={lang.code}
+                                                        onClick={() => { setLocale(lang.code); setShowLanguagePicker(false); }}
+                                                        className={`flex items-center justify-between w-full px-3.5 py-2.5 transition-all ${locale === lang.code
+                                                                ? "bg-[#E80000]/8 text-gray-12"
+                                                                : "text-gray-10 hover:bg-gray-4/50"
+                                                            }`}
+                                                        whileTap={{ scale: 0.98 }}
+                                                    >
+                                                        <div className="flex items-center gap-2.5">
+                                                            <span className="text-base">{lang.flag}</span>
+                                                            <span className="text-sm font-medium">{lang.label}</span>
+                                                        </div>
+                                                        {locale === lang.code && (
+                                                            <motion.svg
+                                                                width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                                                stroke="#E80000" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                                                                initial={{ scale: 0 }} animate={{ scale: 1 }}
+                                                                transition={{ type: "spring", stiffness: 400 }}
+                                                            >
+                                                                <polyline points="20 6 9 17 4 12" />
+                                                            </motion.svg>
+                                                        )}
+                                                    </motion.button>
+                                                ))}
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
                             </div>
 
-                            {/* Footer — logo only */}
+                            {/* Footer */}
                             <div className="text-center pt-3 border-t border-gray-5/30">
                                 <Image src="/Logo-optiz.png" alt="OPTIZ" width={22} height={22} className="mx-auto object-contain" style={{ borderRadius: 0 }} />
                                 <p className="text-[9px] text-gray-7 mt-1">v1.0.0</p>

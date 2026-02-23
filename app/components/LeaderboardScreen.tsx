@@ -1,9 +1,10 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { getRankForLevel, MOCK_LEADERBOARD } from "./rankSystem";
 import { RankBadge } from "./RankBadge";
 import { useState } from "react";
+import { useI18n } from "./i18n";
 
 interface LeaderboardScreenProps {
     userXp: number;
@@ -12,16 +13,15 @@ interface LeaderboardScreenProps {
     userPhoto?: string | null;
 }
 
-const FILTERS = [
-    { key: "today", label: "Today" },
-    { key: "weekly", label: "Week" },
-    { key: "all", label: "All Time" },
-] as const;
-
-type FilterKey = typeof FILTERS[number]["key"];
-
 export function LeaderboardScreen({ userXp, userLevel, userName = "You", userPhoto }: LeaderboardScreenProps) {
-    const [timeFilter, setTimeFilter] = useState<FilterKey>("all");
+    const { t } = useI18n();
+    const [timeFilter, setTimeFilter] = useState<"today" | "weekly" | "all">("all");
+
+    const FILTERS = [
+        { key: "today" as const, label: t("today") },
+        { key: "weekly" as const, label: t("week") },
+        { key: "all" as const, label: t("allTime") },
+    ];
 
     const allEntries = [
         ...MOCK_LEADERBOARD,
@@ -43,11 +43,10 @@ export function LeaderboardScreen({ userXp, userLevel, userName = "You", userPho
                 transition={{ duration: 0.4 }}
                 className="mb-5"
             >
-                <h2 className="text-xl font-bold text-gray-12 mb-3">Leaderboard</h2>
+                <h2 className="text-xl font-bold text-gray-12 mb-3">{t("leaderboardTitle")}</h2>
 
-                {/* Fixed filter buttons — proper controlled state */}
+                {/* Filter buttons */}
                 <div className="relative flex p-1 bg-gray-3/50 rounded-xl border border-gray-5/30">
-                    {/* Active indicator pill */}
                     <motion.div
                         className="absolute top-1 bottom-1 rounded-lg bg-gray-1 border border-gray-5/50 shadow-sm"
                         layout
@@ -94,7 +93,6 @@ export function LeaderboardScreen({ userXp, userLevel, userName = "You", userPho
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.2 + visualIdx * 0.1, duration: 0.5, ease: "easeOut" }}
                         >
-                            {/* Crown for #1 */}
                             {rank === 1 && (
                                 <motion.span
                                     className="text-xl mb-1"
@@ -106,16 +104,14 @@ export function LeaderboardScreen({ userXp, userLevel, userName = "You", userPho
                                 </motion.span>
                             )}
 
-                            {/* Avatar — properly clipped circle */}
+                            {/* Avatar — no red border for user, subtle gray for all */}
                             <div
                                 className="rounded-full overflow-hidden shrink-0 flex items-center justify-center"
                                 style={{
                                     width: avatarSize,
                                     height: avatarSize,
                                     background: "var(--gray-3)",
-                                    border: isMe
-                                        ? "2px solid rgba(232,0,0,0.25)"
-                                        : "1.5px solid var(--gray-5)",
+                                    border: "1.5px solid var(--gray-5)",
                                 }}
                             >
                                 {isMe && userPhoto ? (
@@ -128,31 +124,19 @@ export function LeaderboardScreen({ userXp, userLevel, userName = "You", userPho
                                 )}
                             </div>
 
-                            {/* Name */}
-                            <p className={`text-[11px] font-bold truncate max-w-full mt-1.5 ${isMe ? "text-[#FF2D2D]" : "text-gray-11"
-                                }`}>
+                            <p className={`text-[11px] font-bold truncate max-w-full mt-1.5 ${isMe ? "text-[#FF2D2D]" : "text-gray-11"}`}>
                                 {user.name}
                             </p>
 
-                            {/* XP + level under name */}
                             <div className="flex items-center gap-1 mt-0.5">
-                                <RankBadge
-                                    colors={rankInfo.tier.gradient}
-                                    glowColor={rankInfo.tier.glowColor}
-                                    tierName={rankInfo.tier.name}
-                                    size={16}
-                                />
+                                <RankBadge colors={rankInfo.tier.gradient} glowColor={rankInfo.tier.glowColor} tierName={rankInfo.tier.name} size={16} />
                                 <span className="text-[9px] text-gray-8 font-medium tabular-nums">
                                     {(user.xp / 1000).toFixed(1)}k
                                 </span>
                             </div>
 
-                            {/* Podium bar */}
                             <motion.div
-                                className={`w-full mt-2 rounded-t-xl flex items-start justify-center pt-3 ${rank === 1
-                                        ? "optiz-gradient-bg"
-                                        : "bg-gray-4/70"
-                                    }`}
+                                className={`w-full mt-2 rounded-t-xl flex items-start justify-center pt-3 ${rank === 1 ? "optiz-gradient-bg" : "bg-gray-4/70"}`}
                                 initial={{ height: 0, opacity: 0 }}
                                 animate={{ height: heights[visualIdx], opacity: 1 }}
                                 transition={{ delay: 0.35 + visualIdx * 0.08, duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
@@ -166,7 +150,7 @@ export function LeaderboardScreen({ userXp, userLevel, userName = "You", userPho
                 })}
             </motion.div>
 
-            {/* Rank list — clean like reference design */}
+            {/* List */}
             <div className="space-y-1">
                 {rest.map((user, idx) => {
                     const isMe = "isMe" in user && user.isMe;
@@ -184,19 +168,14 @@ export function LeaderboardScreen({ userXp, userLevel, userName = "You", userPho
                             transition={{ delay: 0.4 + idx * 0.04, duration: 0.3, ease: "easeOut" }}
                             whileHover={{ scale: 1.005 }}
                         >
-                            {/* Rank number */}
-                            <span className="text-[12px] font-bold text-gray-7 w-5 text-center tabular-nums">
-                                {user.rank}
-                            </span>
+                            <span className="text-[12px] font-bold text-gray-7 w-5 text-center tabular-nums">{user.rank}</span>
 
-                            {/* Avatar — properly circular */}
+                            {/* Avatar — no red border */}
                             <div
                                 className="w-9 h-9 rounded-full overflow-hidden shrink-0 flex items-center justify-center"
                                 style={{
                                     background: "var(--gray-4)",
-                                    border: isMe
-                                        ? "1.5px solid rgba(232,0,0,0.2)"
-                                        : "1px solid var(--gray-5)",
+                                    border: "1px solid var(--gray-5)",
                                 }}
                             >
                                 {isMe && userPhoto ? (
@@ -209,31 +188,21 @@ export function LeaderboardScreen({ userXp, userLevel, userName = "You", userPho
                                 )}
                             </div>
 
-                            {/* Name + level */}
                             <div className="flex-1 min-w-0">
-                                <p className={`text-[13px] font-semibold truncate ${isMe ? "text-[#FF2D2D]" : "text-gray-12"
-                                    }`}>
+                                <p className={`text-[13px] font-semibold truncate ${isMe ? "text-[#FF2D2D]" : "text-gray-12"}`}>
                                     {user.name}
                                 </p>
                                 <div className="flex items-center gap-1 mt-0.5">
-                                    <RankBadge
-                                        colors={rankInfo.tier.gradient}
-                                        glowColor={rankInfo.tier.glowColor}
-                                        tierName={rankInfo.tier.name}
-                                        size={12}
-                                    />
+                                    <RankBadge colors={rankInfo.tier.gradient} glowColor={rankInfo.tier.glowColor} tierName={rankInfo.tier.name} size={12} />
                                     <span className="text-[9px] font-medium" style={{ color: rankInfo.tier.color }}>
-                                        Lvl {user.level}
+                                        {t("lvl")} {user.level}
                                     </span>
                                 </div>
                             </div>
 
-                            {/* XP — more visible */}
                             <div className="text-right shrink-0">
-                                <span className="text-[12px] font-bold tabular-nums text-gray-11">
-                                    {user.xp.toLocaleString()}
-                                </span>
-                                <span className="text-[9px] font-extrabold text-[#E80000] ml-1">XP</span>
+                                <span className="text-[12px] font-bold tabular-nums text-gray-11">{user.xp.toLocaleString()}</span>
+                                <span className="text-[9px] font-extrabold text-[#E80000] ml-1">{t("xpLabel")}</span>
                             </div>
                         </motion.div>
                     );

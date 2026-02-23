@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { AnimatedFireIcon } from "./AnimatedIcons";
+import { useI18n } from "./i18n";
 
 interface StreakModalProps {
     isOpen: boolean;
@@ -13,6 +14,8 @@ interface StreakModalProps {
 const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 export function StreakModal({ isOpen, onClose, streakDays, weeklyProgress }: StreakModalProps) {
+    const { t } = useI18n();
+
     return (
         <AnimatePresence>
             {isOpen && (
@@ -75,14 +78,14 @@ export function StreakModal({ isOpen, onClose, streakDays, weeklyProgress }: Str
                                     animate={{ scale: 1, opacity: 1 }}
                                     transition={{ delay: 0.15, type: "spring" }}
                                 >
-                                    {streakDays} day{streakDays !== 1 ? "s" : ""}
+                                    {streakDays} {streakDays === 1 ? t("day") : t("days")}
                                 </motion.h2>
-                                <p className="text-sm text-gray-9 mt-1 font-medium">Current Streak</p>
+                                <p className="text-sm text-gray-9 mt-1 font-medium">{t("currentStreak")}</p>
                             </div>
 
                             {/* Weekly progress */}
                             <div className="bg-gray-3 rounded-2xl p-4 border border-gray-5 mb-5">
-                                <p className="text-xs font-bold text-gray-10 uppercase tracking-wider mb-3">This Week</p>
+                                <p className="text-xs font-bold text-gray-10 uppercase tracking-wider mb-3">{t("thisWeek")}</p>
                                 <div className="flex items-center justify-between gap-1">
                                     {DAY_LABELS.map((day, i) => {
                                         const isDone = weeklyProgress[i];
@@ -113,11 +116,11 @@ export function StreakModal({ isOpen, onClose, streakDays, weeklyProgress }: Str
 
                             {/* How it works */}
                             <div className="space-y-3 mb-5">
-                                <h3 className="text-sm font-bold text-gray-12">How Streaks Work</h3>
+                                <h3 className="text-sm font-bold text-gray-12">{t("howStreaksWork")}</h3>
                                 {[
-                                    { emoji: "✅", text: "Complete at least 1 task every 24 hours to keep your streak alive." },
-                                    { emoji: "💀", text: "Miss a day? Your streak resets to 0. No exceptions." },
-                                    { emoji: "🏅", text: "Longer streaks unlock special badges and recognition on the leaderboard." },
+                                    { emoji: "✅", text: t("streakRule1") },
+                                    { emoji: "💀", text: t("streakRule2") },
+                                    { emoji: "🏅", text: t("streakRule3") },
                                 ].map((item) => (
                                     <div key={item.text} className="flex items-start gap-2.5">
                                         <span className="text-base mt-0.5 shrink-0">{item.emoji}</span>
@@ -131,7 +134,7 @@ export function StreakModal({ isOpen, onClose, streakDays, weeklyProgress }: Str
                                 className="w-full py-3 rounded-xl font-bold text-sm bg-gray-4 border border-gray-5 text-gray-12 hover:bg-gray-5 transition-all"
                                 whileTap={{ scale: 0.97 }}
                             >
-                                Got it
+                                {t("gotIt")}
                             </motion.button>
                         </div>
                     </motion.div>
