@@ -14,16 +14,17 @@ const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
         opacity: 1,
-        transition: { staggerChildren: 0.1 },
+        transition: { staggerChildren: 0.08 },
     },
 };
 
 const itemVariants = {
-    hidden: { opacity: 0, y: 14 },
+    hidden: { opacity: 0, y: 16, scale: 0.97 },
     visible: {
         opacity: 1,
         y: 0,
-        transition: { type: "spring" as const, stiffness: 300, damping: 28 },
+        scale: 1,
+        transition: { type: "spring" as const, stiffness: 320, damping: 28 },
     },
 };
 
@@ -63,11 +64,16 @@ export function ChallengesScreen({
                                     : "bg-gray-3/25 border border-gray-5/35 hover:border-gray-5/60"
                                 }`}
                             variants={itemVariants}
-                            whileTap={{ scale: 0.99 }}
+                            whileTap={{ scale: 0.985 }}
+                            whileHover={{ y: -1 }}
                         >
                             <div className="flex items-center gap-3.5 p-3.5">
-                                {/* Challenge image */}
-                                <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0 bg-gray-4">
+                                {/* Challenge image — proper clipping */}
+                                <motion.div
+                                    className="w-14 h-14 rounded-xl overflow-hidden shrink-0 bg-gray-4"
+                                    whileHover={{ scale: 1.05 }}
+                                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                                >
                                     <Image
                                         src="/Challenge1.jpeg"
                                         alt={challenge.title}
@@ -75,9 +81,8 @@ export function ChallengesScreen({
                                         height={56}
                                         className="w-full h-full object-cover"
                                     />
-                                </div>
+                                </motion.div>
 
-                                {/* Info */}
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 mb-1">
                                         <h3 className="text-[13px] font-bold text-gray-12 truncate">
@@ -95,14 +100,15 @@ export function ChallengesScreen({
                                         </span>
                                     </div>
 
-                                    {/* Minimal stats */}
                                     <div className="flex items-center gap-3 text-[10px] text-gray-7 font-medium">
                                         <span>{challenge.participantCount.toLocaleString()} joined</span>
                                         <span>·</span>
-                                        <span>⚡ {challenge.totalXp} XP</span>
+                                        <span className="flex items-center gap-0.5">
+                                            <span className="text-[#E80000] font-bold">{challenge.totalXp}</span>
+                                            <span className="text-[#E80000] text-[8px] font-extrabold">XP</span>
+                                        </span>
                                     </div>
 
-                                    {/* Progress for joined */}
                                     {isJoined && (
                                         <div className="mt-2">
                                             <div className="h-1 w-full bg-gray-4/60 rounded-full overflow-hidden">
@@ -110,7 +116,7 @@ export function ChallengesScreen({
                                                     className="h-full rounded-full optiz-gradient-bg"
                                                     initial={{ width: 0 }}
                                                     animate={{ width: `${(completedTasks / challenge.tasks.length) * 100}%` }}
-                                                    transition={{ duration: 0.6, ease: "easeOut" }}
+                                                    transition={{ duration: 0.8, ease: "easeOut" }}
                                                 />
                                             </div>
                                             <p className="text-[9px] text-gray-6 mt-1 tabular-nums">
@@ -120,22 +126,24 @@ export function ChallengesScreen({
                                     )}
                                 </div>
 
-                                {/* Button */}
                                 <div className="shrink-0">
                                     {isJoined ? (
-                                        <button
+                                        <motion.button
                                             onClick={() => onGoToProgram(challenge.id)}
-                                            className="px-3.5 py-2 rounded-xl font-semibold text-[11px] bg-gray-4/60 border border-gray-5/40 text-gray-12 hover:bg-gray-4 transition-all active:scale-95"
+                                            className="px-3.5 py-2 rounded-xl font-semibold text-[11px] bg-gray-4/60 border border-gray-5/40 text-gray-12 hover:bg-gray-4 transition-all"
+                                            whileTap={{ scale: 0.92 }}
                                         >
                                             Open →
-                                        </button>
+                                        </motion.button>
                                     ) : (
-                                        <button
+                                        <motion.button
                                             onClick={() => onOpenChallenge(challenge)}
-                                            className="px-3.5 py-2 rounded-xl font-bold text-[11px] optiz-gradient-bg text-white transition-all active:scale-95"
+                                            className="px-3.5 py-2 rounded-xl font-bold text-[11px] optiz-gradient-bg text-white transition-all"
+                                            whileTap={{ scale: 0.92 }}
+                                            whileHover={{ scale: 1.03 }}
                                         >
                                             Join →
-                                        </button>
+                                        </motion.button>
                                     )}
                                 </div>
                             </div>

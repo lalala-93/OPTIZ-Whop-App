@@ -60,7 +60,6 @@ export function HomeScreen({
         setQuoteIndex(prev => (prev + 1) % MOTIVATIONAL_QUOTES.length);
     }, []);
 
-    // Sort: incomplete first, completed last
     const sortedTodos = useMemo(() => {
         return [...todos].sort((a, b) => {
             if (a.completed === b.completed) return 0;
@@ -113,24 +112,33 @@ export function HomeScreen({
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
+                whileHover={{ borderColor: "rgba(232,0,0,0.15)" }}
             >
                 <div className="flex items-start gap-3 p-4">
-                    {/* Left accent line */}
                     <div className="w-[2.5px] shrink-0 self-stretch rounded-full optiz-gradient-bg opacity-60" />
-
                     <div className="flex-1 min-w-0">
-                        <p className="text-[13px] text-gray-11 italic leading-relaxed">
-                            &ldquo;{quote.text}&rdquo;
-                        </p>
-                        <p className="text-[10px] text-gray-7 mt-1 font-medium">
-                            — {quote.author}
-                        </p>
+                        <AnimatePresence mode="wait">
+                            <motion.div
+                                key={quoteIndex}
+                                initial={{ opacity: 0, y: 4 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -4 }}
+                                transition={{ duration: 0.25 }}
+                            >
+                                <p className="text-[13px] text-gray-11 italic leading-relaxed">
+                                    &ldquo;{quote.text}&rdquo;
+                                </p>
+                                <p className="text-[10px] text-gray-7 mt-1 font-medium">
+                                    — {quote.author}
+                                </p>
+                            </motion.div>
+                        </AnimatePresence>
                     </div>
-
-                    {/* Refresh button */}
-                    <button
+                    <motion.button
                         onClick={refreshQuote}
-                        className="w-7 h-7 rounded-lg bg-gray-4/50 border border-gray-5/40 flex items-center justify-center text-gray-7 hover:text-gray-11 hover:bg-gray-4 transition-all active:scale-90 shrink-0 mt-0.5"
+                        className="w-7 h-7 rounded-lg bg-gray-4/50 border border-gray-5/40 flex items-center justify-center text-gray-7 hover:text-gray-11 hover:bg-gray-4 transition-all shrink-0 mt-0.5"
+                        whileTap={{ scale: 0.85, rotate: 180 }}
+                        transition={{ type: "spring", stiffness: 300 }}
                     >
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M21 2v6h-6" />
@@ -138,7 +146,7 @@ export function HomeScreen({
                             <path d="M3 22v-6h6" />
                             <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
                         </svg>
-                    </button>
+                    </motion.button>
                 </div>
             </motion.div>
 
@@ -151,21 +159,18 @@ export function HomeScreen({
             >
                 <div className="flex items-center justify-between mb-3">
                     <h3 className="text-base font-bold text-gray-12">My To-do</h3>
-                    <button
-                        onClick={() => {
-                            setShowInput(!showInput);
-                            if (showInput) setNewTodo("");
-                        }}
-                        className={`text-xs font-semibold px-3 py-1.5 rounded-full border transition-all active:scale-95 ${showInput
+                    <motion.button
+                        onClick={() => { setShowInput(!showInput); if (showInput) setNewTodo(""); }}
+                        className={`text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ${showInput
                                 ? "bg-gray-4 border-gray-6 text-gray-12"
                                 : "bg-gray-3 border-gray-5 text-gray-11 hover:bg-gray-4"
                             }`}
+                        whileTap={{ scale: 0.92 }}
                     >
                         {showInput ? "Close" : "+ Add"}
-                    </button>
+                    </motion.button>
                 </div>
 
-                {/* Input field */}
                 <AnimatePresence>
                     {showInput && (
                         <motion.div
@@ -182,20 +187,20 @@ export function HomeScreen({
                                 onKeyDown={(e) => e.key === "Enter" && handleAddTodo()}
                                 placeholder="What needs to be done?"
                                 autoFocus
-                                className="flex-1 bg-gray-3 border border-gray-5 rounded-xl px-3.5 py-2.5 text-sm text-gray-12 placeholder:text-gray-8 focus:outline-none focus:border-gray-6 transition-all"
+                                className="flex-1 bg-gray-3 border border-gray-5 rounded-xl px-3.5 py-2.5 text-sm text-gray-12 placeholder:text-gray-8 focus:outline-none focus:border-[#E80000]/30 focus:ring-1 focus:ring-[#E80000]/10 transition-all"
                             />
-                            <button
+                            <motion.button
                                 onClick={handleAddTodo}
                                 disabled={!newTodo.trim()}
-                                className="px-4 py-2.5 rounded-xl text-sm font-semibold optiz-gradient-bg text-white disabled:opacity-30 transition-all active:scale-95 shrink-0"
+                                className="px-4 py-2.5 rounded-xl text-sm font-semibold optiz-gradient-bg text-white disabled:opacity-30 transition-all shrink-0"
+                                whileTap={{ scale: 0.93 }}
                             >
                                 Add
-                            </button>
+                            </motion.button>
                         </motion.div>
                     )}
                 </AnimatePresence>
 
-                {/* Todo items — sorted: incomplete first, completed last */}
                 <LayoutGroup>
                     <div className="space-y-1.5">
                         <AnimatePresence mode="popLayout">
@@ -222,39 +227,46 @@ export function HomeScreen({
                                         opacity: { duration: 0.2 },
                                         scale: { duration: 0.2 },
                                     }}
-                                    className={`flex items-center gap-3 p-3 rounded-xl group ${todo.completed
+                                    className={`flex items-center gap-3 p-3 rounded-xl group transition-colors ${todo.completed
                                             ? "bg-gray-2/60 opacity-45"
-                                            : "bg-gray-3/30 border border-gray-5/40"
+                                            : "bg-gray-3/30 border border-gray-5/40 hover:bg-gray-3/50"
                                         }`}
                                 >
-                                    <button
+                                    <motion.button
                                         onClick={() => onToggleTodo(todo.id)}
                                         className={`w-5 h-5 rounded-full border-[1.5px] flex items-center justify-center shrink-0 transition-all ${todo.completed
                                                 ? "bg-[#E80000] border-[#E80000]"
                                                 : "border-gray-6 hover:border-gray-8"
                                             }`}
+                                        whileTap={{ scale: 0.8 }}
                                     >
                                         {todo.completed && (
-                                            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                                            <motion.svg
+                                                width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"
+                                                initial={{ pathLength: 0 }}
+                                                animate={{ pathLength: 1 }}
+                                                transition={{ duration: 0.3 }}
+                                            >
                                                 <polyline points="20 6 9 17 4 12" />
-                                            </svg>
+                                            </motion.svg>
                                         )}
-                                    </button>
+                                    </motion.button>
 
-                                    <span className={`flex-1 text-sm ${todo.completed ? "line-through text-gray-7" : "text-gray-12"
+                                    <span className={`flex-1 text-sm transition-colors duration-300 ${todo.completed ? "line-through text-gray-7" : "text-gray-12"
                                         }`}>
                                         {todo.text}
                                     </span>
 
-                                    <button
+                                    <motion.button
                                         onClick={() => onDeleteTodo(todo.id)}
                                         className="opacity-0 group-hover:opacity-100 text-gray-7 hover:text-red-400 transition-all p-1"
+                                        whileTap={{ scale: 0.75 }}
                                     >
                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                             <line x1="18" y1="6" x2="6" y2="18" />
                                             <line x1="6" y1="6" x2="18" y2="18" />
                                         </svg>
-                                    </button>
+                                    </motion.button>
                                 </motion.div>
                             ))}
                         </AnimatePresence>

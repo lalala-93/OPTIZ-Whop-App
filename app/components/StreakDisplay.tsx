@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { AnimatedFireIcon } from "./AnimatedIcons";
 
 interface StreakDisplayProps {
     streakDays: number;
@@ -19,13 +20,7 @@ export function StreakDisplay({ streakDays, weeklyProgress }: StreakDisplayProps
         >
             {/* Header — all on one line */}
             <div className="flex items-center gap-2 mb-4">
-                <motion.span
-                    className="text-xl"
-                    animate={{ scale: [1, 1.08, 1] }}
-                    transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-                >
-                    🔥
-                </motion.span>
+                <AnimatedFireIcon size={18} />
                 <p className="text-sm font-bold text-gray-12">
                     {streakDays} day streak
                 </p>
@@ -67,6 +62,7 @@ export function StreakDisplay({ streakDays, weeklyProgress }: StreakDisplayProps
                                             ? { duration: 2.5, repeat: Infinity, ease: "easeInOut" }
                                             : {}
                                 }
+                                whileTap={isDone ? { scale: 0.9 } : {}}
                             >
                                 {isDone && (
                                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">

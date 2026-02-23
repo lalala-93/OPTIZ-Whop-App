@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { RankBadge } from "./RankBadge";
 import type { RankTier } from "./rankSystem";
+import { AnimatedFireIcon } from "./AnimatedIcons";
 import Image from "next/image";
 import { useState, useRef } from "react";
 
@@ -99,13 +100,10 @@ export function SettingsSheet({
                                     className="relative w-16 h-16 rounded-full bg-gray-3 border border-gray-5 flex items-center justify-center overflow-hidden mb-3 group"
                                 >
                                     {userPhoto ? (
-                                        <Image
+                                        <img
                                             src={userPhoto}
                                             alt="Profile"
-                                            width={64}
-                                            height={64}
-                                            className="rounded-full object-cover"
-                                            unoptimized
+                                            className="w-full h-full object-cover rounded-full block"
                                         />
                                     ) : (
                                         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-8">
@@ -163,7 +161,7 @@ export function SettingsSheet({
                                 {[
                                     { label: "Level", value: String(level) },
                                     { label: "Total XP", value: totalXp.toLocaleString() },
-                                    { label: "Streak", value: `🔥 ${streakDays}` },
+                                    { label: "Streak", value: `${streakDays} days` },
                                     { label: "Tasks Done", value: String(tasksCompleted) },
                                 ].map((s) => (
                                     <div key={s.label} className="bg-gray-3/60 rounded-xl p-3 text-center border border-gray-5/40">

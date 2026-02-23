@@ -1,6 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
+import { AnimatedFireIcon } from "./AnimatedIcons";
 
 interface StreakModalProps {
     isOpen: boolean;
@@ -36,23 +37,24 @@ export function StreakModal({ isOpen, onClose, streakDays, weeklyProgress }: Str
                             <div className="w-10 h-1 rounded-full bg-gray-6" />
                         </div>
 
-                        <button
+                        <motion.button
                             onClick={onClose}
                             className="absolute top-4 right-4 w-8 h-8 rounded-full bg-gray-4 border border-gray-5 flex items-center justify-center text-gray-9 hover:bg-gray-5 hover:text-gray-12 transition-all z-10"
+                            whileTap={{ scale: 0.85 }}
                         >
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                 <line x1="18" y1="6" x2="6" y2="18" />
                                 <line x1="6" y1="6" x2="18" y2="18" />
                             </svg>
-                        </button>
+                        </motion.button>
 
                         <div className="p-6 pt-8">
-                            {/* Giant animated flame */}
+                            {/* Giant animated flame — custom SVG, not emoji */}
                             <div className="flex flex-col items-center mb-5">
                                 <motion.div
-                                    className="text-7xl mb-2"
+                                    className="mb-2"
                                     animate={{
-                                        scale: [1, 1.15, 1.05, 1.2, 1],
+                                        scale: [1, 1.12, 1.05, 1.15, 1],
                                         rotate: [0, -3, 2, -2, 0],
                                     }}
                                     transition={{
@@ -64,7 +66,7 @@ export function StreakModal({ isOpen, onClose, streakDays, weeklyProgress }: Str
                                         filter: "drop-shadow(0 0 20px rgba(255, 100, 0, 0.5)) drop-shadow(0 0 40px rgba(255, 60, 0, 0.25))",
                                     }}
                                 >
-                                    🔥
+                                    <AnimatedFireIcon size={64} />
                                 </motion.div>
 
                                 <motion.h2
@@ -92,10 +94,10 @@ export function StreakModal({ isOpen, onClose, streakDays, weeklyProgress }: Str
                                                 </span>
                                                 <motion.div
                                                     className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${isDone
-                                                            ? "bg-[#E80000] text-white shadow-[0_0_12px_rgba(232,0,0,0.35)]"
-                                                            : isToday
-                                                                ? "border-2 border-[#E80000]/50 bg-[#E80000]/10 text-gray-11"
-                                                                : "bg-gray-4 text-gray-7 border border-gray-5"
+                                                        ? "bg-[#E80000] text-white shadow-[0_0_12px_rgba(232,0,0,0.35)]"
+                                                        : isToday
+                                                            ? "border-2 border-[#E80000]/50 bg-[#E80000]/10 text-gray-11"
+                                                            : "bg-gray-4 text-gray-7 border border-gray-5"
                                                         }`}
                                                     initial={isDone ? { scale: 0 } : {}}
                                                     animate={isDone ? { scale: 1 } : {}}
@@ -124,12 +126,13 @@ export function StreakModal({ isOpen, onClose, streakDays, weeklyProgress }: Str
                                 ))}
                             </div>
 
-                            <button
+                            <motion.button
                                 onClick={onClose}
-                                className="w-full py-3 rounded-xl font-bold text-sm bg-gray-4 border border-gray-5 text-gray-12 hover:bg-gray-5 transition-all active:scale-[0.98]"
+                                className="w-full py-3 rounded-xl font-bold text-sm bg-gray-4 border border-gray-5 text-gray-12 hover:bg-gray-5 transition-all"
+                                whileTap={{ scale: 0.97 }}
                             >
                                 Got it
-                            </button>
+                            </motion.button>
                         </div>
                     </motion.div>
                 </div>
