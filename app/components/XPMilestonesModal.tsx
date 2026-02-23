@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { RANK_TIERS, getXpForLevel, getRankForLevel } from "./rankSystem";
+import { RANK_TIERS, getXpForLevel, getRankForLevel, formatNumber } from "./rankSystem";
 import { RankBadge } from "./RankBadge";
 import { useRef, useEffect, useMemo } from "react";
 import { useI18n } from "./i18n";
@@ -68,7 +68,7 @@ export function XPMilestonesModal({ isOpen, onClose, currentLevel, totalXp }: XP
                                 <div>
                                     <h2 className="text-base font-bold text-gray-12">{t("rankMilestones")}</h2>
                                     <p className="text-[11px] text-gray-8 mt-0.5">
-                                        {t("level")} {currentLevel} · {t("xpTotal", { n: totalXp.toLocaleString() })}
+                                        {t("level")} {currentLevel} · {t("xpTotal", { n: formatNumber(totalXp) })}
                                     </p>
                                 </div>
                                 <motion.button
@@ -142,7 +142,7 @@ export function XPMilestonesModal({ isOpen, onClose, currentLevel, totalXp }: XP
                                             <div className="text-right shrink-0">
                                                 <span className={`text-[11px] tabular-nums font-semibold ${item.isReached ? "text-gray-10" : "text-gray-6"
                                                     }`}>
-                                                    {item.xpNeeded.toLocaleString()}
+                                                    {formatNumber(item.xpNeeded)}
                                                 </span>
                                                 <span className="text-[8px] text-[#E80000] font-bold ml-0.5">XP</span>
                                             </div>

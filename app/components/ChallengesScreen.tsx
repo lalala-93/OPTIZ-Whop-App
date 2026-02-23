@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
-import type { Challenge } from "./rankSystem";
+import { formatNumber, type Challenge } from "./rankSystem";
 import { useI18n } from "./i18n";
 
 interface ChallengesScreenProps {
@@ -72,7 +72,7 @@ export function ChallengesScreen({
                                         <path d="M16 3.13a4 4 0 0 1 0 7.75" />
                                     </svg>
                                     <span className="text-[10px] font-bold text-white tabular-nums">
-                                        {challenge.participantCount.toLocaleString()}
+                                        {formatNumber(challenge.participantCount)}
                                     </span>
                                     <span className="text-[9px] text-gray-10 font-medium">{t("members")}</span>
                                 </motion.div>

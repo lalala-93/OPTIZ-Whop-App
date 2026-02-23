@@ -21,6 +21,7 @@ import { I18nProvider, useI18n } from "./i18n";
 import {
   getLevelProgress,
   getRankForLevel,
+  formatNumber,
   type TodoItem,
   type Challenge,
 } from "./rankSystem";
@@ -291,7 +292,7 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
             >
               <AnimatedBoltIcon size={18} />
               <span className="text-sm font-bold text-gray-12 tabular-nums">
-                {totalXp.toLocaleString()}
+                {formatNumber(totalXp)}
               </span>
               <span className="text-[10px] font-extrabold text-[#E80000]">{t("xpLabel")}</span>
             </motion.button>

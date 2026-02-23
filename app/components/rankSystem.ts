@@ -108,6 +108,19 @@ export const TASK_DESCRIPTIONS: Record<string, { benefit: string; tips: string }
     "t9": { benefit: "Reading expands knowledge, improves focus, reduces stress, and stimulates creative thinking.", tips: "Read before bed instead of scrolling. Choose topics that inspire you." },
 };
 
+// ── Stable number formatting (avoids hydration mismatch) ──
+export function formatNumber(n: number): string {
+    if (n < 1000) return String(n);
+    const parts: string[] = [];
+    let remaining = n;
+    while (remaining >= 1000) {
+        parts.unshift(String(remaining % 1000).padStart(3, "0"));
+        remaining = Math.floor(remaining / 1000);
+    }
+    parts.unshift(String(remaining));
+    return parts.join(",");
+}
+
 // ── Mock Data ──
 export const MOTIVATIONAL_QUOTES = [
     { text: "The only bad workout is the one that didn't happen.", author: "Unknown" },

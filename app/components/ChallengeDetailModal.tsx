@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
-import type { Challenge } from "./rankSystem";
+import { formatNumber, type Challenge } from "./rankSystem";
 import { useI18n } from "./i18n";
 
 interface ChallengeDetailModalProps {
@@ -73,7 +73,7 @@ export function ChallengeDetailModal({ challenge, isOpen, onClose, onJoin, onGoT
                             {/* Stats */}
                             <div className="grid grid-cols-3 gap-2 mb-5">
                                 {[
-                                    { icon: "👥", label: t("members"), value: challenge.participantCount.toLocaleString() },
+                                    { icon: "👥", label: t("members"), value: formatNumber(challenge.participantCount) },
                                     { icon: "⚡", label: t("xpLabel"), value: String(challenge.totalXp) },
                                     { icon: "📋", label: t("tasks"), value: String(challenge.tasks.length) },
                                 ].map((s) => (

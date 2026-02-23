@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { RankBadge } from "./RankBadge";
-import type { RankTier } from "./rankSystem";
+import { formatNumber, type RankTier } from "./rankSystem";
 import { useI18n, type Locale } from "./i18n";
 import Image from "next/image";
 import { useState, useRef } from "react";
@@ -130,7 +130,7 @@ export function SettingsSheet({
                             <div className="grid grid-cols-2 gap-2 mb-5">
                                 {[
                                     { label: t("level"), value: String(level) },
-                                    { label: t("totalXP"), value: totalXp.toLocaleString() },
+                                    { label: t("totalXP"), value: formatNumber(totalXp) },
                                     { label: t("streak"), value: `${streakDays} ${streakDays === 1 ? t("day") : t("days")}` },
                                     { label: t("tasksDone"), value: String(tasksCompleted) },
                                 ].map((s) => (

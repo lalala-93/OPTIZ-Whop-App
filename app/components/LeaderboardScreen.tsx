@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { getLevelProgress, getRankForLevel } from "./rankSystem";
+import { getLevelProgress, getRankForLevel, formatNumber } from "./rankSystem";
 import { RankBadge } from "./RankBadge";
 import { useState, useEffect, useTransition } from "react";
 import { useI18n } from "./i18n";
@@ -278,7 +278,7 @@ export function LeaderboardScreen({ userId, userXp, userLevel, userName = "You",
                                     </div>
 
                                     <div className="text-right shrink-0">
-                                        <span className="text-[12px] font-bold tabular-nums text-gray-11">{xp.toLocaleString()}</span>
+                                        <span className="text-[12px] font-bold tabular-nums text-gray-11">{formatNumber(xp)}</span>
                                         <span className="text-[9px] font-extrabold text-[#E80000] ml-1">{t("xpLabel")}</span>
                                     </div>
                                 </motion.div>

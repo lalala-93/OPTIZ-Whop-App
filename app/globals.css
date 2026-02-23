@@ -13,9 +13,14 @@
   --font-mono: var(--font-geist-mono);
 }
 
-/* ── Anti-flash: hide until Whop theme class is applied ── */
+/* ── Anti-flash: briefly hide until Whop theme class is applied ── */
 html:not(.light):not(.dark) {
   visibility: hidden;
+  animation: force-visible 0s 0.3s forwards;
+}
+
+@keyframes force-visible {
+  to { visibility: visible; }
 }
 
 html.dark {
