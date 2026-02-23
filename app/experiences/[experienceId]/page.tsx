@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { verifyUser, checkExperienceAccess } from "@/lib/authentication";
 import { ExperienceDashboard } from "@/app/components/ExperienceDashboard";
+import type { InitialData } from "@/app/components/ExperienceDashboard";
 import { loadUserData } from "@/lib/actions";
 
 export default async function ExperiencePage({
@@ -23,8 +24,21 @@ export default async function ExperiencePage({
     );
   }
 
-  // Load all data server-side (has access to Whop headers)
-  const initialData = await loadUserData(userId);
+  // Load all data server-side with error resilience
+  let initialData: InitialData;
+  try {
+    initialData = await loadUserData(userId);
+  } catch (err) {
+    console.error("[OPTIZ] SSR loadUserData failed:", err);
+    // Provide safe defaults so the page still renders
+    initialData = {
+      profile: { totalXp: 0, streakDays: 0, displayName: "User", avatarUrl: null, locale: null },
+      todos: [],
+      challenges: [],
+      weeklyProgress: [false, false, false, false, false, false, false],
+      totalTasksCompleted: 0,
+    };
+  }
 
   return (
     <ExperienceDashboard userId={userId} initialData={initialData} />
