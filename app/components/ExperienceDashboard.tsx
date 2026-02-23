@@ -65,6 +65,7 @@ function DashboardInner({ userId }: { userId: string }) {
   const [taskCompleteAnim, setTaskCompleteAnim] = useState({ visible: false, xp: 0 });
   const [levelUpAnim, setLevelUpAnim] = useState({ visible: false, newLevel: 0 });
   const [completingTaskId, setCompletingTaskId] = useState<string | null>(null);
+  const [todoXpAnim, setTodoXpAnim] = useState<{ id: string; xp: number } | null>(null);
 
   const levelData = getLevelProgress(totalXp);
   const rankData = getRankForLevel(levelData.level);
@@ -78,8 +79,16 @@ function DashboardInner({ userId }: { userId: string }) {
   const handleToggleTodo = useCallback((id: string) => {
     setTodos(prev => {
       const todo = prev.find(t => t.id === id);
-      if (todo && !todo.completed) {
-        // Completing a todo — also triggers streak check
+      if (!todo) return prev;
+
+      if (!todo.completed) {
+        // Completing a todo
+        const TODO_XP = 3;
+        const prevLevel = getLevelProgress(totalXp).level;
+        const newTotalXp = totalXp + TODO_XP;
+        const newLevelData = getLevelProgress(newTotalXp);
+
+        // Streak check
         const today = new Date().getDay();
         const dayIdx = today === 0 ? 6 : today - 1;
         setWeeklyProgress(wp => {
@@ -87,17 +96,26 @@ function DashboardInner({ userId }: { userId: string }) {
           if (!next[dayIdx]) {
             next[dayIdx] = true;
             setStreakDays(s => s + 1);
-            // Streak bonus!
             handleStreakBonus();
           }
           return next;
         });
+
         setTotalTasksCompleted(tc => tc + 1);
-        setTotalXp(xp => xp + 10); // base 10 XP for todo
+        setTotalXp(newTotalXp);
+
+        // Trigger inline confetti + XP popup
+        setTodoXpAnim({ id, xp: TODO_XP });
+        setTimeout(() => setTodoXpAnim(null), 1200);
+
+        // Level-up check
+        if (newLevelData.level > prevLevel) {
+          setTimeout(() => setLevelUpAnim({ visible: true, newLevel: newLevelData.level }), 1000);
+        }
       }
       return prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t);
     });
-  }, [handleStreakBonus]);
+  }, [handleStreakBonus, totalXp]);
 
   const handleAddTodo = useCallback((text: string) => {
     setTodos(prev => [{ id: `todo-${Date.now()}`, text, completed: false }, ...prev]);
@@ -287,6 +305,7 @@ function DashboardInner({ userId }: { userId: string }) {
             onAddTodo={handleAddTodo}
             onDeleteTodo={handleDeleteTodo}
             onXpRingClick={() => setIsXpModalOpen(true)}
+            todoXpAnim={todoXpAnim}
           />
         ) : activeTab === "challenges" ? (
           <ChallengesScreen

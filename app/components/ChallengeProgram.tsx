@@ -46,7 +46,7 @@ export function ChallengeProgram({
                 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
             >
                 <div className="relative h-36 w-full">
-                    <Image src="/Illustration1.png" alt={challengeTitle} fill className="object-cover object-top" />
+                    <Image src="/Challenge1.jpeg" alt={challengeTitle} fill className="object-cover object-top" />
                     <div className="absolute inset-0 bg-gradient-to-t from-[var(--gray-2)] via-[var(--gray-2)]/50 to-transparent" />
                     <div className="absolute bottom-3 left-4 right-4">
                         <h2 className="text-lg font-bold text-white">{challengeTitle}</h2>
@@ -91,8 +91,8 @@ export function ChallengeProgram({
                         <motion.div
                             key={task.id}
                             className={`flex items-center gap-3 p-3 rounded-xl transition-all ${task.completed
-                                    ? "bg-gray-2/60 opacity-50"
-                                    : "bg-gray-3/25 border border-gray-5/35"
+                                ? "bg-gray-2/60 opacity-50"
+                                : "bg-gray-3/25 border border-gray-5/35"
                                 }`}
                             initial={{ opacity: 0, y: 6 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -142,8 +142,8 @@ export function ChallengeProgram({
                             <div className="flex items-center gap-1.5 shrink-0">
                                 <span className="text-sm">{task.emoji}</span>
                                 <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${task.completed
-                                        ? "bg-gray-3 text-gray-6"
-                                        : "bg-[#E80000]/8 text-[#FF2D2D] border border-[#E80000]/10"
+                                    ? "bg-gray-3 text-gray-6"
+                                    : "bg-[#E80000]/8 text-[#FF2D2D] border border-[#E80000]/10"
                                     }`}>
                                     +{task.xpReward}
                                 </span>

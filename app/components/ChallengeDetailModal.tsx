@@ -48,7 +48,7 @@ export function ChallengeDetailModal({ challenge, isOpen, onClose, onJoin, onGoT
                         {/* Illustration — taller for full visibility */}
                         <div className="relative w-full aspect-[4/3] overflow-hidden">
                             <Image
-                                src="/Illustration1.png"
+                                src="/Challenge1.jpeg"
                                 alt={challenge.title}
                                 fill
                                 className="object-cover object-top"
@@ -89,12 +89,12 @@ export function ChallengeDetailModal({ challenge, isOpen, onClose, onJoin, onGoT
                             <div className="flex items-center gap-2 mb-5">
                                 <span className="text-[10px] font-bold text-gray-8 uppercase tracking-wider">{t("difficulty")}</span>
                                 <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${challenge.difficulty === "Hard"
-                                        ? "bg-orange-500/12 text-orange-400 border border-orange-500/15"
-                                        : challenge.difficulty === "Extreme"
-                                            ? "bg-red-500/12 text-red-400 border border-red-500/15"
-                                            : challenge.difficulty === "Medium"
-                                                ? "bg-yellow-500/12 text-yellow-400 border border-yellow-500/15"
-                                                : "bg-green-500/12 text-green-400 border border-green-500/15"
+                                    ? "bg-orange-500/12 text-orange-400 border border-orange-500/15"
+                                    : challenge.difficulty === "Extreme"
+                                        ? "bg-red-500/12 text-red-400 border border-red-500/15"
+                                        : challenge.difficulty === "Medium"
+                                            ? "bg-yellow-500/12 text-yellow-400 border border-yellow-500/15"
+                                            : "bg-green-500/12 text-green-400 border border-green-500/15"
                                     }`}>
                                     {challenge.difficulty}
                                 </span>

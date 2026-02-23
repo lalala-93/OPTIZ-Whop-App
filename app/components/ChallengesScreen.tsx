@@ -39,8 +39,8 @@ export function ChallengesScreen({
                         <motion.div
                             key={challenge.id}
                             className={`rounded-2xl overflow-hidden transition-all ${isJoined
-                                    ? "bg-gray-3/40 border border-gray-5/60"
-                                    : "bg-gray-3/25 border border-gray-5/35 hover:border-gray-5/60"
+                                ? "bg-gray-3/40 border border-gray-5/60"
+                                : "bg-gray-3/25 border border-gray-5/35 hover:border-gray-5/60"
                                 }`}
                             initial={{ opacity: 0, y: 12 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -50,7 +50,7 @@ export function ChallengesScreen({
                             {/* Hero image with Illustration1 */}
                             <div className="w-full aspect-[2.4/1] overflow-hidden relative">
                                 <Image
-                                    src="/Illustration1.png"
+                                    src="/Challenge1.jpeg"
                                     alt={challenge.title}
                                     fill
                                     className="object-cover object-top"
@@ -80,12 +80,12 @@ export function ChallengesScreen({
                                 {/* Difficulty badge */}
                                 <div className="absolute top-3 right-3">
                                     <span className={`text-[9px] font-bold px-2 py-1 rounded-full uppercase tracking-wider backdrop-blur-md border ${challenge.difficulty === "Hard"
-                                            ? "bg-orange-500/20 text-orange-300 border-orange-500/20"
-                                            : challenge.difficulty === "Extreme"
-                                                ? "bg-red-500/20 text-red-300 border-red-500/20"
-                                                : challenge.difficulty === "Medium"
-                                                    ? "bg-yellow-500/20 text-yellow-300 border-yellow-500/20"
-                                                    : "bg-green-500/20 text-green-300 border-green-500/20"
+                                        ? "bg-orange-500/20 text-orange-300 border-orange-500/20"
+                                        : challenge.difficulty === "Extreme"
+                                            ? "bg-red-500/20 text-red-300 border-red-500/20"
+                                            : challenge.difficulty === "Medium"
+                                                ? "bg-yellow-500/20 text-yellow-300 border-yellow-500/20"
+                                                : "bg-green-500/20 text-green-300 border-green-500/20"
                                         }`}>
                                         {challenge.difficulty}
                                     </span>
