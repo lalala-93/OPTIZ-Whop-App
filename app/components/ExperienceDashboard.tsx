@@ -138,13 +138,21 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
 
         // Server: toggle todo + award XP
         startTransition(async () => {
-          await serverToggleTodo(userId, id, true);
-          const result = await serverAwardXp(userId, TODO_XP, "todo");
-          // Sync server values
-          setTotalXp(result.totalXp);
-          setStreakDays(result.streakDays);
-          if (result.streakEarned) {
-            setStreakAnim(true);
+          try {
+            await serverToggleTodo(userId, id, true);
+            const result = await serverAwardXp(userId, TODO_XP, "todo");
+            // Sync server values
+            setTotalXp(result.totalXp);
+            setStreakDays(result.streakDays);
+            if (result.streakEarned) {
+              setStreakAnim(true);
+            }
+          } catch (err) {
+            console.error("Failed to toggle todo:", err);
+            // Revert optimistic update on failure
+            setTodos(prev => prev.map(t => t.id === id ? { ...t, completed: false } : t));
+            setTotalXp((prev) => prev - TODO_XP);
+            setTotalTasksCompleted((prev) => prev - 1);
           }
         });
       }
@@ -157,22 +165,38 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
     setTodos(prev => [{ id: tempId, text, completed: false }, ...prev]);
 
     startTransition(async () => {
-      const newTodo = await serverAddTodo(userId, text);
-      setTodos(prev => prev.map(t => t.id === tempId ? { ...t, id: newTodo.id } : t));
+      try {
+        const newTodo = await serverAddTodo(userId, text);
+        setTodos(prev => prev.map(t => t.id === tempId ? { ...t, id: newTodo.id } : t));
+      } catch (err) {
+        console.error("Failed to add todo:", err);
+        // Remove optimistic todo on failure
+        setTodos(prev => prev.filter(t => t.id !== tempId));
+      }
     });
   }, [userId]);
 
   const handleDeleteTodo = useCallback((id: string) => {
     setTodos(prev => prev.filter(t => t.id !== id));
     startTransition(async () => {
-      await serverDeleteTodo(userId, id);
+      try {
+        await serverDeleteTodo(userId, id);
+      } catch (err) {
+        console.error("Failed to delete todo:", err);
+        // We could revert the optimistic delete here if needed, but for delete it's usually fine
+      }
     });
   }, [userId]);
 
   const handleJoinChallenge = useCallback((challengeId: string) => {
     setChallenges(prev => prev.map(c => c.id === challengeId ? { ...c, joined: true } : c));
     startTransition(async () => {
-      await serverJoinChallenge(userId, challengeId);
+      try {
+        await serverJoinChallenge(userId, challengeId);
+      } catch (err) {
+        console.error("Failed to join challenge:", err);
+        setChallenges(prev => prev.map(c => c.id === challengeId ? { ...c, joined: false } : c));
+      }
     });
   }, [userId]);
 
@@ -200,10 +224,14 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
 
       // Server: award XP
       startTransition(async () => {
-        const result = await serverAwardXp(userId, task.xpReward, "challenge", taskId);
-        setTotalXp(result.totalXp);
-        setStreakDays(result.streakDays);
-        if (result.streakEarned) setStreakAnim(true);
+        try {
+          const result = await serverAwardXp(userId, task.xpReward, "challenge", taskId);
+          setTotalXp(result.totalXp);
+          setStreakDays(result.streakDays);
+          if (result.streakEarned) setStreakAnim(true);
+        } catch (err) {
+          console.error("Failed to complete task:", err);
+        }
       });
 
       if (newLevelData.level > prevLevel) {
@@ -229,7 +257,11 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
   const handleUpdateName = useCallback((name: string) => {
     setUserName(name);
     startTransition(async () => {
-      await serverUpdateProfile(userId, { display_name: name });
+      try {
+        await serverUpdateProfile(userId, { display_name: name });
+      } catch (err) {
+        console.error("Failed to update name:", err);
+      }
     });
   }, [userId]);
 
@@ -237,7 +269,11 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
     setUserPhoto(photo);
     if (photo) {
       startTransition(async () => {
-        await serverUpdateProfile(userId, { avatar_url: photo });
+        try {
+          await serverUpdateProfile(userId, { avatar_url: photo });
+        } catch (err) {
+          console.error("Failed to update photo:", err);
+        }
       });
     }
   }, [userId]);
@@ -292,7 +328,7 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
             >
               <AnimatedBoltIcon size={18} />
               <span className="text-sm font-bold text-gray-12 tabular-nums">
-                {formatNumber(totalXp)}
+                {totalXp}
               </span>
               <span className="text-[10px] font-extrabold text-[#E80000]">{t("xpLabel")}</span>
             </motion.button>

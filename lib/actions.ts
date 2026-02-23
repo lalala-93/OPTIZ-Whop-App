@@ -57,9 +57,48 @@ export async function loadUserData(userId: string) {
     const joinedIds = new Set((joinedRes.data || []).map((j: { challenge_id: string }) => j.challenge_id));
     const completedTaskIds = new Set((completionsRes.data || []).map((c: { task_id: string }) => c.task_id));
 
+    // Auto-seed challenge if empty
+    let fetchedChallenges = challengesRes.data || [];
+    let fetchedTasks = tasksRes.data || [];
+
+    if (fetchedChallenges.length === 0) {
+        try {
+            const { data: seededChallenge, error: challengeErr } = await db.from("challenges").insert({
+                id: "optiz-max",
+                title: "OPTIZ Max",
+                description: "30-day elite fitness program — push your limits.",
+                long_desc: "The ultimate 30-day transformation challenge. Complete daily tasks across cardio, strength, flexibility, and nutrition to earn XP, level up your rank, and compete on the global leaderboard. Designed for those who refuse to settle.",
+                emoji: "🔥",
+                difficulty: "Hard",
+                duration_days: 30,
+                total_xp: 380,
+                is_active: true
+            }).select().single();
+
+            if (!challengeErr && seededChallenge) {
+                fetchedChallenges = [seededChallenge];
+                const tasksToInsert = [
+                    { id: "t1", challenge_id: "optiz-max", name: "Morning Run — 5km", emoji: "🏃‍♂️", xp_reward: 50, sort_order: 1 },
+                    { id: "t2", challenge_id: "optiz-max", name: "100 Push-ups", emoji: "💪", xp_reward: 50, sort_order: 2 },
+                    { id: "t3", challenge_id: "optiz-max", name: "Yoga Session — 20min", emoji: "🧘‍♀️", xp_reward: 30, sort_order: 3 },
+                    { id: "t4", challenge_id: "optiz-max", name: "Drink 3L Water", emoji: "💧", xp_reward: 20, sort_order: 4 },
+                    { id: "t5", challenge_id: "optiz-max", name: "Eat Clean — No Junk", emoji: "🥗", xp_reward: 40, sort_order: 5 },
+                    { id: "t6", challenge_id: "optiz-max", name: "Cold Shower", emoji: "🥶", xp_reward: 50, sort_order: 6 },
+                    { id: "t7", challenge_id: "optiz-max", name: "200 Sit-ups", emoji: "🔥", xp_reward: 50, sort_order: 7 },
+                    { id: "t8", challenge_id: "optiz-max", name: "10min Meditation", emoji: "🧠", xp_reward: 40, sort_order: 8 },
+                    { id: "t9", challenge_id: "optiz-max", name: "Read 30 Pages", emoji: "📖", xp_reward: 50, sort_order: 9 },
+                ];
+                const { data: seededTasks } = await db.from("challenge_tasks").insert(tasksToInsert).select();
+                fetchedTasks = seededTasks || tasksToInsert;
+            }
+        } catch (e) {
+            console.error("[OPTIZ] Auto-seed failed", e);
+        }
+    }
+
     // Assemble challenges with tasks
-    const challenges = (challengesRes.data || []).map((c: Record<string, unknown>) => {
-        const tasks = (tasksRes.data || []).filter((t: Record<string, unknown>) => t.challenge_id === c.id);
+    const challenges = fetchedChallenges.map((c: Record<string, unknown>) => {
+        const tasks = fetchedTasks.filter((t: Record<string, unknown>) => t.challenge_id === c.id);
         return {
             id: c.id as string,
             title: c.title as string,
