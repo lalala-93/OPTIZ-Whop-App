@@ -62,7 +62,7 @@ function getTierConfig(tierName?: string) {
                 innerSymbol: "radiant", innerGlow: 0.5, orbits: 3,
                 accent: "#FF5252", shimmer: "rgba(255,82,82,0.35)",
             };
-        case "champion":
+        case "mythic":
             return {
                 outerStroke: 3.5, gems: 8, hasWreaths: true, hasCrown: true, hasWings: true,
                 innerSymbol: "phoenix", innerGlow: 0.6, orbits: 3,

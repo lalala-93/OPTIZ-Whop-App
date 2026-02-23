@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { AnimatedFireIcon } from "./AnimatedIcons";
 import { useI18n } from "./i18n";
@@ -13,6 +14,12 @@ const DAY_LABELS = ["M", "T", "W", "T", "F", "S", "S"];
 
 export function StreakDisplay({ streakDays, weeklyProgress }: StreakDisplayProps) {
     const { t } = useI18n();
+    const [todayIndex, setTodayIndex] = useState<number>(-1);
+
+    useEffect(() => {
+        const day = new Date().getDay();
+        setTodayIndex(day === 0 ? 6 : day - 1);
+    }, []);
 
     return (
         <motion.div
@@ -43,7 +50,7 @@ export function StreakDisplay({ streakDays, weeklyProgress }: StreakDisplayProps
             <div className="flex items-center justify-between gap-1">
                 {DAY_LABELS.map((day, i) => {
                     const isDone = weeklyProgress[i];
-                    const isToday = i === (new Date().getDay() === 0 ? 6 : new Date().getDay() - 1);
+                    const isToday = i === todayIndex;
 
                     return (
                         <div key={`${day}-${i}`} className="flex flex-col items-center gap-1.5 flex-1">
@@ -53,10 +60,10 @@ export function StreakDisplay({ streakDays, weeklyProgress }: StreakDisplayProps
                             </span>
                             <motion.div
                                 className={`w-8 h-8 rounded-full flex items-center justify-center ${isDone
-                                        ? "bg-[#E80000] text-white"
-                                        : isToday
-                                            ? "border-[1.5px] border-[#E80000]/40 bg-[#E80000]/8 text-gray-10"
-                                            : "bg-gray-4/60 text-gray-6 border border-gray-5/40"
+                                    ? "bg-[#E80000] text-white"
+                                    : isToday
+                                        ? "border-[1.5px] border-[#E80000]/40 bg-[#E80000]/8 text-gray-10"
+                                        : "bg-gray-4/60 text-gray-6 border border-gray-5/40"
                                     }`}
                                 initial={isDone ? { scale: 0.6, opacity: 0 } : {}}
                                 animate={isDone ? { scale: 1, opacity: 1 } : isToday ? { scale: [1, 1.04, 1] } : {}}

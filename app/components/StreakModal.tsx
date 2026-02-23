@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AnimatedFireIcon } from "./AnimatedIcons";
 import { useI18n } from "./i18n";
@@ -15,6 +16,12 @@ const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 export function StreakModal({ isOpen, onClose, streakDays, weeklyProgress }: StreakModalProps) {
     const { t } = useI18n();
+    const [todayIndex, setTodayIndex] = useState<number>(-1);
+
+    useEffect(() => {
+        const day = new Date().getDay();
+        setTodayIndex(day === 0 ? 6 : day - 1);
+    }, []);
 
     return (
         <AnimatePresence>
@@ -89,7 +96,7 @@ export function StreakModal({ isOpen, onClose, streakDays, weeklyProgress }: Str
                                 <div className="flex items-center justify-between gap-1">
                                     {DAY_LABELS.map((day, i) => {
                                         const isDone = weeklyProgress[i];
-                                        const isToday = i === (new Date().getDay() === 0 ? 6 : new Date().getDay() - 1);
+                                        const isToday = i === todayIndex;
                                         return (
                                             <div key={day} className="flex flex-col items-center gap-1.5 flex-1">
                                                 <span className={`text-[10px] font-semibold ${isToday ? "text-gray-12" : "text-gray-8"}`}>
