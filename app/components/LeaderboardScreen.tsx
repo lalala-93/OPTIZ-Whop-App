@@ -6,6 +6,7 @@ import { RankBadge } from "./RankBadge";
 import { useState, useEffect, useTransition } from "react";
 import { useI18n } from "./i18n";
 import { getLeaderboard } from "@/lib/actions";
+import { Crown, Trophy } from "lucide-react";
 
 interface LeaderboardEntry {
     whop_user_id: string;
@@ -153,7 +154,7 @@ export function LeaderboardScreen({ userId, userXp, userLevel, userName = "You",
                 </div>
             ) : entries.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 text-gray-7">
-                    <span className="text-3xl mb-3">🏆</span>
+                    <Trophy size={28} className="mb-3 text-gray-7" />
                     <p className="text-sm font-medium">No entries yet</p>
                     <p className="text-xs text-gray-6 mt-1">Complete tasks to appear here!</p>
                 </div>
@@ -187,12 +188,12 @@ export function LeaderboardScreen({ userId, userXp, userLevel, userName = "You",
                                     >
                                         {rank === 1 && (
                                             <motion.span
-                                                className="text-xl mb-1"
+                                                className="mb-1"
                                                 initial={{ opacity: 0, y: -10, scale: 0.5 }}
                                                 animate={{ opacity: 1, y: 0, scale: 1 }}
                                                 transition={{ delay: 0.5, type: "spring", stiffness: 300 }}
                                             >
-                                                👑
+                                                <Crown size={19} className="text-[#FF5555]" />
                                             </motion.span>
                                         )}
 

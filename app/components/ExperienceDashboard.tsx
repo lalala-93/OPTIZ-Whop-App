@@ -72,6 +72,7 @@ export interface InitialData {
       emoji: string;
       xpReward: number;
       completed: boolean;
+      rounds?: number;
       color?: string;
       exercises?: { name: string; sets: string; muscles: string; youtubeUrl: string }[];
     }[];
@@ -338,7 +339,8 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
         const title = defaultTitleByVariant[variant];
         const focus = defaultFocusByVariant[variant];
         const exerciseCount = task.exercises?.length ?? 5;
-        const estimatedMinutes = Math.max(20, exerciseCount * 4);
+        const rounds = task.rounds ?? 4;
+        const estimatedMinutes = Math.max(10, exerciseCount * rounds);
 
         return {
           id: task.id,
@@ -347,6 +349,7 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
           focus,
           xpReward: task.xpReward,
           exerciseCount,
+          roundCount: rounds,
           estimatedMinutes,
           completed: task.completed,
           variant,

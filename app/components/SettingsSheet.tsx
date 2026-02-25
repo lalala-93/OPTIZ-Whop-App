@@ -23,9 +23,9 @@ interface SettingsSheetProps {
     deletingData: boolean;
 }
 
-const LANGUAGE_OPTIONS: { code: Locale; label: string; flag: string }[] = [
-    { code: "en", label: "English", flag: "🇬🇧" },
-    { code: "fr", label: "Français", flag: "🇫🇷" },
+const LANGUAGE_OPTIONS: { code: Locale; label: string; shortLabel: string }[] = [
+    { code: "en", label: "English", shortLabel: "EN" },
+    { code: "fr", label: "Français", shortLabel: "FR" },
 ];
 
 export function SettingsSheet({
@@ -195,7 +195,9 @@ export function SettingsSheet({
                                             <span className="text-sm text-gray-12 font-medium">{t("language")}</span>
                                         </div>
                                         <div className="flex items-center gap-1.5">
-                                            <span className="text-xs">{currentLang.flag}</span>
+                                            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md border border-gray-5/45 bg-gray-4/40 text-gray-8">
+                                                {currentLang.shortLabel}
+                                            </span>
                                             <span className="text-xs text-gray-8 font-medium">{currentLang.label}</span>
                                             <svg
                                                 width="10" height="10" viewBox="0 0 24 24" fill="none"
@@ -227,7 +229,9 @@ export function SettingsSheet({
                                                         whileTap={{ scale: 0.98 }}
                                                     >
                                                         <div className="flex items-center gap-2.5">
-                                                            <span className="text-base">{lang.flag}</span>
+                                                            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md border border-gray-5/45 bg-gray-4/40 text-gray-8">
+                                                                {lang.shortLabel}
+                                                            </span>
                                                             <span className="text-sm font-medium">{lang.label}</span>
                                                         </div>
                                                         {locale === lang.code && (

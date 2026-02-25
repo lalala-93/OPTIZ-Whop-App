@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { ArrowRight, Bike, CircleCheckBig, Dumbbell, Grip, ShieldAlert } from "lucide-react";
 import { useI18n } from "./i18n";
 
 export type WorkoutVariant = "push" | "pull" | "legs" | "upper";
@@ -12,6 +13,7 @@ export interface WorkoutCardItem {
   focus: string;
   xpReward: number;
   exerciseCount: number;
+  roundCount: number;
   estimatedMinutes: number;
   completed: boolean;
   variant: WorkoutVariant;
@@ -23,44 +25,19 @@ interface ChallengesScreenProps {
 }
 
 function WorkoutGlyph({ variant, completed }: { variant: WorkoutVariant; completed: boolean }) {
-  const stroke = completed ? "#6B7280" : "#E80000";
-
   if (variant === "push") {
-    return (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden>
-        <path d="M4 14h16" stroke={stroke} strokeWidth="1.8" strokeLinecap="round" />
-        <path d="M7 18v-4m10 4v-4" stroke={stroke} strokeWidth="1.8" strokeLinecap="round" />
-        <path d="M9 10l3-4 3 4" stroke={stroke} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    );
+    return <Dumbbell size={20} strokeWidth={2.1} className={completed ? "text-gray-7" : "text-[#FF5353]"} />;
   }
 
   if (variant === "pull") {
-    return (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden>
-        <path d="M4 6h16" stroke={stroke} strokeWidth="1.8" strokeLinecap="round" />
-        <path d="M7 6v4a5 5 0 0 0 10 0V6" stroke={stroke} strokeWidth="1.8" strokeLinecap="round" />
-        <circle cx="12" cy="14" r="1.6" fill={stroke} />
-      </svg>
-    );
+    return <Grip size={20} strokeWidth={2.1} className={completed ? "text-gray-7" : "text-[#FF5353]"} />;
   }
 
   if (variant === "legs") {
-    return (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden>
-        <path d="M8 5v6l-2 7" stroke={stroke} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M16 5v6l2 7" stroke={stroke} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M8 11h8" stroke={stroke} strokeWidth="1.8" strokeLinecap="round" />
-      </svg>
-    );
+    return <Bike size={20} strokeWidth={2.1} className={completed ? "text-gray-7" : "text-[#FF5353]"} />;
   }
 
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path d="M6 8h12M7.5 12h9M9 16h6" stroke={stroke} strokeWidth="1.8" strokeLinecap="round" />
-      <rect x="4" y="5" width="16" height="14" rx="4" stroke={stroke} strokeWidth="1.4" />
-    </svg>
-  );
+  return <ShieldAlert size={20} strokeWidth={2.1} className={completed ? "text-gray-7" : "text-[#FF5353]"} />;
 }
 
 export function ChallengesScreen({ workouts, onOpenWorkout }: ChallengesScreenProps) {
@@ -97,21 +74,41 @@ export function ChallengesScreen({ workouts, onOpenWorkout }: ChallengesScreenPr
               type="button"
               disabled={isCompleted}
               onClick={isCompleted ? undefined : () => onOpenWorkout(workout.id)}
-              className={`w-full text-left rounded-3xl border p-4 transition-all ${
+              className={`group relative overflow-hidden w-full text-left rounded-3xl border p-4 transition-all ${
                 isCompleted
-                  ? "bg-gray-3/15 border-gray-5/20 opacity-70 cursor-not-allowed"
-                  : "bg-gray-2/70 border-gray-5/45 hover:border-[#E80000]/35 active:scale-[0.995]"
+                  ? "bg-gray-3/18 border-gray-5/24 opacity-80 cursor-not-allowed"
+                  : "bg-gray-2/82 border-gray-5/45 hover:border-[#E80000]/35 active:scale-[0.995]"
               }`}
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.32, delay: 0.12 + i * 0.05 }}
+              whileHover={isCompleted ? undefined : { y: -2 }}
             >
+              {!isCompleted ? (
+                <>
+                  <motion.div
+                    className="absolute -inset-12 opacity-40 pointer-events-none"
+                    style={{
+                      background:
+                        "radial-gradient(62% 50% at 72% 90%, rgba(232,0,0,0.16) 0%, rgba(232,0,0,0) 72%)",
+                    }}
+                    animate={{ opacity: [0.25, 0.45, 0.25] }}
+                    transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
+                  />
+                  <motion.div
+                    className="absolute -left-[35%] top-0 h-full w-1/3 bg-gradient-to-r from-transparent via-white/[0.07] to-transparent pointer-events-none"
+                    animate={{ x: ["0%", "320%"] }}
+                    transition={{ duration: 3.8, repeat: Infinity, repeatDelay: 2.2, ease: "easeInOut" }}
+                  />
+                </>
+              ) : null}
+
               <div className="flex items-start gap-3.5">
                 <div
                   className={`w-12 h-12 rounded-2xl shrink-0 flex items-center justify-center border ${
                     isCompleted
-                      ? "bg-gray-4/30 border-gray-5/35"
-                      : "bg-[#E80000]/8 border-[#E80000]/25"
+                      ? "bg-gray-4/25 border-gray-5/35"
+                      : "bg-[#E80000]/10 border-[#E80000]/30 group-hover:bg-[#E80000]/14"
                   }`}
                 >
                   <WorkoutGlyph variant={workout.variant} completed={isCompleted} />
@@ -129,7 +126,7 @@ export function ChallengesScreen({ workouts, onOpenWorkout }: ChallengesScreenPr
 
                     <div className="shrink-0 text-right">
                       <p className="text-[10px] uppercase tracking-wider text-gray-7 font-semibold mb-1">{t("reward")}</p>
-                      <p className={`text-[18px] font-semibold tabular-nums ${isCompleted ? "text-gray-8" : "text-[#FF4747]"}`}>
+                      <p className={`text-[19px] font-semibold tabular-nums ${isCompleted ? "text-gray-8" : "text-[#FF4747]"}`}>
                         +{workout.xpReward}
                       </p>
                     </div>
@@ -141,6 +138,9 @@ export function ChallengesScreen({ workouts, onOpenWorkout }: ChallengesScreenPr
                         {workout.exerciseCount} {t("exercises")}
                       </span>
                       <span className="rounded-full px-2.5 py-1 bg-gray-4/45 border border-gray-5/30 tabular-nums">
+                        {workout.roundCount} {t("series")}
+                      </span>
+                      <span className="rounded-full px-2.5 py-1 bg-gray-4/45 border border-gray-5/30 tabular-nums">
                         {workout.estimatedMinutes} {t("minutesShort")}
                       </span>
                     </div>
@@ -148,7 +148,7 @@ export function ChallengesScreen({ workouts, onOpenWorkout }: ChallengesScreenPr
                     <span
                       className={`rounded-full px-2.5 py-1 border text-[10px] font-semibold uppercase tracking-wider ${
                         isCompleted
-                          ? "bg-gray-4/35 text-gray-7 border-gray-5/35"
+                          ? "bg-gray-4/30 text-gray-7 border-gray-5/35"
                           : "bg-[#E80000]/12 text-[#FF5A5A] border-[#E80000]/30"
                       }`}
                     >
@@ -156,14 +156,20 @@ export function ChallengesScreen({ workouts, onOpenWorkout }: ChallengesScreenPr
                     </span>
                   </div>
 
-                  <div className="mt-3 flex items-center justify-between">
+                  <div className="mt-3 flex items-center justify-between gap-3">
                     <p className="text-[11px] text-gray-7">
                       {isCompleted ? t("workoutLockedUntilTomorrow") : t("openWorkoutHint")}
                     </p>
 
                     {!isCompleted ? (
-                      <span className="text-[13px] font-semibold text-gray-12">{t("startWorkout")} →</span>
-                    ) : null}
+                      <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-gray-12">
+                        {t("startWorkout")} <ArrowRight size={14} />
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-gray-7">
+                        <CircleCheckBig size={14} /> {t("doneToday")}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>

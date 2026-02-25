@@ -98,22 +98,22 @@ export async function loadUserData(userId: string) {
             const { data: seededChallenge, error: challengeErr } = await db.from("challenges").insert({
                 id: "optiz-max",
                 title: "OPTIZ Max",
-                description: "30-day elite fitness program — push your limits.",
-                long_desc: "The ultimate 30-day transformation challenge. Complete daily tasks across cardio, strength, flexibility, and nutrition to earn XP, level up your rank, and compete on the global leaderboard. Designed for those who refuse to settle.",
-                emoji: "🔥",
+                description: "4 fixed EMOM workouts for daily execution.",
+                long_desc: "Each workout follows strict EMOM logic: 1 minute = 1 exercise. One series is the full pack of exercises. Repeat the pack for the prescribed number of series, then validate and earn XP.",
+                emoji: "",
                 difficulty: "Hard",
                 duration_days: 30,
-                total_xp: 380,
+                total_xp: 400,
                 is_active: true
             }).select().single();
 
             if (!challengeErr && seededChallenge) {
                 fetchedChallenges = [seededChallenge];
                 const tasksToInsert = [
-                    { id: "a0000001-0000-0000-0000-000000000001", challenge_id: seededChallenge.id, name: "Push I — Chest / Shoulders / Triceps", emoji: null, xp_reward: 50, sort_order: 1 },
-                    { id: "a0000001-0000-0000-0000-000000000002", challenge_id: seededChallenge.id, name: "Pull I — Back / Biceps / Rear Delts", emoji: null, xp_reward: 50, sort_order: 2 },
-                    { id: "a0000001-0000-0000-0000-000000000003", challenge_id: seededChallenge.id, name: "Legs — Quads / Glutes / Core", emoji: null, xp_reward: 50, sort_order: 3 },
-                    { id: "a0000001-0000-0000-0000-000000000004", challenge_id: seededChallenge.id, name: "Upper — Full Upper Body", emoji: null, xp_reward: 50, sort_order: 4 },
+                    { id: "a0000001-0000-0000-0000-000000000001", challenge_id: seededChallenge.id, name: "Push Strength", emoji: null, xp_reward: 100, sort_order: 1 },
+                    { id: "a0000001-0000-0000-0000-000000000002", challenge_id: seededChallenge.id, name: "Pull Strength", emoji: null, xp_reward: 100, sort_order: 2 },
+                    { id: "a0000001-0000-0000-0000-000000000003", challenge_id: seededChallenge.id, name: "Legs & Core", emoji: null, xp_reward: 100, sort_order: 3 },
+                    { id: "a0000001-0000-0000-0000-000000000004", challenge_id: seededChallenge.id, name: "Upper Density", emoji: null, xp_reward: 100, sort_order: 4 },
                 ];
                 const { data: seededTasks } = await db.from("challenge_tasks").insert(tasksToInsert).select();
                 fetchedTasks = seededTasks || tasksToInsert;
@@ -125,7 +125,7 @@ export async function loadUserData(userId: string) {
 
     // Map exercise data from OPTIZ_MAX_CHALLENGE onto tasks from DB
     const exerciseMap = new Map(
-        OPTIZ_MAX_CHALLENGE.tasks.map(t => [normalizeTaskName(t.name), { exercises: t.exercises, color: t.color }])
+        OPTIZ_MAX_CHALLENGE.tasks.map(t => [normalizeTaskName(t.name), { exercises: t.exercises, color: t.color, xpReward: t.xpReward, rounds: t.rounds }])
     );
 
     // Assemble challenges with tasks
@@ -145,13 +145,23 @@ export async function loadUserData(userId: string) {
             tasks: tasks.map((t: Record<string, unknown>, taskIndex: number) => {
                 const name = t.name as string;
                 const fallback = OPTIZ_MAX_CHALLENGE.tasks[taskIndex];
-                const match = exerciseMap.get(normalizeTaskName(name)) || (fallback ? { exercises: fallback.exercises, color: fallback.color } : undefined);
+                const match =
+                    exerciseMap.get(normalizeTaskName(name)) ||
+                    (fallback
+                        ? {
+                            exercises: fallback.exercises,
+                            color: fallback.color,
+                            xpReward: fallback.xpReward,
+                            rounds: fallback.rounds,
+                        }
+                        : undefined);
                 return {
                     id: t.id as string,
                     name,
                     emoji: (t.emoji as string) || "",
-                    xpReward: (t.xp_reward as number) ?? 10,
+                    xpReward: match?.xpReward ?? (t.xp_reward as number) ?? 10,
                     completed: completedTaskIds.has(t.id as string),
+                    rounds: match?.rounds ?? 3,
                     exercises: match?.exercises,
                     color: match?.color,
                 };
