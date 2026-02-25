@@ -1,7 +1,6 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { RankBadge } from "./RankBadge";
 import { formatNumber, type RankTier } from "./rankSystem";
 import { useI18n, type Locale } from "./i18n";
 import Image from "next/image";
@@ -15,12 +14,13 @@ interface SettingsSheetProps {
     rankFullName: string;
     tier: RankTier;
     streakDays: number;
-    tasksCompleted: number;
     challengesJoined: number;
     userName: string;
     userPhoto: string | null;
     onUpdateName: (name: string) => void;
     onUpdatePhoto: (url: string | null) => void;
+    onDeleteData: () => Promise<void>;
+    deletingData: boolean;
 }
 
 const LANGUAGE_OPTIONS: { code: Locale; label: string; flag: string }[] = [
@@ -30,13 +30,14 @@ const LANGUAGE_OPTIONS: { code: Locale; label: string; flag: string }[] = [
 
 export function SettingsSheet({
     isOpen, onClose, level, totalXp, rankFullName, tier,
-    streakDays, tasksCompleted, challengesJoined, userName, userPhoto,
-    onUpdateName, onUpdatePhoto,
+    streakDays, challengesJoined, userName, userPhoto,
+    onUpdateName, onUpdatePhoto, onDeleteData, deletingData,
 }: SettingsSheetProps) {
     const { t, locale, setLocale } = useI18n();
     const [editingName, setEditingName] = useState(false);
     const [tempName, setTempName] = useState(userName);
     const [showLanguagePicker, setShowLanguagePicker] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleSaveName = () => {
@@ -138,7 +139,7 @@ export function SettingsSheet({
                                     { label: t("level"), value: String(level) },
                                     { label: t("totalXP"), value: formatNumber(totalXp) },
                                     { label: t("streak"), value: `${streakDays} ${streakDays === 1 ? t("day") : t("days")}` },
-                                    { label: t("tasksDone"), value: String(tasksCompleted) },
+                                    { label: t("workoutsDone"), value: String(challengesJoined) },
                                 ].map((s) => (
                                     <div key={s.label} className="bg-gray-3/60 rounded-xl p-3 text-center border border-gray-5/40">
                                         <p className="text-base font-bold text-gray-12">{s.value}</p>
@@ -154,7 +155,10 @@ export function SettingsSheet({
                                 {/* Notifications */}
                                 <div className="flex items-center justify-between p-3 rounded-xl bg-gray-3/40 border border-gray-5/30">
                                     <div className="flex items-center gap-2.5">
-                                        <span className="text-sm">🔔</span>
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-8">
+                                            <path d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2a2 2 0 0 1-.6 1.4L4 17h5" />
+                                            <path d="M9 17a3 3 0 0 0 6 0" />
+                                        </svg>
                                         <span className="text-sm text-gray-12 font-medium">{t("notifications")}</span>
                                     </div>
                                     <span className="text-xs text-gray-8">{t("on")}</span>
@@ -163,7 +167,13 @@ export function SettingsSheet({
                                 {/* Theme */}
                                 <div className="flex items-center justify-between p-3 rounded-xl bg-gray-3/40 border border-gray-5/30">
                                     <div className="flex items-center gap-2.5">
-                                        <span className="text-sm">🎨</span>
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-8">
+                                            <circle cx="13.5" cy="6.5" r="2.5" />
+                                            <circle cx="19" cy="11" r="2" />
+                                            <circle cx="16.5" cy="17.5" r="2.5" />
+                                            <circle cx="8" cy="18" r="2" />
+                                            <path d="M6 10.5a6.5 6.5 0 1 1 0 0Z" />
+                                        </svg>
                                         <span className="text-sm text-gray-12 font-medium">{t("theme")}</span>
                                     </div>
                                     <span className="text-xs text-gray-8">{t("dark")}</span>
@@ -177,7 +187,11 @@ export function SettingsSheet({
                                         whileTap={{ scale: 0.98 }}
                                     >
                                         <div className="flex items-center gap-2.5">
-                                            <span className="text-sm">🌍</span>
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-8">
+                                                <circle cx="12" cy="12" r="10" />
+                                                <path d="M2 12h20" />
+                                                <path d="M12 2a15 15 0 0 1 4 10 15 15 0 0 1-4 10 15 15 0 0 1-4-10 15 15 0 0 1 4-10Z" />
+                                            </svg>
                                             <span className="text-sm text-gray-12 font-medium">{t("language")}</span>
                                         </div>
                                         <div className="flex items-center gap-1.5">
@@ -234,12 +248,67 @@ export function SettingsSheet({
                                 </div>
                             </div>
 
+                            <div className="mb-4">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowDeleteConfirm(true)}
+                                    className="w-full py-3 rounded-xl border border-[#E80000]/35 bg-[#E80000]/10 text-[#FF6666] text-sm font-semibold hover:bg-[#E80000]/14 transition-colors"
+                                >
+                                    {t("deleteMyData")}
+                                </button>
+                            </div>
+
                             {/* Footer */}
                             <div className="text-center pt-3 border-t border-gray-5/30">
                                 <Image src="/Logo-optiz.png" alt="OPTIZ" width={22} height={22} className="mx-auto object-contain" style={{ borderRadius: 0 }} />
                                 <p className="text-[9px] text-gray-7 mt-1">v1.0.0</p>
                             </div>
                         </div>
+
+                        <AnimatePresence>
+                            {showDeleteConfirm && (
+                                <div className="absolute inset-0 z-20 flex items-center justify-center p-4">
+                                    <motion.div
+                                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                                        className="absolute inset-0 bg-black/65 backdrop-blur-sm"
+                                        onClick={() => setShowDeleteConfirm(false)}
+                                    />
+                                    <motion.div
+                                        initial={{ opacity: 0, scale: 0.96, y: 8 }}
+                                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                                        exit={{ opacity: 0, scale: 0.96, y: 8 }}
+                                        className="relative w-full max-w-xs rounded-2xl border border-gray-5/40 bg-gray-2 p-4"
+                                    >
+                                        <h4 className="text-sm font-semibold text-gray-12 mb-1">{t("deleteDataTitle")}</h4>
+                                        <p className="text-xs text-gray-8 leading-relaxed mb-4">{t("deleteDataBody")}</p>
+                                        <div className="flex gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowDeleteConfirm(false)}
+                                                className="flex-1 py-2 rounded-lg border border-gray-5/35 bg-gray-3/35 text-xs font-semibold text-gray-10"
+                                            >
+                                                {t("cancel")}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                disabled={deletingData}
+                                                onClick={async () => {
+                                                    await onDeleteData();
+                                                    setShowDeleteConfirm(false);
+                                                }}
+                                                className={`flex-1 py-2 rounded-lg text-xs font-semibold ${
+                                                    deletingData
+                                                        ? "bg-[#E80000]/45 text-white/70 cursor-not-allowed"
+                                                        : "bg-[#E80000] text-white"
+                                                }`}
+                                            >
+                                                {deletingData ? t("deleting") : t("deleteConfirm")}
+                                            </button>
+                                        </div>
+                                    </motion.div>
+                                </div>
+                            )}
+                        </AnimatePresence>
                     </motion.div>
                 </div>
             )}

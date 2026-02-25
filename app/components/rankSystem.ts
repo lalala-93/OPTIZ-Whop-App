@@ -133,7 +133,7 @@ export const OPTIZ_MAX_CHALLENGE: Challenge = {
     title: "OPTIZ Max",
     description: "4 structured workouts focused on strength, control, and progression.",
     longDescription: "Train with a 4-session split: Push, Pull, Legs, Upper. Each workout is designed for daily repeatability with clear set and rep targets. Complete one workout per day, stack XP, and return tomorrow for a fresh reset.",
-    emoji: "🏋️",
+    emoji: "",
     difficulty: "Hard",
     durationDays: 30,
     participantCount: 847,
@@ -143,8 +143,8 @@ export const OPTIZ_MAX_CHALLENGE: Challenge = {
     tasks: [
         {
             id: "push1",
-            name: "🟥 Push I — Chest / Shoulders / Triceps",
-            emoji: "🟥",
+            name: "Push I — Chest / Shoulders / Triceps",
+            emoji: "",
             xpReward: 50,
             completed: false,
             color: "#E80000",
@@ -158,11 +158,11 @@ export const OPTIZ_MAX_CHALLENGE: Challenge = {
         },
         {
             id: "pull1",
-            name: "🟦 Pull I — Back / Biceps / Rear Delts",
-            emoji: "🟦",
+            name: "Pull I — Back / Biceps / Rear Delts",
+            emoji: "",
             xpReward: 50,
             completed: false,
-            color: "#3B82F6",
+            color: "#C62828",
             exercises: [
                 { name: "Pull-Ups (Pronated)", sets: "4 × 5-8", muscles: "Lats, upper back, biceps", youtubeUrl: "https://youtube.com/shorts/6zISFVRhN2c?si=b3_HydHFYq-OmEcJ" },
                 { name: "One-Arm Dumbbell Row", sets: "4 × 8-10 / side", muscles: "Lats, rhomboids, biceps", youtubeUrl: "https://www.youtube.com/watch?v=67aqcWUYw2I" },
@@ -173,11 +173,11 @@ export const OPTIZ_MAX_CHALLENGE: Challenge = {
         },
         {
             id: "legs1",
-            name: "🟩 Legs — Quads / Glutes / Core",
-            emoji: "🟩",
+            name: "Legs — Quads / Glutes / Core",
+            emoji: "",
             xpReward: 50,
             completed: false,
-            color: "#10B981",
+            color: "#A61B1B",
             exercises: [
                 { name: "Goblet Squat", sets: "4 × 8-12", muscles: "Quads, glutes, core", youtubeUrl: "https://youtube.com/shorts/XtruE8T-19Q?si=TkIpqFpQW6HJQkH0" },
                 { name: "Bulgarian Split Squat", sets: "3 × 8-10 / side", muscles: "Quads, glutes", youtubeUrl: "https://youtube.com/shorts/XtruE8T-19Q?si=TkIpqFpQW6HJQkH0" },
@@ -188,11 +188,11 @@ export const OPTIZ_MAX_CHALLENGE: Challenge = {
         },
         {
             id: "upper1",
-            name: "🟪 Upper — Full Upper Body",
-            emoji: "🟪",
+            name: "Upper — Full Upper Body",
+            emoji: "",
             xpReward: 50,
             completed: false,
-            color: "#8B5CF6",
+            color: "#7F1D1D",
             exercises: [
                 { name: "Floor Dumbbell Press", sets: "4 × 8-10", muscles: "Chest, triceps, shoulders", youtubeUrl: "https://youtube.com/shorts/EE-A7qkMOek?si=STp3jXoDD19p2xvx" },
                 { name: "Pull-Ups Volume", sets: "4 × 8-12", muscles: "Lats, upper back, biceps", youtubeUrl: "https://youtube.com/shorts/6zISFVRhN2c?si=b3_HydHFYq-OmEcJ" },

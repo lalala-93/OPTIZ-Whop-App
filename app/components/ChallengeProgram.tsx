@@ -31,6 +31,8 @@ import {
 interface ChallengeProgramProps {
   challengeTitle: string;
   workoutTask: ChallengeTask;
+  workoutDisplayName?: string;
+  workoutFocus?: string;
   onCompleteTask: (taskId: string) => void;
   onBack: () => void;
   completingTaskId: string | null;
@@ -176,6 +178,8 @@ function ExerciseInfoSheet({ exercise, isOpen, onClose }: ExerciseInfoSheetProps
 export function ChallengeProgram({
   challengeTitle,
   workoutTask,
+  workoutDisplayName,
+  workoutFocus,
   onCompleteTask,
   onBack,
   completingTaskId,
@@ -325,9 +329,9 @@ export function ChallengeProgram({
           {t("back")}
         </motion.button>
 
-        <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/5 p-5 text-center">
+        <div className="rounded-2xl border border-gray-5/35 bg-gray-3/20 p-5 text-center">
           <h2 className="text-lg font-bold text-gray-12 mb-1">{t("doneToday")}</h2>
-          <p className="text-sm text-gray-8 mb-2">{workoutTask.name}</p>
+          <p className="text-sm text-gray-8 mb-2">{workoutDisplayName || workoutTask.name}</p>
           <p className="text-xs text-gray-7">{t("dailyResetHint")}</p>
         </div>
       </div>
@@ -348,14 +352,15 @@ export function ChallengeProgram({
       </motion.button>
 
       <motion.div
-        className="rounded-2xl border border-gray-5/40 bg-gradient-to-br from-gray-2 via-gray-2 to-[#170909] p-5 mb-5"
+        className="rounded-3xl border border-gray-5/40 bg-gradient-to-br from-gray-2 via-gray-2 to-[#140808] p-5 mb-5"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
       >
         <p className="text-[10px] uppercase tracking-[0.2em] text-gray-7 font-semibold mb-1">{challengeTitle}</p>
-        <h2 className="text-xl font-black text-gray-12 tracking-tight leading-tight mb-2">{workoutTask.name.replace(/^[🟥🟦🟩🟪]\s*/, "")}</h2>
-        <p className="text-xs text-gray-8 mb-3">{t("dailyResetHint")}</p>
-        <div className="flex items-center gap-2 text-[10px] text-gray-8 font-medium">
+        <h2 className="text-[26px] leading-tight font-semibold text-gray-12 tracking-tight mb-1.5">{workoutDisplayName || workoutTask.name}</h2>
+        {workoutFocus ? <p className="text-sm text-gray-8 mb-2">{workoutFocus}</p> : null}
+        <p className="text-xs text-gray-8 mb-3 leading-relaxed">{t("dailyResetHint")}</p>
+        <div className="flex flex-wrap items-center gap-2 text-[11px] text-gray-8 font-medium">
           <span className="rounded-full px-2.5 py-1 bg-gray-4/45 border border-gray-5/30">+{workoutTask.xpReward} XP</span>
           <span className="rounded-full px-2.5 py-1 bg-gray-4/45 border border-gray-5/30">{blocks.length} {t("totalSets")}</span>
           <span className="rounded-full px-2.5 py-1 bg-gray-4/45 border border-gray-5/30">~{estimatedMinutes} {t("minutesShort")}</span>
@@ -478,9 +483,22 @@ export function ChallengeProgram({
                 <span className="text-[11px] text-gray-8 tabular-nums">{currentBlockIndex + 1}/{Math.max(1, blocks.length)}</span>
                 <button
                   onClick={handleToggleSound}
-                  className="w-8 h-8 rounded-full bg-gray-3/70 border border-gray-5/35 text-gray-9"
+                  className="w-9 h-9 rounded-full bg-gray-3/70 border border-gray-5/35 text-gray-9 flex items-center justify-center"
+                  aria-label={t("sound")}
                 >
-                  {soundOn ? "🔊" : "🔇"}
+                  {soundOn ? (
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19" />
+                      <path d="M19 9a4 4 0 0 1 0 6" />
+                      <path d="M22 7a7 7 0 0 1 0 10" />
+                    </svg>
+                  ) : (
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19" />
+                      <line x1="23" y1="9" x2="17" y2="15" />
+                      <line x1="17" y1="9" x2="23" y2="15" />
+                    </svg>
+                  )}
                 </button>
               </div>
             </div>
@@ -510,7 +528,7 @@ export function ChallengeProgram({
               <div className="flex items-center justify-center gap-3 mt-4">
                 <motion.button
                   onClick={handleResetWorkout}
-                  className="w-11 h-11 rounded-full bg-gray-3/70 border border-gray-5/35 text-gray-10 flex items-center justify-center"
+                  className="w-12 h-12 rounded-full bg-gray-3/70 border border-gray-5/35 text-gray-10 flex items-center justify-center"
                   whileTap={{ scale: 0.88 }}
                 >
                   <ResetIcon size={16} />
@@ -518,7 +536,7 @@ export function ChallengeProgram({
 
                 <motion.button
                   onClick={isRunning ? handlePause : handleResume}
-                  className="w-14 h-14 rounded-full optiz-gradient-bg text-white flex items-center justify-center"
+                  className="w-16 h-16 rounded-full optiz-gradient-bg text-white flex items-center justify-center shadow-[0_10px_30px_rgba(232,0,0,0.24)]"
                   whileTap={{ scale: 0.9 }}
                 >
                   {isRunning ? <PauseIcon size={22} /> : <PlayIcon size={22} />}
@@ -526,7 +544,7 @@ export function ChallengeProgram({
 
                 <motion.button
                   onClick={handleSkipBlock}
-                  className="w-11 h-11 rounded-full bg-gray-3/70 border border-gray-5/35 text-gray-10 flex items-center justify-center"
+                  className="w-12 h-12 rounded-full bg-gray-3/70 border border-gray-5/35 text-gray-10 flex items-center justify-center"
                   whileTap={{ scale: 0.88 }}
                 >
                   <SkipIcon size={16} />
@@ -543,9 +561,9 @@ export function ChallengeProgram({
                   <motion.button
                     key={`${block.exercise.id}-${blockIndex}`}
                     onClick={() => handleToggleBlock(blockIndex)}
-                    className={`w-full rounded-xl border px-3 py-2.5 flex items-center gap-2.5 text-left transition-all ${
+                    className={`w-full rounded-2xl border px-3.5 py-3 flex items-center gap-2.5 text-left transition-all ${
                       isChecked
-                        ? "bg-emerald-500/8 border-emerald-500/20"
+                        ? "bg-[#E80000]/10 border-[#E80000]/28"
                         : isCurrent
                         ? "bg-gray-3/55 border-gray-5/45"
                         : "bg-gray-3/20 border-gray-5/25"
@@ -554,13 +572,13 @@ export function ChallengeProgram({
                   >
                     <div
                       className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
-                        isChecked ? "bg-emerald-500" : "bg-gray-4/65"
+                        isChecked ? "bg-[#E80000]" : "bg-gray-4/65"
                       }`}
                     >
                       {isChecked ? "✓" : blockIndex + 1}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className={`text-sm font-semibold truncate ${isChecked ? "text-emerald-300" : "text-gray-12"}`}>
+                      <p className={`text-sm font-semibold truncate ${isChecked ? "text-[#FF6F6F]" : "text-gray-12"}`}>
                         {block.exercise.name}
                       </p>
                       <p className="text-[11px] text-gray-8">

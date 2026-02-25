@@ -4,7 +4,7 @@ import { useState, useCallback, useTransition, useRef, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Tabs } from "@whop/react/components";
 import { HomeScreen } from "./HomeScreen";
-import { ChallengesScreen, type WorkoutCardItem } from "./ChallengesScreen";
+import { ChallengesScreen, type WorkoutCardItem, type WorkoutVariant } from "./ChallengesScreen";
 import { ChallengeProgram } from "./ChallengeProgram";
 import { LeaderboardScreen } from "./LeaderboardScreen";
 import { SettingsSheet } from "./SettingsSheet";
@@ -30,9 +30,20 @@ import {
   deleteTodo as serverDeleteTodo,
   awardXp as serverAwardXp,
   updateProfile as serverUpdateProfile,
+  deleteUserData as serverDeleteUserData,
 } from "@/lib/actions";
 
 type TabType = "home" | "challenges" | "leaderboard";
+
+function classifyWorkoutVariant(taskId: string, taskName: string, index: number): WorkoutVariant {
+  const normalized = `${taskId} ${taskName}`.toLowerCase();
+  if (normalized.includes("push")) return "push";
+  if (normalized.includes("pull")) return "pull";
+  if (normalized.includes("leg")) return "legs";
+  if (normalized.includes("upper")) return "upper";
+  const fallback: WorkoutVariant[] = ["push", "pull", "legs", "upper"];
+  return fallback[index % fallback.length];
+}
 
 /** Shape of SSR-loaded initial data from lib/actions.ts loadUserData() */
 export interface InitialData {
@@ -82,8 +93,7 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
   // XP and streak — from SSR
   const [totalXp, setTotalXp] = useState(initialData.profile.totalXp);
   const [streakDays, setStreakDays] = useState(initialData.profile.streakDays);
-  const [weeklyProgress, setWeeklyProgress] = useState(initialData.weeklyProgress);
-  const [totalTasksCompleted, setTotalTasksCompleted] = useState(initialData.totalTasksCompleted);
+  const [weeklyProgress] = useState(initialData.weeklyProgress);
 
   // Todos — from SSR
   const [todos, setTodos] = useState<TodoItem[]>(initialData.todos);
@@ -110,6 +120,7 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
   const [taskCompleteAnim, setTaskCompleteAnim] = useState({ visible: false, xp: 0 });
   const [levelUpAnim, setLevelUpAnim] = useState({ visible: false, newLevel: 0 });
   const [completingTaskId, setCompletingTaskId] = useState<string | null>(null);
+  const [deletingData, setDeletingData] = useState(false);
   const [todoXpAnim, setTodoXpAnim] = useState<{ id: string; xp: number } | null>(null);
 
   const levelData = getLevelProgress(totalXp);
@@ -141,7 +152,6 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
 
     // Optimistic UI update
     setTodos(prev => prev.map(t => t.id === id ? { ...t, completed: true } : t));
-    setTotalTasksCompleted(tc => tc + 1);
     setTotalXp(newTotalXp);
     setTodoXpAnim({ id, xp: TODO_XP });
     setTimeout(() => setTodoXpAnim(null), 1200);
@@ -166,7 +176,6 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
         // Revert optimistic update on failure
         setTodos(prev => prev.map(t => t.id === id ? { ...t, completed: false } : t));
         setTotalXp((prev) => prev - TODO_XP);
-        setTotalTasksCompleted((prev) => prev - 1);
       } finally {
         pendingTodoIds.current.delete(id);
       }
@@ -174,17 +183,12 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
   }, [totalXp, userId, todos]);
 
   const handleAddTodo = useCallback((text: string) => {
-    const tempId = `temp-${Date.now()}`;
-    setTodos(prev => [{ id: tempId, text, completed: false }, ...prev]);
-
     startTransition(async () => {
       try {
         const newTodo = await serverAddTodo(userId, text);
-        setTodos(prev => prev.map(t => t.id === tempId ? { ...t, id: newTodo.id } : t));
+        setTodos(prev => [{ id: newTodo.id, text: newTodo.text, completed: newTodo.completed }, ...prev]);
       } catch (err) {
         console.error("Failed to add todo:", err);
-        // Remove optimistic todo on failure
-        setTodos(prev => prev.filter(t => t.id !== tempId));
       }
     });
   }, [userId]);
@@ -218,7 +222,6 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
       }));
       setChallenges(updatedChallenges);
       setTotalXp(newTotalXp);
-      setTotalTasksCompleted(prev => prev + 1);
       setCompletingTaskId(null);
 
       // Before showing task complete, dismiss others
@@ -288,17 +291,54 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
     }
   }, [userId]);
 
-  const workoutCards = useMemo<WorkoutCardItem[]>(() => {
-    const accents = ["#E80000", "#FF6A00", "#3B82F6", "#10B981", "#8B5CF6"];
+  const handleDeleteMyData = useCallback(async () => {
+    if (deletingData) return;
 
+    setDeletingData(true);
+    try {
+      await serverDeleteUserData(userId);
+      setTodos([]);
+      setChallenges((prev) =>
+        prev.map((challenge) => ({
+          ...challenge,
+          tasks: challenge.tasks.map((task) => ({ ...task, completed: false })),
+        }))
+      );
+      setTotalXp(0);
+      setStreakDays(0);
+      setActiveWorkout(null);
+      setIsSettingsOpen(false);
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("optiz-locale");
+      }
+    } catch (err) {
+      console.error("Failed to delete user data:", err);
+    } finally {
+      setDeletingData(false);
+    }
+  }, [deletingData, userId]);
+
+  const workoutCards = useMemo<WorkoutCardItem[]>(() => {
     return challenges.flatMap((challenge) =>
       challenge.tasks.map((task, index) => {
-        const cleanName = task.name.replace(/^[🟥🟦🟩🟪]\s*/, "");
-        const parts = cleanName.split("—").map((p) => p.trim());
-        const title = parts[0] || cleanName;
-        const focus = parts[1] || challenge.description || "";
+        const variant = classifyWorkoutVariant(task.id, task.name, index);
+        const defaultTitleByVariant: Record<WorkoutVariant, string> = {
+          push: t("workoutPushTitle"),
+          pull: t("workoutPullTitle"),
+          legs: t("workoutLegsTitle"),
+          upper: t("workoutUpperTitle"),
+        };
+        const defaultFocusByVariant: Record<WorkoutVariant, string> = {
+          push: t("workoutPushFocus"),
+          pull: t("workoutPullFocus"),
+          legs: t("workoutLegsFocus"),
+          upper: t("workoutUpperFocus"),
+        };
+
+        const title = defaultTitleByVariant[variant];
+        const focus = defaultFocusByVariant[variant];
         const exerciseCount = task.exercises?.length ?? 5;
-        const estimatedMinutes = Math.max(18, exerciseCount * 4);
+        const estimatedMinutes = Math.max(20, exerciseCount * 4);
 
         return {
           id: task.id,
@@ -309,7 +349,7 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
           exerciseCount,
           estimatedMinutes,
           completed: task.completed,
-          accent: task.color || accents[index % accents.length],
+          variant,
         };
       })
     );
@@ -320,8 +360,9 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
     const challenge = challenges.find((c) => c.id === activeWorkout.challengeId);
     const workoutTask = challenge?.tasks.find((task) => task.id === activeWorkout.taskId);
     if (!challenge || !workoutTask) return null;
-    return { challenge, workoutTask };
-  }, [activeWorkout, challenges]);
+    const card = workoutCards.find((w) => w.id === workoutTask.id);
+    return { challenge, workoutTask, displayName: card?.title ?? workoutTask.name, displayFocus: card?.focus ?? "" };
+  }, [activeWorkout, challenges, workoutCards]);
 
   const completedWorkouts = challenges.reduce((sum, challenge) => {
     return sum + challenge.tasks.filter((task) => task.completed).length;
@@ -413,6 +454,8 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
             key={selectedWorkout.workoutTask.id}
             challengeTitle={selectedWorkout.challenge.title}
             workoutTask={selectedWorkout.workoutTask}
+            workoutDisplayName={selectedWorkout.displayName}
+            workoutFocus={selectedWorkout.displayFocus}
             onCompleteTask={handleCompleteTask}
             onBack={() => setActiveWorkout(null)}
             completingTaskId={completingTaskId}
@@ -459,9 +502,11 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
       <SettingsSheet
         isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)}
         level={levelData.level} totalXp={totalXp} rankFullName={rankData.fullName}
-        tier={rankData.tier} streakDays={streakDays} tasksCompleted={totalTasksCompleted}
+        tier={rankData.tier} streakDays={streakDays}
         challengesJoined={completedWorkouts} userName={userName} userPhoto={userPhoto}
         onUpdateName={handleUpdateName} onUpdatePhoto={handleUpdatePhoto}
+        onDeleteData={handleDeleteMyData}
+        deletingData={deletingData}
       />
       <InfoModal isOpen={isInfoOpen} onClose={() => setIsInfoOpen(false)} />
       <StreakModal isOpen={isStreakModalOpen} onClose={() => setIsStreakModalOpen(false)} streakDays={streakDays} weeklyProgress={weeklyProgress} />
