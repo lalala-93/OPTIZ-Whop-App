@@ -44,7 +44,7 @@ export function ChallengesScreen({
                                 }`}
                             initial={{ opacity: 0, y: 12 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.5, delay: 0.08 + i * 0.06, ease: [0.25, 0.1, 0.25, 1] }}
+                            transition={{ duration: 0.35, delay: 0.02 + i * 0.04, ease: [0.25, 0.1, 0.25, 1] }}
                             whileTap={{ scale: 0.985 }}
                         >
                             {/* Hero image with Illustration1 */}
@@ -63,7 +63,7 @@ export function ChallengesScreen({
                                     className="absolute bottom-3 left-3 flex items-center gap-1.5 bg-black/50 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10"
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
-                                    transition={{ delay: 0.3 + i * 0.06 }}
+                                    transition={{ delay: 0.15 + i * 0.04 }}
                                 >
                                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-10">
                                         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -136,7 +136,7 @@ export function ChallengesScreen({
                                                 className="h-full rounded-full optiz-gradient-bg"
                                                 initial={{ width: 0 }}
                                                 animate={{ width: `${(completedTasks / challenge.tasks.length) * 100}%` }}
-                                                transition={{ duration: 0.8, ease: "easeOut" }}
+                                                transition={{ duration: 0.4, ease: "easeOut", delay: 0.1 }}
                                             />
                                         </div>
                                         <p className="text-[9px] text-gray-6 mt-1 tabular-nums">

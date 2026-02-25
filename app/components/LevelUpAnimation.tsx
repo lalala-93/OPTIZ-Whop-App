@@ -30,7 +30,7 @@ export function LevelUpAnimation({
 
     useEffect(() => {
         if (isVisible) {
-            const timer = setTimeout(onComplete, 3500);
+            const timer = setTimeout(onComplete, 1800); // Faster auto-dismiss
             return () => clearTimeout(timer);
         }
     }, [isVisible, onComplete]);
@@ -42,8 +42,9 @@ export function LevelUpAnimation({
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="fixed inset-0 z-[110] flex items-center justify-center pointer-events-none"
+                    transition={{ duration: 0.2 }}
+                    className="fixed inset-0 z-[110] flex items-center justify-center cursor-pointer"
+                    onClick={onComplete}
                 >
                     {/* Backdrop */}
                     <motion.div
@@ -114,6 +115,7 @@ export function LevelUpAnimation({
                                 colors={rankData.tier.gradient}
                                 glowColor={rankData.tier.glowColor}
                                 size={100}
+                                tierName={rankData.tier.name}
                             />
                         </motion.div>
 
@@ -153,9 +155,8 @@ export function LevelUpAnimation({
                             </motion.p>
                         </motion.div>
                     </div>
-                </motion.div >
-            )
-            }
-        </AnimatePresence >
+                </motion.div>
+            )}
+        </AnimatePresence>
     );
 }

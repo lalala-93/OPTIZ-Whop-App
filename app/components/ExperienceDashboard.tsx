@@ -244,7 +244,7 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
       });
 
       if (newLevelData.level > prevLevel) {
-        setTimeout(() => setLevelUpAnim({ visible: true, newLevel: newLevelData.level }), 2400);
+        setTimeout(() => setLevelUpAnim({ visible: true, newLevel: newLevelData.level }), 1200);
       }
 
       const updatedChallenge = updatedChallenges.find(c => c.id === challenge.id);
@@ -257,10 +257,10 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
               visible: true, title: updatedChallenge.title, emoji: updatedChallenge.emoji,
               xp: totalChallengeXp, tasks: updatedChallenge.tasks.length,
             });
-          }, newLevelData.level > prevLevel ? 6000 : 2600);
+          }, newLevelData.level > prevLevel ? 3000 : 1200);
         }
       }
-    }, 600);
+    }, 400);
   }, [challenges, totalXp, userId]);
 
   const handleUpdateName = useCallback((name: string) => {

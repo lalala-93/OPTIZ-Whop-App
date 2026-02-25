@@ -13,10 +13,10 @@ interface StreakEarnedAnimationProps {
 export function StreakEarnedAnimation({ isVisible, onComplete }: StreakEarnedAnimationProps) {
     const { t } = useI18n();
 
-    // Reliable timer-based dismiss — not dependent on Framer Motion lifecycle
+    // Reliable timer-based dismiss
     useEffect(() => {
         if (!isVisible) return;
-        const timer = setTimeout(onComplete, 2800);
+        const timer = setTimeout(onComplete, 1500); // Faster auto-dismiss
         return () => clearTimeout(timer);
     }, [isVisible, onComplete]);
 
@@ -24,7 +24,8 @@ export function StreakEarnedAnimation({ isVisible, onComplete }: StreakEarnedAni
         <AnimatePresence>
             {isVisible && (
                 <motion.div
-                    className="fixed inset-0 z-[60] flex items-center justify-center pointer-events-none"
+                    className="fixed inset-0 z-[60] flex items-center justify-center cursor-pointer"
+                    onClick={onComplete}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}

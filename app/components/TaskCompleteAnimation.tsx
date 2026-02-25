@@ -24,7 +24,7 @@ export function TaskCompleteAnimation({
 }: TaskCompleteAnimationProps) {
     useEffect(() => {
         if (isVisible) {
-            const timer = setTimeout(onComplete, 2200);
+            const timer = setTimeout(onComplete, 1400); // Faster auto-dismiss
             return () => clearTimeout(timer);
         }
     }, [isVisible, onComplete]);
@@ -37,7 +37,8 @@ export function TaskCompleteAnimation({
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.2 }}
-                    className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none"
+                    className="fixed inset-0 z-[100] flex items-center justify-center cursor-pointer"
+                    onClick={onComplete}
                 >
                     {/* Backdrop */}
                     <motion.div

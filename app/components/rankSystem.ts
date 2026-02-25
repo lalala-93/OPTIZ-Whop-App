@@ -14,19 +14,11 @@ export interface RankTier {
 }
 
 export const RANK_TIERS: RankTier[] = [
-    { name: "Iron", minLevel: 1, maxLevel: 5, color: "#6B7280", colorLight: "#9CA3AF", gradient: ["#4B5563", "#9CA3AF"], glowColor: "rgba(107,114,128,0.3)", ringBg: "rgba(107,114,128,0.15)" },
-    { name: "Bronze", minLevel: 6, maxLevel: 10, color: "#CD7F32", colorLight: "#D4A056", gradient: ["#8B5E23", "#CD7F32"], glowColor: "rgba(205,127,50,0.3)", ringBg: "rgba(205,127,50,0.15)" },
-    { name: "Silver", minLevel: 11, maxLevel: 15, color: "#A8B4C0", colorLight: "#C8D4E0", gradient: ["#7A8A9A", "#C8D4E0"], glowColor: "rgba(168,180,192,0.3)", ringBg: "rgba(168,180,192,0.15)" },
-    { name: "Gold", minLevel: 16, maxLevel: 20, color: "#FFD700", colorLight: "#FFE44D", gradient: ["#C8A200", "#FFE44D"], glowColor: "rgba(255,215,0,0.35)", ringBg: "rgba(255,215,0,0.15)" },
-    { name: "Platinum", minLevel: 21, maxLevel: 25, color: "#00CED1", colorLight: "#5CF5F5", gradient: ["#008B8B", "#5CF5F5"], glowColor: "rgba(0,206,209,0.3)", ringBg: "rgba(0,206,209,0.15)" },
-    { name: "Diamond", minLevel: 26, maxLevel: 30, color: "#7EB8FF", colorLight: "#B9D9FF", gradient: ["#4A90D9", "#B9D9FF"], glowColor: "rgba(126,184,255,0.35)", ringBg: "rgba(126,184,255,0.15)" },
-    { name: "Master", minLevel: 31, maxLevel: 40, color: "#B46EFF", colorLight: "#D4A5FF", gradient: ["#8B3EC9", "#D4A5FF"], glowColor: "rgba(180,110,255,0.35)", ringBg: "rgba(180,110,255,0.15)" },
-    { name: "Grandmaster", minLevel: 41, maxLevel: 55, color: "#E80000", colorLight: "#FF5252", gradient: ["#B71C1C", "#FF5252"], glowColor: "rgba(232,0,0,0.35)", ringBg: "rgba(232,0,0,0.15)" },
-    { name: "Mythic", minLevel: 56, maxLevel: 75, color: "#FF6D00", colorLight: "#FFB74D", gradient: ["#E65100", "#FFD54F"], glowColor: "rgba(255,109,0,0.35)", ringBg: "rgba(255,109,0,0.15)" },
-    { name: "Legend", minLevel: 76, maxLevel: 999, color: "#FFD700", colorLight: "#FFFACD", gradient: ["#E80000", "#FFD700"], glowColor: "rgba(255,215,0,0.4)", ringBg: "rgba(255,215,0,0.2)" },
+    { name: "Initiate", minLevel: 1, maxLevel: 10, color: "#9CA3AF", colorLight: "#E5E7EB", gradient: ["#374151", "#9CA3AF"], glowColor: "rgba(156,163,175,0.3)", ringBg: "rgba(156,163,175,0.15)" },
+    { name: "Grinder", minLevel: 11, maxLevel: 20, color: "#D97706", colorLight: "#FBBF24", gradient: ["#92400E", "#FBBF24"], glowColor: "rgba(217,119,6,0.3)", ringBg: "rgba(217,119,6,0.15)" },
+    { name: "Elite", minLevel: 21, maxLevel: 30, color: "#E80000", colorLight: "#FF5252", gradient: ["#7F1D1D", "#FF5252"], glowColor: "rgba(232,0,0,0.4)", ringBg: "rgba(232,0,0,0.2)" },
+    { name: "Apex", minLevel: 31, maxLevel: 999, color: "#FFD700", colorLight: "#FEF08A", gradient: ["#B45309", "#FEF08A"], glowColor: "rgba(255,215,0,0.5)", ringBg: "rgba(255,215,0,0.25)" },
 ];
-
-const DIVISION_LABELS = ["I", "II", "III", "IV", "V"];
 
 // ── XP Calculation ──
 export function getXpForLevel(level: number): number {
@@ -57,11 +49,9 @@ export function getLevelProgress(totalXp: number) {
 export function getRankForLevel(level: number) {
     const tier = RANK_TIERS.find(t => level >= t.minLevel && level <= t.maxLevel)
         || RANK_TIERS[RANK_TIERS.length - 1];
-    const divIdx = Math.min(level - tier.minLevel, DIVISION_LABELS.length - 1);
     return {
         tier,
-        division: DIVISION_LABELS[divIdx],
-        fullName: `${tier.name} ${DIVISION_LABELS[divIdx]}`,
+        fullName: tier.name,
     };
 }
 

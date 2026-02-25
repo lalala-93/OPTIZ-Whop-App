@@ -11,299 +11,222 @@ interface RankBadgeProps {
     mousePosition?: { x: number; y: number };
 }
 
-// Tier-specific badge configuration — each tier is visually distinct and increasingly prestigious
-function getTierConfig(tierName?: string) {
-    switch (tierName?.toLowerCase()) {
-        case "iron":
-            return {
-                outerStroke: 1.5, gems: 0, hasWreaths: false, hasCrown: false, hasWings: false,
-                innerSymbol: "diamond", innerGlow: 0, orbits: 0,
-                accent: "#9CA3AF", shimmer: "rgba(156,163,175,0.15)",
-            };
-        case "bronze":
-            return {
-                outerStroke: 1.8, gems: 2, hasWreaths: false, hasCrown: false, hasWings: false,
-                innerSymbol: "star5", innerGlow: 0.15, orbits: 0,
-                accent: "#CD7F32", shimmer: "rgba(205,127,50,0.2)",
-            };
-        case "silver":
-            return {
-                outerStroke: 2, gems: 3, hasWreaths: true, hasCrown: false, hasWings: false,
-                innerSymbol: "star6", innerGlow: 0.2, orbits: 0,
-                accent: "#C0C0C0", shimmer: "rgba(192,192,192,0.25)",
-            };
-        case "gold":
-            return {
-                outerStroke: 2.2, gems: 4, hasWreaths: true, hasCrown: true, hasWings: false,
-                innerSymbol: "star6", innerGlow: 0.3, orbits: 0,
-                accent: "#FFD700", shimmer: "rgba(255,215,0,0.25)",
-            };
-        case "platinum":
-            return {
-                outerStroke: 2.5, gems: 4, hasWreaths: true, hasCrown: true, hasWings: true,
-                innerSymbol: "starburst", innerGlow: 0.35, orbits: 1,
-                accent: "#40E0D0", shimmer: "rgba(64,224,208,0.3)",
-            };
-        case "diamond":
-            return {
-                outerStroke: 2.8, gems: 6, hasWreaths: true, hasCrown: true, hasWings: true,
-                innerSymbol: "crystal", innerGlow: 0.4, orbits: 2,
-                accent: "#4FC3F7", shimmer: "rgba(79,195,247,0.35)",
-            };
-        case "master":
-            return {
-                outerStroke: 3, gems: 6, hasWreaths: true, hasCrown: true, hasWings: true,
-                innerSymbol: "radiant", innerGlow: 0.45, orbits: 2,
-                accent: "#AB47BC", shimmer: "rgba(171,71,188,0.35)",
-            };
-        case "grandmaster":
-            return {
-                outerStroke: 3.2, gems: 8, hasWreaths: true, hasCrown: true, hasWings: true,
-                innerSymbol: "radiant", innerGlow: 0.5, orbits: 3,
-                accent: "#FF5252", shimmer: "rgba(255,82,82,0.35)",
-            };
-        case "mythic":
-            return {
-                outerStroke: 3.5, gems: 8, hasWreaths: true, hasCrown: true, hasWings: true,
-                innerSymbol: "phoenix", innerGlow: 0.6, orbits: 3,
-                accent: "#FF6D00", shimmer: "rgba(255,109,0,0.4)",
-            };
-        case "legend":
-            return {
-                outerStroke: 4, gems: 10, hasWreaths: true, hasCrown: true, hasWings: true,
-                innerSymbol: "phoenix", innerGlow: 0.7, orbits: 4,
-                accent: "#FFD700", shimmer: "rgba(255,215,0,0.5)",
-            };
-        default:
-            return {
-                outerStroke: 1.5, gems: 0, hasWreaths: false, hasCrown: false, hasWings: false,
-                innerSymbol: "diamond", innerGlow: 0, orbits: 0,
-                accent: "#9CA3AF", shimmer: "rgba(156,163,175,0.15)",
-            };
-    }
-}
-
-function getInnerSymbolPath(symbol: string): string {
-    switch (symbol) {
-        case "diamond":
-            return "M50 38 L56 50 L50 62 L44 50 Z";
-        case "star5":
-            return "M50 36 L53 46 L63 46 L55 52 L58 62 L50 56 L42 62 L45 52 L37 46 L47 46 Z";
-        case "star6":
-            return "M50 34 L54 44 L64 44 L57 51 L60 62 L50 55 L40 62 L43 51 L36 44 L46 44 Z";
-        case "starburst":
-            return "M50 32 L53 44 L64 38 L57 49 L68 50 L57 53 L64 63 L53 57 L50 68 L47 57 L36 63 L43 53 L32 50 L43 49 L36 38 L47 44 Z";
-        case "crystal":
-            return "M50 30 L60 44 L60 58 L50 70 L40 58 L40 44 Z";
-        case "radiant":
-            return "M50 28 L55 42 L68 38 L59 50 L68 62 L55 58 L50 72 L45 58 L32 62 L41 50 L32 38 L45 42 Z";
-        case "phoenix":
-            return "M50 26 L56 40 L70 34 L60 48 L72 52 L60 56 L70 68 L56 60 L50 74 L44 60 L30 68 L40 56 L28 52 L40 48 L30 34 L44 40 Z";
-        default:
-            return "M50 38 L56 50 L50 62 L44 50 Z";
-    }
-}
-
 export function RankBadge({ colors, glowColor, tierName, size = 80, className = "", mousePosition }: RankBadgeProps) {
     const id = `rb-${(tierName || "def").slice(0, 4)}-${size}`;
-    const cfg = getTierConfig(tierName);
+    const t = (tierName || "Initiate").toLowerCase();
+
+    // Global breathing animation to make badges feel alive
+    const breathing = {
+        scale: [1, 1.02, 1],
+        transition: { duration: 4, repeat: Infinity, ease: "easeInOut" as const }
+    };
 
     return (
         <motion.div
-            className={`relative ${className}`}
+            className={`relative flex items-center justify-center pointer-events-none ${className}`}
             style={{ width: size, height: size }}
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ type: "spring", stiffness: 250, damping: 20 }}
+            whileHover={{ scale: 1.05 }}
         >
-            {/* Animated glow backdrop for higher tiers */}
-            {cfg.innerGlow > 0.2 && (
+            {/* Ambient Background Glow for higher tiers */}
+            {(t === "elite" || t === "apex") && (
                 <motion.div
-                    className="absolute inset-0 rounded-full pointer-events-none"
+                    className="absolute inset-0 rounded-full"
                     style={{
-                        background: `radial-gradient(circle, ${glowColor}${Math.round(cfg.innerGlow * 80).toString(16).padStart(2, "0")} 0%, transparent 60%)`,
-                        filter: `blur(${Math.max(4, cfg.innerGlow * 12)}px)`,
+                        background: `radial-gradient(circle, ${glowColor} 0%, transparent 65%)`,
+                        filter: `blur(${size * 0.15}px)`,
+                        opacity: t === "apex" ? 0.8 : 0.5
                     }}
-                    animate={{ opacity: [0.5, 0.8, 0.5], scale: [0.95, 1.05, 0.95] }}
+                    animate={{ opacity: t === "apex" ? [0.6, 1, 0.6] : [0.3, 0.6, 0.3], scale: [0.95, 1.05, 0.95] }}
                     transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
                 />
             )}
 
-            {/* Cursor-following reflection */}
+            {/* Reflection Overlay (Cursor follow) */}
             {mousePosition && (
                 <div
-                    className="absolute inset-0 pointer-events-none z-10 overflow-hidden"
-                    style={{ clipPath: "polygon(50% 2%, 93% 18%, 88% 78%, 50% 98%, 12% 78%, 7% 18%)" }}
+                    className="absolute inset-0 z-10 overflow-hidden rounded-full mix-blend-overlay"
                 >
                     <motion.div
                         className="w-full h-full"
                         style={{
-                            background: `radial-gradient(circle at ${mousePosition.x * 100}% ${mousePosition.y * 100}%, rgba(255,255,255,0.2) 0%, transparent 35%)`,
+                            background: `radial-gradient(circle at ${mousePosition.x * 100}% ${mousePosition.y * 100}%, rgba(255,255,255,0.4) 0%, transparent 40%)`,
                         }}
                         animate={{ opacity: mousePosition.x === 0.5 && mousePosition.y === 0.5 ? 0 : 1 }}
-                        transition={{ duration: 0.4 }}
+                        transition={{ duration: 0.2 }}
                     />
                 </div>
             )}
 
-            <svg viewBox="0 0 100 100" className="w-full h-full">
+            <motion.svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-2xl relative z-0" animate={breathing}>
                 <defs>
-                    <linearGradient id={`${id}-g`} x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0%" stopColor={colors[0]} />
-                        <stop offset="100%" stopColor={colors[1]} />
+                    <linearGradient id={`${id}-metal`} x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stopColor="#6B7280" />
+                        <stop offset="50%" stopColor="#374151" />
+                        <stop offset="100%" stopColor="#111827" />
                     </linearGradient>
-                    <linearGradient id={`${id}-sh`} x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="rgba(255,255,255,0.4)" />
-                        <stop offset="35%" stopColor="rgba(255,255,255,0)" />
-                        <stop offset="100%" stopColor="rgba(255,255,255,0.1)" />
+                    <linearGradient id={`${id}-bronze`} x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stopColor="#F5A623" />
+                        <stop offset="50%" stopColor="#92400E" />
+                        <stop offset="100%" stopColor="#451A03" />
                     </linearGradient>
-                    <radialGradient id={`${id}-glow`} cx="50%" cy="40%" r="45%">
-                        <stop offset="0%" stopColor={cfg.shimmer} />
-                        <stop offset="100%" stopColor="transparent" />
-                    </radialGradient>
-                    <filter id={`${id}-blur`}>
-                        <feGaussianBlur stdDeviation="1.5" />
+                    <linearGradient id={`${id}-crimson`} x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stopColor="#FF5252" />
+                        <stop offset="40%" stopColor="#DC2626" />
+                        <stop offset="100%" stopColor="#450A0A" />
+                    </linearGradient>
+                    <linearGradient id={`${id}-gold`} x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stopColor="#FFF7B0" />
+                        <stop offset="30%" stopColor="#F5A623" />
+                        <stop offset="70%" stopColor="#B45309" />
+                        <stop offset="100%" stopColor="#78350F" />
+                    </linearGradient>
+                    <filter id={`${id}-drop`}>
+                        <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="#000" floodOpacity="0.5" />
+                    </filter>
+                    <filter id={`${id}-glow-red`}>
+                        <feGaussianBlur stdDeviation="3" result="coloredBlur" />
+                        <feMerge>
+                            <feMergeNode in="coloredBlur" />
+                            <feMergeNode in="SourceGraphic" />
+                        </feMerge>
+                    </filter>
+                    <filter id={`${id}-glow-gold`}>
+                        <feGaussianBlur stdDeviation="4" result="coloredBlur" />
+                        <feMerge>
+                            <feMergeNode in="coloredBlur" />
+                            <feMergeNode in="SourceGraphic" />
+                        </feMerge>
                     </filter>
                 </defs>
 
-                {/* Wings for Platinum+ */}
-                {cfg.hasWings && (
-                    <g opacity="0.35">
-                        <motion.path
-                            d="M14 50 Q6 35 18 22 Q24 32 20 45 Z"
-                            fill={cfg.accent}
-                            initial={{ d: "M14 50 Q6 35 18 22 Q24 32 20 45 Z" }}
-                            animate={{
-                                d: [
-                                    "M14 50 Q6 35 18 22 Q24 32 20 45 Z",
-                                    "M12 50 Q4 33 16 20 Q22 30 18 44 Z",
-                                    "M14 50 Q6 35 18 22 Q24 32 20 45 Z",
-                                ]
-                            }}
-                            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                        />
-                        <motion.path
-                            d="M86 50 Q94 35 82 22 Q76 32 80 45 Z"
-                            fill={cfg.accent}
-                            initial={{ d: "M86 50 Q94 35 82 22 Q76 32 80 45 Z" }}
-                            animate={{
-                                d: [
-                                    "M86 50 Q94 35 82 22 Q76 32 80 45 Z",
-                                    "M88 50 Q96 33 84 20 Q78 30 82 44 Z",
-                                    "M86 50 Q94 35 82 22 Q76 32 80 45 Z",
-                                ]
-                            }}
-                            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                        />
-                    </g>
-                )}
-
-                {/* Outer shield */}
-                <path
-                    d="M50 4 L91 20 L86 78 L50 97 L14 78 L9 20 Z"
-                    fill={`url(#${id}-g)`}
-                    stroke="rgba(255,255,255,0.12)"
-                    strokeWidth={cfg.outerStroke}
-                />
-
-                {/* Inner border with inset */}
-                <path
-                    d="M50 10 L85 24 L81 74 L50 91 L19 74 L15 24 Z"
-                    fill="none"
-                    stroke="rgba(255,255,255,0.08)"
-                    strokeWidth="0.8"
-                />
-
-                {/* Shine overlay */}
-                <path
-                    d="M50 4 L91 20 L86 78 L50 97 L14 78 L9 20 Z"
-                    fill={`url(#${id}-sh)`}
-                    opacity="0.7"
-                />
-
-                {/* Inner glow */}
-                <circle cx="50" cy="48" r="22" fill={`url(#${id}-glow)`} opacity={cfg.innerGlow * 2} />
-
-                {/* Dark center */}
-                <circle cx="50" cy="49" r="18" fill="rgba(0,0,0,0.4)" stroke="rgba(255,255,255,0.06)" strokeWidth="0.5" />
-
-                {/* Inner symbol — animated shimmer */}
-                <motion.path
-                    d={getInnerSymbolPath(cfg.innerSymbol)}
-                    fill="rgba(255,255,255,0.85)"
-                    animate={{ opacity: [0.75, 1, 0.75] }}
-                    transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-                />
-
-                {/* Gem accents */}
-                {cfg.gems >= 2 && (
-                    <>
-                        <circle cx="30" cy="38" r="2" fill={cfg.accent} opacity="0.7" />
-                        <circle cx="70" cy="38" r="2" fill={cfg.accent} opacity="0.7" />
-                    </>
-                )}
-                {cfg.gems >= 4 && (
-                    <>
-                        <circle cx="24" cy="55" r="1.5" fill={cfg.accent} opacity="0.5" />
-                        <circle cx="76" cy="55" r="1.5" fill={cfg.accent} opacity="0.5" />
-                    </>
-                )}
-                {cfg.gems >= 6 && (
-                    <>
-                        <circle cx="50" cy="86" r="2" fill={cfg.accent} opacity="0.6" />
-                        <circle cx="50" cy="12" r="1.5" fill={cfg.accent} opacity="0.5" />
-                    </>
-                )}
-
-                {/* Wreaths for Silver+ */}
-                {cfg.hasWreaths && (
-                    <g opacity="0.25">
-                        <path d="M18 30 Q10 45 18 65" fill="none" stroke={cfg.accent} strokeWidth="1.5" strokeLinecap="round" />
-                        <path d="M82 30 Q90 45 82 65" fill="none" stroke={cfg.accent} strokeWidth="1.5" strokeLinecap="round" />
-                    </g>
-                )}
-
-                {/* Crown for Gold+ */}
-                {cfg.hasCrown && (
-                    <motion.g
-                        animate={{ y: [0, -1, 0] }}
-                        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                    >
-                        <path
-                            d="M37 8 L41 1 L50 5 L59 1 L63 8"
-                            fill="none"
-                            stroke={cfg.accent}
-                            strokeWidth="1.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            opacity="0.7"
-                        />
-                        <circle cx="41" cy="1" r="1.2" fill={cfg.accent} opacity="0.6" />
-                        <circle cx="50" cy="5" r="1.5" fill={cfg.accent} opacity="0.8" />
-                        <circle cx="59" cy="1" r="1.2" fill={cfg.accent} opacity="0.6" />
-                    </motion.g>
-                )}
-
-                {/* Orbiting particles for Platinum+ */}
-                {cfg.orbits > 0 && (
-                    <motion.g
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-                        style={{ transformOrigin: "50px 49px" }}
-                    >
-                        {Array.from({ length: cfg.orbits }).map((_, i) => (
-                            <circle
-                                key={i}
-                                cx={50 + 25 * Math.cos((i / cfg.orbits) * Math.PI * 2)}
-                                cy={49 + 25 * Math.sin((i / cfg.orbits) * Math.PI * 2)}
-                                r="1"
-                                fill="white"
-                                opacity="0.5"
-                            />
-                        ))}
-                    </motion.g>
-                )}
-            </svg>
+                {/* Render specific geometry based on rank */}
+                {t === "initiate" && <InitiateBadge id={id} />}
+                {t === "grinder" && <GrinderBadge id={id} />}
+                {t === "elite" && <EliteBadge id={id} />}
+                {t === "apex" && <ApexBadge id={id} />}
+            </motion.svg>
         </motion.div>
+    );
+}
+
+// ── TIER 1: INITIATE (Raw Steel, Hexagon) ──
+function InitiateBadge({ id }: { id: string }) {
+    return (
+        <g filter={`url(#${id}-drop)`}>
+            {/* Heavy Base Hexagon */}
+            <path d="M50 10 L85 25 L85 75 L50 90 L15 75 L15 25 Z" fill={`url(#${id}-metal)`} stroke="#4B5563" strokeWidth="2" />
+
+            {/* Inner Dark Cutout */}
+            <path d="M50 18 L76 30 L76 70 L50 82 L24 70 L24 30 Z" fill="#111827" stroke="#374151" strokeWidth="1" />
+
+            {/* Center Monolith */}
+            <motion.path
+                d="M45 35 L55 35 L50 65 Z"
+                fill="#9CA3AF"
+                animate={{ fill: ["#9CA3AF", "#D1D5DB", "#9CA3AF"] }}
+                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+            />
+        </g>
+    );
+}
+
+// ── TIER 2: GRINDER (Forged Bronze, Heavy Shield) ──
+function GrinderBadge({ id }: { id: string }) {
+    return (
+        <g filter={`url(#${id}-drop)`}>
+            {/* Aggressive Wide Shield Base */}
+            <path d="M50 5 L95 25 L85 80 L50 95 L15 80 L5 25 Z" fill={`url(#${id}-bronze)`} stroke="#D97706" strokeWidth="2.5" />
+
+            {/* Dark Inner Shield Core */}
+            <path d="M50 14 L84 30 L76 74 L50 86 L24 74 L16 30 Z" fill="#18181B" stroke="#78350F" strokeWidth="1.5" />
+
+            {/* Center Geometry */}
+            <motion.g animate={{ scale: [1, 1.05, 1] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}>
+                <path d="M50 25 L65 50 L50 75 L35 50 Z" fill={`url(#${id}-bronze)`} />
+                <path d="M50 35 L58 50 L50 65 L42 50 Z" fill="#FBBF24" opacity="0.8" />
+            </motion.g>
+        </g>
+    );
+}
+
+// ── TIER 3: ELITE (OPTIZ Red & Black, Demon Shield) ──
+function EliteBadge({ id }: { id: string }) {
+    return (
+        <g filter={`url(#${id}-drop)`}>
+            {/* Winged Demon Base */}
+            <path d="M50 5 L95 20 L80 55 L95 65 L50 95 L5 65 L20 55 L5 20 Z" fill={`url(#${id}-crimson)`} stroke="#DC2626" strokeWidth="2" />
+
+            {/* Inner Obsidian Core */}
+            <path d="M50 14 L82 26 L70 55 L82 62 L50 85 L18 62 L30 55 L18 26 Z" fill="#000000" />
+
+            {/* Red Pulsing Core Light */}
+            <motion.circle
+                cx="50" cy="50" r="15"
+                fill="#DC2626"
+                filter={`url(#${id}-glow-red)`}
+                animate={{ opacity: [0.4, 0.8, 0.4] }}
+                transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+            />
+
+            {/* The "Optiz" Spark/Bolt */}
+            <motion.path
+                d="M45 25 L65 25 L55 50 L70 50 L35 80 L45 55 L30 55 Z"
+                fill="#FF5252"
+                filter={`url(#${id}-glow-red)`}
+                animate={{ opacity: [0.8, 1, 0.8] }}
+                transition={{ duration: 0.8, repeat: Infinity }}
+            />
+        </g>
+    );
+}
+
+// ── TIER 4: APEX (Floating Obsidian & Gold, Masterpiece) ──
+function ApexBadge({ id }: { id: string }) {
+    return (
+        <g>
+            {/* Floating Gold Back-Arc */}
+            <motion.path
+                d="M20 30 Q50 0 80 30"
+                fill="none"
+                stroke={`url(#${id}-gold)`}
+                strokeWidth="4"
+                strokeLinecap="round"
+                filter={`url(#${id}-glow-gold)`}
+                animate={{ y: [0, -4, 0] }}
+                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+            />
+
+            {/* Main Obsidian Shield with Gold Border */}
+            <g filter={`url(#${id}-drop)`}>
+                <path d="M50 10 L90 35 L75 85 L50 100 L25 85 L10 35 Z" fill="#09090B" stroke={`url(#${id}-gold)`} strokeWidth="3" />
+
+                {/* Gold Inner Carvings */}
+                <path d="M50 20 L80 40 L68 80 L50 91 L32 80 L20 40 Z" fill="none" stroke="#F5A623" strokeWidth="1" opacity="0.5" />
+
+                {/* Center Core Floating Gem */}
+                <motion.g animate={{ y: [0, 5, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}>
+                    {/* Glow behind gem */}
+                    <circle cx="50" cy="55" r="18" fill="#FBBF24" filter={`url(#${id}-glow-gold)`} opacity="0.6" />
+                    {/* Gem */}
+                    <path d="M50 35 L65 55 L50 75 L35 55 Z" fill={`url(#${id}-gold)`} />
+                    <path d="M50 42 L58 55 L50 68 L42 55 Z" fill="#FEF08A" />
+                </motion.g>
+            </g>
+
+            {/* Orbiting Halo Particles */}
+            <motion.g
+                animate={{ rotate: 360 }}
+                transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+                style={{ originX: "50px", originY: "50px" }}
+            >
+                <circle cx="20" cy="50" r="2.5" fill="#FFF7B0" filter={`url(#${id}-glow-gold)`} />
+                <circle cx="80" cy="50" r="2.5" fill="#FFF7B0" filter={`url(#${id}-glow-gold)`} />
+                <circle cx="50" cy="20" r="2.5" fill="#FFF7B0" filter={`url(#${id}-glow-gold)`} />
+                <circle cx="50" cy="80" r="2.5" fill="#FFF7B0" filter={`url(#${id}-glow-gold)`} />
+            </motion.g>
+        </g>
     );
 }
