@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════
-// OPTIZ Rank System — Inspired by CoD / LoL tiers
+// OPTIZ Rank System — 4 Tiers, 20 Levels
 // ═══════════════════════════════════════════════
 
 export interface RankTier {
@@ -14,15 +14,15 @@ export interface RankTier {
 }
 
 export const RANK_TIERS: RankTier[] = [
-    { name: "Initiate", minLevel: 1, maxLevel: 10, color: "#9CA3AF", colorLight: "#E5E7EB", gradient: ["#374151", "#9CA3AF"], glowColor: "rgba(156,163,175,0.3)", ringBg: "rgba(156,163,175,0.15)" },
-    { name: "Grinder", minLevel: 11, maxLevel: 20, color: "#D97706", colorLight: "#FBBF24", gradient: ["#92400E", "#FBBF24"], glowColor: "rgba(217,119,6,0.3)", ringBg: "rgba(217,119,6,0.15)" },
-    { name: "Elite", minLevel: 21, maxLevel: 30, color: "#E80000", colorLight: "#FF5252", gradient: ["#7F1D1D", "#FF5252"], glowColor: "rgba(232,0,0,0.4)", ringBg: "rgba(232,0,0,0.2)" },
-    { name: "Apex", minLevel: 31, maxLevel: 999, color: "#FFD700", colorLight: "#FEF08A", gradient: ["#B45309", "#FEF08A"], glowColor: "rgba(255,215,0,0.5)", ringBg: "rgba(255,215,0,0.25)" },
+    { name: "Initiate", minLevel: 1, maxLevel: 5, color: "#9CA3AF", colorLight: "#E5E7EB", gradient: ["#374151", "#9CA3AF"], glowColor: "rgba(156,163,175,0.3)", ringBg: "rgba(156,163,175,0.15)" },
+    { name: "Grinder", minLevel: 6, maxLevel: 10, color: "#D97706", colorLight: "#FBBF24", gradient: ["#92400E", "#FBBF24"], glowColor: "rgba(217,119,6,0.3)", ringBg: "rgba(217,119,6,0.15)" },
+    { name: "Elite", minLevel: 11, maxLevel: 15, color: "#E80000", colorLight: "#FF5252", gradient: ["#7F1D1D", "#FF5252"], glowColor: "rgba(232,0,0,0.4)", ringBg: "rgba(232,0,0,0.2)" },
+    { name: "Apex", minLevel: 16, maxLevel: 999, color: "#FFD700", colorLight: "#FEF08A", gradient: ["#B45309", "#FEF08A"], glowColor: "rgba(255,215,0,0.5)", ringBg: "rgba(255,215,0,0.25)" },
 ];
 
-// ── XP Calculation ──
+// ── XP Calculation ── (uncapped — users can go beyond level 20)
 export function getXpForLevel(level: number): number {
-    return Math.floor(100 * Math.pow(1.08, level - 1));
+    return Math.floor(100 * Math.pow(1.12, level - 1));
 }
 
 export function getLevelProgress(totalXp: number) {
@@ -62,12 +62,22 @@ export interface TodoItem {
     completed: boolean;
 }
 
+export interface Exercise {
+    name: string;
+    sets: string;
+    muscles: string;
+    youtubeUrl: string;
+}
+
 export interface ChallengeTask {
     id: string;
     name: string;
     emoji: string;
     xpReward: number;
     completed: boolean;
+    exercises?: Exercise[];
+    youtubeUrl?: string;
+    color?: string;
 }
 
 export interface Challenge {
@@ -87,15 +97,10 @@ export interface Challenge {
 
 // ── Task Descriptions (for TaskInfoModal) ──
 export const TASK_DESCRIPTIONS: Record<string, { benefit: string; tips: string }> = {
-    "t1": { benefit: "Cardio boosts heart health, torches calories, and releases endorphins that elevate your mood for the entire day.", tips: "Start slow and build up pace. Listen to music or a podcast to make it enjoyable." },
-    "t2": { benefit: "Push-ups build upper body strength, core stability, and muscular endurance. A full-body compound movement.", tips: "Break into sets of 20-25. Maintain proper form — chest to floor, back straight." },
-    "t3": { benefit: "Yoga improves flexibility, reduces stress hormones, and enhances mind-body connection for better recovery.", tips: "Focus on deep breathing. Hold each pose for 30s minimum. Don't rush." },
-    "t4": { benefit: "Proper hydration improves energy levels, brain function, skin health, and supports muscle recovery.", tips: "Carry a water bottle everywhere. Set reminders every hour. Add lemon for taste." },
-    "t5": { benefit: "Clean nutrition fuels performance, supports muscle growth, and reduces inflammation throughout your body.", tips: "Prep meals in advance. Focus on whole foods — lean protein, vegetables, complex carbs." },
-    "t6": { benefit: "Cold showers boost circulation, reduce muscle soreness, strengthen immunity, and build mental toughness.", tips: "Start with 30 seconds cold at the end of a warm shower. Gradually increase duration." },
-    "t7": { benefit: "Sit-ups strengthen your core, improve posture, and support better performance in every other exercise.", tips: "Break into sets of 40-50. Keep your core engaged. Don't pull on your neck." },
-    "t8": { benefit: "Meditation reduces stress, improves focus, and enhances emotional regulation for better decision-making.", tips: "Find a quiet spot. Focus on your breath. Start with guided meditations if new." },
-    "t9": { benefit: "Reading expands knowledge, improves focus, reduces stress, and stimulates creative thinking.", tips: "Read before bed instead of scrolling. Choose topics that inspire you." },
+    "push1": { benefit: "Développe la force de poussée. Cible les pectoraux, épaules et triceps.", tips: "Contrôle chaque rep. En RIR1 (1 rep en réserve)." },
+    "pull1": { benefit: "Renforce le dos et les biceps. Développe le V-shape et le grip.", tips: "Tire vers la poitrine pour les tractions. Contracte bien le dos en haut." },
+    "legs1": { benefit: "Renforcement global des jambes, fessiers et gainage.", tips: "Garde le dos droit. Descends le plus bas possible en squat." },
+    "upper1": { benefit: "Rappel global haut du corps avec focus poussée/tirage.", tips: "Maintiens le même nombre de reps dans les EMOM. Note tes temps de Dead Hang." },
 };
 
 // ── Stable number formatting (avoids hydration mismatch) ──
@@ -126,25 +131,77 @@ export const MOTIVATIONAL_QUOTES = [
 export const OPTIZ_MAX_CHALLENGE: Challenge = {
     id: "optiz-max",
     title: "OPTIZ Max",
-    description: "30-day elite fitness program — push your limits.",
-    longDescription: "The ultimate 30-day transformation challenge. Complete daily tasks across cardio, strength, flexibility, and nutrition to earn XP, level up your rank, and compete on the global leaderboard. Designed for those who refuse to settle.",
-    emoji: "🔥",
+    description: "Programme Haltères / Dips / Tractions — 4 séances.",
+    longDescription: "Programme complet de musculation avec haltères, dips et tractions. 4 séances par semaine : Push, Pull, Legs, Upper. Chaque exercice est filmé et expliqué. En RIR1 — donne tout !",
+    emoji: "🏋️",
     difficulty: "Hard",
     durationDays: 30,
     participantCount: 847,
-    taskCount: 8,
-    totalXp: 380,
+    taskCount: 4,
+    totalXp: 200,
     joined: false,
     tasks: [
-        { id: "t1", name: "Morning Run — 5km", emoji: "🏃‍♂️", xpReward: 50, completed: false },
-        { id: "t2", name: "100 Push-ups", emoji: "💪", xpReward: 50, completed: false },
-        { id: "t3", name: "Yoga Session — 20min", emoji: "🧘‍♀️", xpReward: 30, completed: false },
-        { id: "t4", name: "Drink 3L Water", emoji: "💧", xpReward: 20, completed: false },
-        { id: "t5", name: "Eat Clean — No Junk", emoji: "🥗", xpReward: 40, completed: false },
-        { id: "t6", name: "Cold Shower", emoji: "🥶", xpReward: 50, completed: false },
-        { id: "t7", name: "200 Sit-ups", emoji: "🔥", xpReward: 50, completed: false },
-        { id: "t8", name: "10min Meditation", emoji: "🧠", xpReward: 40, completed: false },
-        { id: "t9", name: "Read 30 Pages", emoji: "📖", xpReward: 50, completed: false },
+        {
+            id: "push1",
+            name: "🟥 Push 1 — Pecs / Épaules / Triceps",
+            emoji: "🟥",
+            xpReward: 50,
+            completed: false,
+            color: "#E80000",
+            exercises: [
+                { name: "Dips (en force)", sets: "3 × 4-8 reps", muscles: "Pecs, triceps, épaules avant", youtubeUrl: "https://youtube.com/shorts/MTWrCC1gTuU?si=BNHkdbUIb68KzR-q" },
+                { name: "Développé militaire (haltères)", sets: "3 séries", muscles: "Épaules, triceps", youtubeUrl: "https://www.youtube.com/watch?v=5pjcqP_nqRA" },
+                { name: "Écarté couché (haltères)", sets: "3 séries", muscles: "Pecs", youtubeUrl: "https://youtube.com/shorts/tekqcBETXyQ?si=qDHuJiPKkg8skkJx" },
+                { name: "Skull crushers (haltères)", sets: "3 séries", muscles: "Triceps", youtubeUrl: "https://youtube.com/shorts/IfNBr2zw6rw?si=Mpu7DkQ3HPq15qQf" },
+                { name: "Pompes — AMRAP", sets: "1-2 séries max reps", muscles: "Pecs, triceps, gainage", youtubeUrl: "https://youtu.be/xbciD15GlPs?si=nLfZfIQ2PFegkGEF" },
+            ],
+        },
+        {
+            id: "pull1",
+            name: "🟦 Pull 1 — Dos / Biceps / Épaules",
+            emoji: "🟦",
+            xpReward: 50,
+            completed: false,
+            color: "#3B82F6",
+            exercises: [
+                { name: "Tractions pronation (en force)", sets: "3 × 4-8 reps", muscles: "Grand dorsal, trapèzes, biceps", youtubeUrl: "https://youtube.com/shorts/6zISFVRhN2c?si=b3_HydHFYq-OmEcJ" },
+                { name: "Élévations latérales (haltères)", sets: "3 séries", muscles: "Épaules (faisceau moyen)", youtubeUrl: "https://www.youtube.com/watch?v=67aqcWUYw2I" },
+                { name: "Rowing unilatéral \"bûcheron\" (haltère)", sets: "3 séries / bras", muscles: "Dos, biceps", youtubeUrl: "https://www.youtube.com/watch?v=67aqcWUYw2I" },
+                { name: "Chin Up (supination)", sets: "3 séries", muscles: "Biceps, dorsaux", youtubeUrl: "https://youtube.com/shorts/Oi3bW9nQmGI?si=Ock9i-K6Z11rGZNZ" },
+                { name: "Curl marteau (haltères)", sets: "3 séries", muscles: "Biceps, avant-bras", youtubeUrl: "https://youtube.com/shorts/XtruE8T-19Q?si=TkIpqFpQW6HJQkH0" },
+            ],
+        },
+        {
+            id: "legs1",
+            name: "🟩 Legs — Jambes / Fessiers / Gainage",
+            emoji: "🟩",
+            xpReward: 50,
+            completed: false,
+            color: "#10B981",
+            exercises: [
+                { name: "Goblet Squat (haltère)", sets: "3 séries", muscles: "Quadriceps, fessiers, gainage", youtubeUrl: "https://youtube.com/shorts/XtruE8T-19Q?si=TkIpqFpQW6HJQkH0" },
+                { name: "Fentes bulgares (haltères)", sets: "3 séries / jambe", muscles: "Quadriceps, fessiers", youtubeUrl: "https://youtube.com/shorts/XtruE8T-19Q?si=TkIpqFpQW6HJQkH0" },
+                { name: "Romanian Deadlift (haltères, tempo lent)", sets: "3 séries", muscles: "Ischios, fessiers, bas du dos", youtubeUrl: "https://youtube.com/shorts/XtruE8T-19Q?si=TkIpqFpQW6HJQkH0" },
+                { name: "Hip Thrust unilatéral au sol", sets: "3 séries / jambe", muscles: "Fessiers", youtubeUrl: "https://www.youtube.com/watch?v=zGxR8AmuOm4" },
+                { name: "Chaise contre un mur — Max Hold", sets: "1 série max hold", muscles: "Quadriceps, gainage isométrique", youtubeUrl: "https://youtube.com/shorts/EE-A7qkMOek?si=STp3jXoDD19p2xvx" },
+            ],
+        },
+        {
+            id: "upper1",
+            name: "🟪 Upper — Rappel Haut du Corps",
+            emoji: "🟪",
+            xpReward: 50,
+            completed: false,
+            color: "#8B5CF6",
+            exercises: [
+                { name: "Développé couché au sol (haltères)", sets: "3 séries", muscles: "Pecs, triceps, épaules", youtubeUrl: "https://youtube.com/shorts/EE-A7qkMOek?si=STp3jXoDD19p2xvx" },
+                { name: "Tractions pronation (volume)", sets: "3 × 8-12 reps", muscles: "Grand dorsal, trapèzes, biceps", youtubeUrl: "https://youtube.com/shorts/6zISFVRhN2c?si=b3_HydHFYq-OmEcJ" },
+                { name: "Dips — EMOM 10 minutes", sets: "EMOM 10 min", muscles: "Pecs, triceps, épaules", youtubeUrl: "https://youtube.com/shorts/6zISFVRhN2c?si=b3_HydHFYq-OmEcJ" },
+                { name: "Extension triceps nuque (haltère)", sets: "3 séries", muscles: "Triceps", youtubeUrl: "https://youtube.com/shorts/AsUqyuzZBJA?si=WiiIfLjgyhaQmtmV" },
+                { name: "Curl biceps (haltères)", sets: "3 séries", muscles: "Biceps", youtubeUrl: "https://youtu.be/MzNKcgL1lVU?si=WL4TYfS_a1BvMY2Q" },
+                { name: "Dead Hang — Max Hold", sets: "3 séries max hold", muscles: "Grip, avant-bras, épaules", youtubeUrl: "https://www.youtube.com/shorts/dombLZaQIz0" },
+            ],
+        },
     ],
 };
 

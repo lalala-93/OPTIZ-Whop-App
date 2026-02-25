@@ -93,8 +93,8 @@ function SwipeableTodoItem({
                     <motion.button
                         onClick={() => { if (!isSwiping) onToggle(); }}
                         className={`w-5 h-5 rounded-full border-[1.5px] flex items-center justify-center shrink-0 transition-all ${todo.completed
-                                ? "bg-[#E80000] border-[#E80000]"
-                                : "border-gray-6 hover:border-gray-8"
+                            ? "bg-[#E80000] border-[#E80000]"
+                            : "border-gray-6 hover:border-gray-8"
                             }`}
                         whileTap={{ scale: 0.8 }}
                     >
@@ -325,7 +325,7 @@ export function HomeScreen({
 
                 <LayoutGroup>
                     <div className="space-y-1.5">
-                        <AnimatePresence mode="popLayout">
+                        <AnimatePresence mode="sync">
                             {sortedTodos.length === 0 && !showInput && (
                                 <motion.p key="empty" className="text-center text-sm text-gray-8 py-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                                     {t("noTasks")}

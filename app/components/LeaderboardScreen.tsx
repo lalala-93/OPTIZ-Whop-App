@@ -33,12 +33,12 @@ export function LeaderboardScreen({ userId, userXp, userLevel, userName = "You",
     const [isLoading, setIsLoading] = useState(true);
     const [, startTransition] = useTransition();
 
-    // Bot entries — these merge with real users and can be overtaken
+    // Bot entries — calibrated to new 20-level system
     const BOT_ENTRIES: LeaderboardEntry[] = [
-        { whop_user_id: "bot-hakim", display_name: "Hakim Zwar", avatar_url: "/HakimProfil.jpg", total_xp: 85000, streak_days: 120, position: 0, isBot: true },
-        { whop_user_id: "bot-amen", display_name: "Amen", avatar_url: "/AmenProfil.jpg", total_xp: 42000, streak_days: 67, position: 0, isBot: true },
-        { whop_user_id: "bot-isaac", display_name: "Isaac", avatar_url: "/Isaac.jpg", total_xp: 18500, streak_days: 34, position: 0, isBot: true },
-        { whop_user_id: "bot-pierre", display_name: "Pierre", avatar_url: null, total_xp: 7200, streak_days: 15, position: 0, isBot: true },
+        { whop_user_id: "bot-hakim", display_name: "Hakim Zwar", avatar_url: "/HakimProfil.jpg", total_xp: 4200, streak_days: 45, position: 0, isBot: true },
+        { whop_user_id: "bot-amen", display_name: "Amen", avatar_url: "/AmenProfil.jpg", total_xp: 2800, streak_days: 30, position: 0, isBot: true },
+        { whop_user_id: "bot-isaac", display_name: "Isaac", avatar_url: "/Isaac.jpg", total_xp: 900, streak_days: 12, position: 0, isBot: true },
+        { whop_user_id: "bot-pierre", display_name: "Pierre", avatar_url: null, total_xp: 30, streak_days: 1, position: 0, isBot: true },
     ];
 
     // Fetch leaderboard via Server Action

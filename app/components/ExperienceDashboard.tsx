@@ -336,10 +336,19 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
               whileTap={{ scale: 0.93 }}
             >
               <AnimatedBoltIcon size={18} />
-              <span className="text-sm font-bold text-gray-12 tabular-nums">
-                {totalXp}
-              </span>
-              <span className="text-[10px] font-extrabold text-[#E80000]">{t("xpLabel")}</span>
+              <div className="flex flex-col items-start">
+                <span className="text-[11px] font-bold text-gray-12 tabular-nums leading-tight">
+                  LVL {levelData.level}
+                </span>
+                <div className="w-10 h-[3px] rounded-full bg-gray-5/50 mt-0.5 overflow-hidden">
+                  <motion.div
+                    className="h-full rounded-full bg-[#E80000]"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${levelData.progressPercent}%` }}
+                    transition={{ duration: 0.5, ease: "easeOut" }}
+                  />
+                </div>
+              </div>
             </motion.button>
 
             <motion.button

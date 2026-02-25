@@ -4,6 +4,20 @@ import { ExperienceDashboard } from "@/app/components/ExperienceDashboard";
 import type { InitialData } from "@/app/components/ExperienceDashboard";
 import { loadUserData } from "@/lib/actions";
 
+/** Retry a function up to `maxAttempts` times with a delay between attempts. */
+async function withRetry<T>(fn: () => Promise<T>, maxAttempts = 3, delayMs = 800): Promise<T> {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      if (attempt === maxAttempts) throw err;
+      console.warn(`[OPTIZ] Attempt ${attempt} failed, retrying in ${delayMs}ms...`);
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+    }
+  }
+  throw new Error("Unreachable");
+}
+
 export default async function ExperiencePage({
   params,
 }: {
@@ -13,15 +27,26 @@ export default async function ExperiencePage({
 
   let userId: string;
   try {
-    const result = await verifyUser(await headers());
+    const result = await withRetry(async () => verifyUser(await headers()));
     userId = result.userId;
   } catch (err) {
-    console.error("[OPTIZ] verifyUser failed:", err);
+    console.error("[OPTIZ] verifyUser failed after retries:", err);
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-1 text-gray-11 p-4 text-center">
-        <div className="text-6xl mb-4">⚠️</div>
-        <h1 className="text-2xl font-bold text-gray-12 mb-2">Authentication Error</h1>
-        <p>Unable to verify your identity. Please reload the page or re-open the app from Whop.</p>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-1 text-gray-11 p-6 text-center">
+        <div className="text-5xl mb-5">⚠️</div>
+        <h1 className="text-xl font-bold text-gray-12 mb-2">Erreur d&apos;authentification</h1>
+        <p className="text-sm text-gray-9 mb-6 max-w-xs">
+          Impossible de vérifier votre identité. Cela peut arriver si la page a été ouverte en dehors de Whop.
+        </p>
+        <a
+          href={typeof window !== "undefined" ? window.location.href : ""}
+          className="px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-[#E80000] hover:bg-[#CC0000] transition-colors"
+        >
+          Réessayer
+        </a>
+        <p className="text-[10px] text-gray-7 mt-4">
+          Si le problème persiste, fermez cet onglet et ouvrez l&apos;app depuis Whop.
+        </p>
       </div>
     );
   }
@@ -33,8 +58,8 @@ export default async function ExperiencePage({
       return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-gray-1 text-gray-11 p-4 text-center">
           <div className="text-6xl mb-4">🔒</div>
-          <h1 className="text-2xl font-bold text-gray-12 mb-2">Access Denied</h1>
-          <p>You need an active plan to view this experience.</p>
+          <h1 className="text-2xl font-bold text-gray-12 mb-2">Accès Refusé</h1>
+          <p>Vous avez besoin d&apos;un accès actif pour voir ce contenu.</p>
         </div>
       );
     }
