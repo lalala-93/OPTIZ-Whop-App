@@ -1,890 +1,600 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
-import Image from "next/image";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChallengeTask, Exercise } from "./rankSystem";
 import { useI18n } from "./i18n";
 import {
-    DumbbellIcon, PullUpIcon, DipIcon, PushUpIcon, SquatIcon,
-    LungeIcon, DeadliftIcon, PlankIcon, TimerIcon,
-    PlayIcon, PauseIcon, SkipIcon, ResetIcon,
+  DumbbellIcon,
+  PullUpIcon,
+  DipIcon,
+  PushUpIcon,
+  SquatIcon,
+  LungeIcon,
+  DeadliftIcon,
+  PlankIcon,
+  TimerIcon,
+  PlayIcon,
+  PauseIcon,
+  SkipIcon,
+  ResetIcon,
 } from "./SportIcons";
 import {
-    playBeepSound, playStartSound, playCompleteSound, playFinishSound,
-    isSoundEnabled, setSoundEnabled,
+  isSoundEnabled,
+  playBeepSound,
+  playCompleteSound,
+  playFinishSound,
+  playStartSound,
+  setSoundEnabled,
 } from "./sounds";
 
-// ── Helpers ──
+interface ChallengeProgramProps {
+  challengeTitle: string;
+  workoutTask: ChallengeTask;
+  onCompleteTask: (taskId: string) => void;
+  onBack: () => void;
+  completingTaskId: string | null;
+}
+
+interface EditableExercise {
+  id: string;
+  name: string;
+  sets: number;
+  reps: string;
+  restSec: number;
+  muscles: string;
+  youtubeUrl: string;
+}
+
+interface ExerciseInfoSheetProps {
+  exercise: EditableExercise | null;
+  isOpen: boolean;
+  onClose: () => void;
+}
 
 function getExerciseIcon(name: string, size = 18, className = "") {
-    const n = name.toLowerCase();
-    if (n.includes("dip")) return <DipIcon size={size} className={className} />;
-    if (n.includes("traction") || n.includes("pull") || n.includes("chin")) return <PullUpIcon size={size} className={className} />;
-    if (n.includes("pompe") || n.includes("push")) return <PushUpIcon size={size} className={className} />;
-    if (n.includes("squat") || n.includes("goblet")) return <SquatIcon size={size} className={className} />;
-    if (n.includes("fente") || n.includes("bulgare") || n.includes("lunge")) return <LungeIcon size={size} className={className} />;
-    if (n.includes("deadlift") || n.includes("romanian") || n.includes("hip thrust")) return <DeadliftIcon size={size} className={className} />;
-    if (n.includes("chaise") || n.includes("hang") || n.includes("hold") || n.includes("plank") || n.includes("gainage")) return <PlankIcon size={size} className={className} />;
-    if (n.includes("emom")) return <TimerIcon size={size} className={className} />;
-    return <DumbbellIcon size={size} className={className} />;
+  const n = name.toLowerCase();
+  if (n.includes("dip")) return <DipIcon size={size} className={className} />;
+  if (n.includes("pull") || n.includes("chin") || n.includes("row")) return <PullUpIcon size={size} className={className} />;
+  if (n.includes("push") || n.includes("press") || n.includes("chest")) return <PushUpIcon size={size} className={className} />;
+  if (n.includes("squat") || n.includes("split squat")) return <SquatIcon size={size} className={className} />;
+  if (n.includes("lunge")) return <LungeIcon size={size} className={className} />;
+  if (n.includes("deadlift") || n.includes("thrust") || n.includes("hinge")) return <DeadliftIcon size={size} className={className} />;
+  if (n.includes("plank") || n.includes("hang") || n.includes("hold") || n.includes("core")) return <PlankIcon size={size} className={className} />;
+  if (n.includes("emom") || n.includes("timer")) return <TimerIcon size={size} className={className} />;
+  return <DumbbellIcon size={size} className={className} />;
 }
 
-function fmt(s: number) {
-    const m = Math.floor(s / 60);
-    const sec = s % 60;
-    return `${m}:${sec.toString().padStart(2, "0")}`;
+function formatSeconds(seconds: number) {
+  const minutes = Math.floor(seconds / 60);
+  const remainder = seconds % 60;
+  return `${minutes}:${remainder.toString().padStart(2, "0")}`;
 }
 
-// ── Props ──
+function parsePrescription(raw: string): { sets: number; reps: string } {
+  const compact = raw.replace(/\s+/g, " ").trim();
+  const emomMatch = compact.match(/emom\s*(\d+)/i);
+  if (emomMatch) {
+    return { sets: Number(emomMatch[1]), reps: "EMOM" };
+  }
 
-interface ChallengeProgramProps {
-    challengeTitle: string;
-    challengeEmoji: string;
-    tasks: ChallengeTask[];
-    onCompleteTask: (taskId: string) => void;
-    onBack: () => void;
-    completingTaskId: string | null;
+  const setRepMatch = compact.match(/^(\d+)\s*(?:x|×)\s*(.+)$/i);
+  if (setRepMatch) {
+    return {
+      sets: Math.max(1, Number(setRepMatch[1])),
+      reps: setRepMatch[2].replace(/reps?/i, "").trim() || "8-12",
+    };
+  }
+
+  const seriesMatch = compact.match(/^(\d+)\s*(?:sets?|séries?)/i);
+  if (seriesMatch) {
+    return { sets: Math.max(1, Number(seriesMatch[1])), reps: "8-12" };
+  }
+
+  return { sets: 3, reps: compact || "8-12" };
 }
 
-// ═══════════════════════════════════════════════
-// EXERCISE INFO SHEET — Clean bottom sheet
-// ═══════════════════════════════════════════════
-
-function ExerciseInfoSheet({ exercise, isOpen, onClose }: { exercise: Exercise | null; isOpen: boolean; onClose: () => void }) {
-    if (!exercise) return null;
-    return (
-        <AnimatePresence>
-            {isOpen && (
-                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-                    <motion.div
-                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                        className="absolute inset-0 bg-black/70 backdrop-blur-md"
-                        onClick={onClose}
-                    />
-                    <motion.div
-                        initial={{ opacity: 0, y: 80 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 80 }}
-                        transition={{ type: "spring", stiffness: 320, damping: 32 }}
-                        className="relative w-full max-w-md bg-gray-2 border border-gray-4 rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl"
-                        onClick={e => e.stopPropagation()}
-                    >
-                        <div className="flex justify-center pt-3 pb-1 sm:hidden">
-                            <div className="w-10 h-1 rounded-full bg-gray-6" />
-                        </div>
-                        <div className="px-5 pt-3 pb-6">
-                            <div className="flex items-center justify-between mb-5">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-gray-3 border border-gray-5/40 flex items-center justify-center text-gray-11">
-                                        {getExerciseIcon(exercise.name, 20)}
-                                    </div>
-                                    <h3 className="text-base font-bold text-gray-12">{exercise.name}</h3>
-                                </div>
-                                <motion.button
-                                    onClick={onClose}
-                                    className="w-8 h-8 rounded-full bg-gray-4 flex items-center justify-center text-gray-9 hover:text-gray-12 transition-colors"
-                                    whileTap={{ scale: 0.85 }}
-                                >
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                        <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                                    </svg>
-                                </motion.button>
-                            </div>
-
-                            <div className="space-y-3">
-                                <div className="bg-gray-3/50 border border-gray-5/30 rounded-xl p-4">
-                                    <span className="text-[10px] text-gray-7 font-bold uppercase tracking-wider block mb-1">Muscles ciblés</span>
-                                    <p className="text-sm text-gray-12 font-medium">{exercise.muscles}</p>
-                                </div>
-                                <div className="bg-gray-3/50 border border-gray-5/30 rounded-xl p-4">
-                                    <span className="text-[10px] text-gray-7 font-bold uppercase tracking-wider block mb-1">Objectif</span>
-                                    <p className="text-sm text-gray-12 font-medium">{exercise.sets}</p>
-                                </div>
-                                <a
-                                    href={exercise.youtubeUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex items-center gap-3 bg-gray-3/50 border border-gray-5/30 rounded-xl p-4 hover:bg-gray-4/50 transition-colors group"
-                                >
-                                    <div className="w-10 h-10 rounded-xl bg-[#E80000]/10 border border-[#E80000]/20 flex items-center justify-center group-hover:bg-[#E80000]/15 transition-colors">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="#E80000">
-                                            <polygon points="9.5,7 9.5,17 18,12" />
-                                        </svg>
-                                    </div>
-                                    <div>
-                                        <span className="text-sm font-bold text-gray-12 block">Voir la démo</span>
-                                        <span className="text-[10px] text-gray-7">Ouvrir sur YouTube</span>
-                                    </div>
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-auto text-gray-6">
-                                        <polyline points="9 18 15 12 9 6" />
-                                    </svg>
-                                </a>
-                            </div>
-                        </div>
-                    </motion.div>
-                </div>
-            )}
-        </AnimatePresence>
-    );
+function toEditableExercise(exercise: Exercise, index: number): EditableExercise {
+  const prescription = parsePrescription(exercise.sets);
+  return {
+    id: `${index}-${exercise.name}`,
+    name: exercise.name,
+    sets: prescription.sets,
+    reps: prescription.reps,
+    restSec: 60,
+    muscles: exercise.muscles,
+    youtubeUrl: exercise.youtubeUrl,
+  };
 }
 
-// ═══════════════════════════════════════════════
-// CIRCULAR TIMER — Central EMOM countdown ring
-// ═══════════════════════════════════════════════
+function ExerciseInfoSheet({ exercise, isOpen, onClose }: ExerciseInfoSheetProps) {
+  const { t } = useI18n();
 
-function CircularTimer({ timeLeft, totalTime, isPaused }: { timeLeft: number; totalTime: number; isPaused: boolean }) {
-    const radius = 72;
-    const stroke = 5;
-    const center = radius + stroke + 4;
-    const svgSize = center * 2;
-    const circumference = 2 * Math.PI * radius;
-    const progress = totalTime > 0 ? (timeLeft / totalTime) : 1;
-    const offset = circumference * (1 - progress);
+  if (!exercise) return null;
 
-    return (
-        <div className="relative flex items-center justify-center">
-            <svg width={svgSize} height={svgSize} className="transform -rotate-90">
-                {/* Background ring */}
-                <circle cx={center} cy={center} r={radius} fill="none" stroke="var(--gray-4)" strokeWidth={stroke} opacity={0.4} />
-                {/* Progress ring */}
-                <motion.circle
-                    cx={center} cy={center} r={radius} fill="none"
-                    stroke={timeLeft <= 3 ? "#E80000" : "var(--gray-11)"}
-                    strokeWidth={stroke}
-                    strokeLinecap="round"
-                    strokeDasharray={circumference}
-                    strokeDashoffset={offset}
-                    style={{ transition: "stroke-dashoffset 0.3s linear, stroke 0.3s ease" }}
-                />
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <motion.span
-                    className={`text-5xl font-mono font-black tracking-tighter ${timeLeft <= 3 ? "text-[#E80000]" : "text-gray-12"}`}
-                    animate={timeLeft <= 3 && !isPaused ? { scale: [1, 1.08, 1] } : {}}
-                    transition={{ duration: 0.5, repeat: Infinity }}
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+          <motion.div
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+          />
+          <motion.div
+            className="relative w-full max-w-md rounded-t-3xl sm:rounded-3xl border border-gray-4 bg-gray-2 overflow-hidden"
+            initial={{ opacity: 0, y: 80 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 80 }}
+            transition={{ type: "spring", stiffness: 320, damping: 32 }}
+          >
+            <div className="p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-base font-bold text-gray-12">{exercise.name}</h3>
+                <button
+                  onClick={onClose}
+                  className="w-8 h-8 rounded-full bg-gray-4 border border-gray-5 flex items-center justify-center text-gray-9"
                 >
-                    {fmt(timeLeft)}
-                </motion.span>
-                {isPaused && (
-                    <motion.span
-                        className="text-[10px] font-bold text-gray-7 uppercase tracking-widest mt-1"
-                        initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                    >
-                        En pause
-                    </motion.span>
-                )}
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="space-y-2.5">
+                <div className="rounded-xl bg-gray-3/50 border border-gray-5/35 p-3">
+                  <p className="text-[10px] uppercase tracking-wider text-gray-7 font-bold mb-1">{t("targetMuscles")}</p>
+                  <p className="text-sm text-gray-12">{exercise.muscles}</p>
+                </div>
+                <div className="rounded-xl bg-gray-3/50 border border-gray-5/35 p-3">
+                  <p className="text-[10px] uppercase tracking-wider text-gray-7 font-bold mb-1">{t("workoutPrescription")}</p>
+                  <p className="text-sm text-gray-12">{exercise.sets} {t("sets")} · {exercise.reps} {t("reps")}</p>
+                </div>
+                <a
+                  href={exercise.youtubeUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-xl bg-[#E80000]/10 border border-[#E80000]/30 p-3 flex items-center justify-between text-[#FF5A5A]"
+                >
+                  <span className="text-sm font-semibold">{t("watchDemo")}</span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </a>
+              </div>
             </div>
+          </motion.div>
         </div>
-    );
+      )}
+    </AnimatePresence>
+  );
 }
-
-// ═══════════════════════════════════════════════
-// EMOM WORKOUT — Full single-screen workout tracker
-// ═══════════════════════════════════════════════
-
-interface EMOMConfig {
-    roundDuration: number; // seconds per exercise (default 60)
-    exercises: { name: string; sets: string; reps: string; muscles: string; youtubeUrl: string }[];
-}
-
-function EMOMWorkout({ task, onFinish, onBack }: {
-    task: ChallengeTask;
-    onFinish: () => void;
-    onBack: () => void;
-}) {
-    const exercises = task.exercises || [];
-    const [config, setConfig] = useState<EMOMConfig>(() => ({
-        roundDuration: 60,
-        exercises: exercises.map(ex => ({ ...ex, reps: ex.sets })),
-    }));
-
-    // Timer state
-    const [isRunning, setIsRunning] = useState(false);
-    const [hasStarted, setHasStarted] = useState(false);
-    const [elapsed, setElapsed] = useState(0); // total elapsed seconds
-    const [completedExercises, setCompletedExercises] = useState<Set<number>>(new Set());
-    const [infoExercise, setInfoExercise] = useState<Exercise | null>(null);
-    const [isEditing, setIsEditing] = useState(false);
-    const [soundOn, setSoundOn] = useState(() => isSoundEnabled());
-    const intervalRef = useRef<NodeJS.Timeout | null>(null);
-    const lastBeepRef = useRef(-1);
-
-    const totalDuration = config.exercises.length * config.roundDuration;
-    const currentExIndex = Math.min(Math.floor(elapsed / config.roundDuration), config.exercises.length - 1);
-    const timeInCurrentRound = elapsed % config.roundDuration;
-    const timeLeftInRound = config.roundDuration - timeInCurrentRound;
-    const isWorkoutDone = elapsed >= totalDuration;
-
-    // Timer tick
-    useEffect(() => {
-        if (isRunning && !isWorkoutDone) {
-            intervalRef.current = setInterval(() => {
-                setElapsed(prev => {
-                    const next = prev + 1;
-                    if (next >= totalDuration) {
-                        setIsRunning(false);
-                        playFinishSound();
-                    }
-                    return Math.min(next, totalDuration);
-                });
-            }, 1000);
-        }
-        return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-    }, [isRunning, isWorkoutDone, totalDuration]);
-
-    // Sound effects on transitions
-    useEffect(() => {
-        if (!isRunning || !hasStarted) return;
-        // 3-2-1 countdown beeps
-        if (timeLeftInRound <= 3 && timeLeftInRound > 0 && lastBeepRef.current !== elapsed) {
-            lastBeepRef.current = elapsed;
-            playBeepSound();
-        }
-        // New exercise start
-        if (timeInCurrentRound === 0 && elapsed > 0 && elapsed < totalDuration) {
-            playStartSound();
-        }
-    }, [elapsed, isRunning, hasStarted, timeLeftInRound, timeInCurrentRound, totalDuration]);
-
-    const handleStart = () => {
-        setIsRunning(true);
-        setHasStarted(true);
-        setIsEditing(false);
-        playStartSound();
-    };
-
-    const handlePause = () => setIsRunning(false);
-    const handleResume = () => { setIsRunning(true); playStartSound(); };
-
-    const handleReset = () => {
-        setIsRunning(false);
-        setElapsed(0);
-        setHasStarted(false);
-        setCompletedExercises(new Set());
-        lastBeepRef.current = -1;
-    };
-
-    const handleSkip = () => {
-        const nextStart = (currentExIndex + 1) * config.roundDuration;
-        if (nextStart < totalDuration) {
-            setElapsed(nextStart);
-            playStartSound();
-        }
-    };
-
-    const handleCheckExercise = (index: number) => {
-        setCompletedExercises(prev => {
-            const next = new Set(prev);
-            if (next.has(index)) next.delete(index);
-            else { next.add(index); playCompleteSound(); }
-            return next;
-        });
-    };
-
-    const handleFinish = () => {
-        // Mark 24h completion
-        const completions = JSON.parse(localStorage.getItem("optiz-completions") || "{}");
-        completions[task.id] = new Date().toISOString();
-        localStorage.setItem("optiz-completions", JSON.stringify(completions));
-        playFinishSound();
-        onFinish();
-    };
-
-    const handleToggleSound = () => {
-        const next = !soundOn;
-        setSoundOn(next);
-        setSoundEnabled(next);
-    };
-
-    const handleRoundDurationChange = (delta: number) => {
-        setConfig(prev => ({
-            ...prev,
-            roundDuration: Math.max(30, Math.min(120, prev.roundDuration + delta)),
-        }));
-    };
-
-    // ── Editing mode: pre-workout setup ──
-    if (isEditing) {
-        return (
-            <div className="pb-8">
-                {/* Header */}
-                <div className="flex items-center justify-between mb-6">
-                    <motion.button
-                        onClick={() => setIsEditing(false)}
-                        className="flex items-center gap-1.5 text-sm text-gray-8 hover:text-gray-12 transition-colors"
-                        whileTap={{ scale: 0.95 }}
-                    >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
-                        Retour
-                    </motion.button>
-                    <span className="text-xs font-bold text-gray-7 uppercase tracking-wider">Configurer l&apos;EMOM</span>
-                </div>
-
-                {/* Round duration */}
-                <div className="bg-gray-3/30 border border-gray-5/30 rounded-2xl p-4 mb-4">
-                    <span className="text-[10px] font-bold text-gray-7 uppercase tracking-wider block mb-3">Durée par exercice</span>
-                    <div className="flex items-center justify-between">
-                        <motion.button
-                            onClick={() => handleRoundDurationChange(-10)}
-                            className="w-10 h-10 rounded-xl bg-gray-4/60 flex items-center justify-center text-gray-9 hover:text-gray-12 transition-colors"
-                            whileTap={{ scale: 0.9 }}
-                        >
-                            <span className="text-lg font-bold">−</span>
-                        </motion.button>
-                        <div className="text-center">
-                            <span className="text-3xl font-mono font-black text-gray-12">{config.roundDuration}</span>
-                            <span className="text-xs text-gray-7 block mt-0.5">secondes</span>
-                        </div>
-                        <motion.button
-                            onClick={() => handleRoundDurationChange(10)}
-                            className="w-10 h-10 rounded-xl bg-gray-4/60 flex items-center justify-center text-gray-9 hover:text-gray-12 transition-colors"
-                            whileTap={{ scale: 0.9 }}
-                        >
-                            <span className="text-lg font-bold">+</span>
-                        </motion.button>
-                    </div>
-                </div>
-
-                {/* Exercise list */}
-                <span className="text-[10px] font-bold text-gray-7 uppercase tracking-wider block mb-3">Exercices ({config.exercises.length})</span>
-                <div className="space-y-2">
-                    {config.exercises.map((ex, i) => (
-                        <div key={i} className="bg-gray-3/30 border border-gray-5/30 rounded-xl p-3.5 flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-lg bg-gray-4/50 flex items-center justify-center text-gray-9">
-                                {getExerciseIcon(ex.name, 16)}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <p className="text-[13px] font-bold text-gray-12 truncate">{ex.name}</p>
-                                <p className="text-[10px] text-gray-7">{ex.muscles}</p>
-                            </div>
-                            <input
-                                type="text"
-                                value={ex.reps}
-                                onChange={e => {
-                                    setConfig(prev => ({
-                                        ...prev,
-                                        exercises: prev.exercises.map((exr, j) =>
-                                            j === i ? { ...exr, reps: e.target.value } : exr
-                                        ),
-                                    }));
-                                }}
-                                className="w-20 h-8 bg-gray-4/50 border border-gray-5/40 rounded-lg text-center text-[11px] font-bold text-gray-12 focus:outline-none focus:border-[#E80000]/50 transition-colors"
-                                placeholder="Reps"
-                            />
-                        </div>
-                    ))}
-                </div>
-
-                {/* Total duration info */}
-                <div className="mt-4 text-center">
-                    <span className="text-xs text-gray-7">Durée totale : </span>
-                    <span className="text-xs font-bold text-gray-11">{fmt(config.exercises.length * config.roundDuration)}</span>
-                </div>
-
-                {/* Start button */}
-                <motion.button
-                    onClick={handleStart}
-                    className="w-full mt-5 py-3.5 rounded-xl font-bold text-sm text-white optiz-gradient-bg transition-all"
-                    whileTap={{ scale: 0.97 }}
-                >
-                    Lancer l&apos;EMOM
-                </motion.button>
-            </div>
-        );
-    }
-
-    // ── Pre-start screen (not editing, not started) ──
-    if (!hasStarted) {
-        const sessionName = task.name.replace(/^[🟥🟦🟩🟪]\s*/, "");
-
-        return (
-            <div className="pb-8">
-                {/* Back */}
-                <motion.button
-                    onClick={onBack}
-                    className="flex items-center gap-1.5 text-sm text-gray-8 hover:text-gray-12 transition-colors mb-5"
-                    initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }}
-                    whileTap={{ scale: 0.95 }}
-                >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
-                    Retour
-                </motion.button>
-
-                {/* Session header */}
-                <motion.div
-                    className="text-center mb-6"
-                    initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                >
-                    <div className="w-14 h-14 rounded-2xl mx-auto mb-3 flex items-center justify-center"
-                        style={{ background: `${task.color || "#E80000"}12`, border: `1.5px solid ${task.color || "#E80000"}25` }}>
-                        <DumbbellIcon size={28} className="text-gray-11" />
-                    </div>
-                    <h2 className="text-xl font-bold text-gray-12">{sessionName}</h2>
-                    <p className="text-xs text-gray-7 mt-1.5">
-                        {exercises.length} exercices · {fmt(exercises.length * config.roundDuration)} · +{task.xpReward} XP
-                    </p>
-                </motion.div>
-
-                {/* Exercise preview list */}
-                <div className="space-y-2 mb-6">
-                    {exercises.map((ex, i) => (
-                        <motion.div
-                            key={i}
-                            className="bg-gray-3/30 border border-gray-5/25 rounded-xl p-3.5 flex items-center gap-3"
-                            initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.05 + i * 0.04 }}
-                        >
-                            <div className="w-9 h-9 rounded-xl bg-gray-4/40 flex items-center justify-center text-gray-9 shrink-0">
-                                {getExerciseIcon(ex.name, 18)}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <p className="text-[13px] font-semibold text-gray-12 truncate">{ex.name}</p>
-                                <p className="text-[10px] text-gray-7 mt-0.5">{ex.sets} · {ex.muscles}</p>
-                            </div>
-                            <motion.button
-                                onClick={() => setInfoExercise(ex)}
-                                className="w-8 h-8 rounded-full bg-gray-4/40 flex items-center justify-center text-gray-7 hover:text-gray-11 transition-colors shrink-0"
-                                whileTap={{ scale: 0.85 }}
-                            >
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                    <circle cx="12" cy="12" r="10" /><path d="M12 16v-4" /><path d="M12 8h.01" />
-                                </svg>
-                            </motion.button>
-                        </motion.div>
-                    ))}
-                </div>
-
-                {/* Actions */}
-                <motion.div
-                    className="space-y-2.5"
-                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}
-                >
-                    <motion.button
-                        onClick={handleStart}
-                        className="w-full py-4 rounded-2xl font-bold text-[15px] text-white optiz-gradient-bg flex items-center justify-center gap-2.5 transition-all"
-                        whileTap={{ scale: 0.97 }}
-                        whileHover={{ scale: 1.01 }}
-                    >
-                        <PlayIcon size={18} />
-                        Lancer l&apos;EMOM
-                    </motion.button>
-                    <motion.button
-                        onClick={() => setIsEditing(true)}
-                        className="w-full py-3.5 rounded-2xl font-semibold text-sm text-gray-11 bg-gray-3/50 border border-gray-5/40 hover:bg-gray-4/60 flex items-center justify-center gap-2 transition-all"
-                        whileTap={{ scale: 0.97 }}
-                    >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                        </svg>
-                        Modifier le programme
-                    </motion.button>
-                </motion.div>
-
-                <ExerciseInfoSheet exercise={infoExercise} isOpen={!!infoExercise} onClose={() => setInfoExercise(null)} />
-            </div>
-        );
-    }
-
-    // ── Active EMOM workout ──
-    const currentEx = config.exercises[currentExIndex];
-    const allChecked = completedExercises.size === config.exercises.length;
-
-    return (
-        <div className="pb-28 -mx-4 sm:-mx-6">
-            {/* Sticky header */}
-            <div className="sticky top-0 z-20 bg-gray-1/95 backdrop-blur-xl border-b border-gray-5/20 px-4 sm:px-6 py-3">
-                <div className="flex items-center justify-between">
-                    <motion.button
-                        onClick={() => { handleReset(); }}
-                        className="flex items-center gap-1 text-sm text-gray-8 hover:text-gray-12 transition-colors"
-                        whileTap={{ scale: 0.95 }}
-                    >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
-                        Arrêter
-                    </motion.button>
-                    <div className="flex items-center gap-3">
-                        <span className="text-[10px] font-bold text-gray-7 tabular-nums">
-                            {currentExIndex + 1}/{config.exercises.length}
-                        </span>
-                        <motion.button
-                            onClick={handleToggleSound}
-                            className="w-8 h-8 rounded-full bg-gray-3/60 flex items-center justify-center text-gray-7 hover:text-gray-11 transition-colors"
-                            whileTap={{ scale: 0.85 }}
-                        >
-                            {soundOn ? (
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19" />
-                                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14" /><path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
-                                </svg>
-                            ) : (
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19" />
-                                    <line x1="23" y1="9" x2="17" y2="15" /><line x1="17" y1="9" x2="23" y2="15" />
-                                </svg>
-                            )}
-                        </motion.button>
-                    </div>
-                </div>
-                {/* Progress bar */}
-                <div className="h-[3px] w-full bg-gray-4/30 rounded-full mt-2.5 overflow-hidden">
-                    <motion.div
-                        className="h-full rounded-full optiz-gradient-bg"
-                        animate={{ width: `${(elapsed / totalDuration) * 100}%` }}
-                        transition={{ duration: 0.3, ease: "linear" }}
-                    />
-                </div>
-            </div>
-
-            <div className="px-4 sm:px-6">
-                {/* Timer section */}
-                <motion.div
-                    className="flex flex-col items-center pt-6 pb-4"
-                    initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-                >
-                    {isWorkoutDone ? (
-                        <motion.div
-                            className="text-center"
-                            initial={{ scale: 0.8, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            transition={{ type: "spring", stiffness: 300 }}
-                        >
-                            <div className="w-36 h-36 rounded-full bg-emerald-500/10 border-2 border-emerald-500/30 flex items-center justify-center mx-auto mb-3">
-                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                    <polyline points="20 6 9 17 4 12" />
-                                </svg>
-                            </div>
-                            <h3 className="text-lg font-bold text-gray-12">Terminé !</h3>
-                            <p className="text-xs text-gray-7 mt-1">+{task.xpReward} XP</p>
-                        </motion.div>
-                    ) : (
-                        <>
-                            <CircularTimer
-                                timeLeft={timeLeftInRound}
-                                totalTime={config.roundDuration}
-                                isPaused={!isRunning}
-                            />
-
-                            {/* Current exercise name */}
-                            <motion.div
-                                className="mt-4 text-center"
-                                key={currentExIndex}
-                                initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                                transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                            >
-                                <div className="flex items-center justify-center gap-2 mb-1">
-                                    <div className="text-gray-9">
-                                        {getExerciseIcon(currentEx.name, 16)}
-                                    </div>
-                                    <h3 className="text-[15px] font-bold text-gray-12">{currentEx.name}</h3>
-                                </div>
-                                <p className="text-[11px] text-gray-7">{currentEx.reps || currentEx.sets}</p>
-                            </motion.div>
-
-                            {/* Controls */}
-                            <div className="flex items-center gap-4 mt-5">
-                                <motion.button
-                                    onClick={handleReset}
-                                    className="w-11 h-11 rounded-full bg-gray-3/60 border border-gray-5/30 flex items-center justify-center text-gray-8 hover:text-gray-12 transition-colors"
-                                    whileTap={{ scale: 0.85 }}
-                                >
-                                    <ResetIcon size={16} />
-                                </motion.button>
-                                <motion.button
-                                    onClick={isRunning ? handlePause : handleResume}
-                                    className="w-14 h-14 rounded-full optiz-gradient-bg flex items-center justify-center text-white shadow-lg"
-                                    whileTap={{ scale: 0.9 }}
-                                    whileHover={{ scale: 1.05 }}
-                                >
-                                    {isRunning ? <PauseIcon size={22} /> : <PlayIcon size={22} />}
-                                </motion.button>
-                                <motion.button
-                                    onClick={handleSkip}
-                                    className="w-11 h-11 rounded-full bg-gray-3/60 border border-gray-5/30 flex items-center justify-center text-gray-8 hover:text-gray-12 transition-colors"
-                                    whileTap={{ scale: 0.85 }}
-                                >
-                                    <SkipIcon size={16} />
-                                </motion.button>
-                            </div>
-                        </>
-                    )}
-                </motion.div>
-
-                {/* Divider */}
-                <div className="h-px bg-gray-5/20 my-3" />
-
-                {/* Exercise list */}
-                <div className="space-y-1.5">
-                    {config.exercises.map((ex, i) => {
-                        const isCurrent = i === currentExIndex && !isWorkoutDone;
-                        const isDone = completedExercises.has(i);
-                        const isPast = !isWorkoutDone && i < currentExIndex;
-
-                        return (
-                            <motion.div
-                                key={i}
-                                className={`rounded-xl p-3 flex items-center gap-3 transition-all ${
-                                    isCurrent
-                                        ? "bg-gray-3/50 border border-gray-5/40"
-                                        : isDone
-                                            ? "bg-emerald-500/5 border border-emerald-500/15"
-                                            : "border border-transparent"
-                                }`}
-                                initial={{ opacity: 0, y: 6 }}
-                                animate={{ opacity: isPast && !isDone ? 0.4 : 1, y: 0 }}
-                                transition={{ delay: i * 0.03 }}
-                            >
-                                {/* Check button */}
-                                <motion.button
-                                    onClick={() => handleCheckExercise(i)}
-                                    className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all ${
-                                        isDone
-                                            ? "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.2)]"
-                                            : isCurrent
-                                                ? "bg-gray-4/60 border border-gray-5/40"
-                                                : "bg-gray-4/30"
-                                    }`}
-                                    whileTap={{ scale: 0.8 }}
-                                >
-                                    {isDone ? (
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                                            <polyline points="20 6 9 17 4 12" />
-                                        </svg>
-                                    ) : (
-                                        <span className="text-[10px] font-bold text-gray-6">{i + 1}</span>
-                                    )}
-                                </motion.button>
-
-                                {/* Exercise info */}
-                                <div className="flex-1 min-w-0">
-                                    <p className={`text-[13px] font-semibold truncate ${isDone ? "text-emerald-400 line-through" : "text-gray-12"}`}>
-                                        {ex.name}
-                                    </p>
-                                    <p className="text-[10px] text-gray-7 mt-0.5">{ex.reps || ex.sets}</p>
-                                </div>
-
-                                {/* Info button */}
-                                <motion.button
-                                    onClick={() => setInfoExercise(exercises[i])}
-                                    className="w-7 h-7 rounded-full bg-gray-4/30 flex items-center justify-center text-gray-7 hover:text-gray-11 transition-colors shrink-0"
-                                    whileTap={{ scale: 0.85 }}
-                                >
-                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                        <circle cx="12" cy="12" r="10" /><path d="M12 16v-4" /><path d="M12 8h.01" />
-                                    </svg>
-                                </motion.button>
-                            </motion.div>
-                        );
-                    })}
-                </div>
-            </div>
-
-            {/* Fixed bottom CTA */}
-            <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-[var(--gray-1)] via-[var(--gray-1)]/95 to-transparent pointer-events-none flex justify-center z-20">
-                <motion.button
-                    onClick={handleFinish}
-                    disabled={!isWorkoutDone && !allChecked}
-                    className={`pointer-events-auto w-full max-w-sm py-3.5 rounded-xl font-bold text-sm transition-all ${
-                        isWorkoutDone || allChecked
-                            ? "optiz-gradient-bg text-white active:scale-[0.97]"
-                            : "bg-gray-3 border border-gray-5/40 text-gray-7 cursor-not-allowed opacity-60"
-                    }`}
-                    whileTap={isWorkoutDone || allChecked ? { scale: 0.97 } : {}}
-                >
-                    {isWorkoutDone || allChecked
-                        ? `Terminer · +${task.xpReward} XP`
-                        : `Terminer (${completedExercises.size}/${config.exercises.length})`
-                    }
-                </motion.button>
-            </div>
-
-            <ExerciseInfoSheet exercise={infoExercise} isOpen={!!infoExercise} onClose={() => setInfoExercise(null)} />
-        </div>
-    );
-}
-
-// ═══════════════════════════════════════════════
-// CHALLENGE PROGRAM — Main export
-// ═══════════════════════════════════════════════
 
 export function ChallengeProgram({
-    challengeTitle, challengeEmoji, tasks, onCompleteTask, onBack, completingTaskId,
+  challengeTitle,
+  workoutTask,
+  onCompleteTask,
+  onBack,
+  completingTaskId,
 }: ChallengeProgramProps) {
-    const { t } = useI18n();
-    const [activeTask, setActiveTask] = useState<ChallengeTask | null>(null);
-    const [completions, setCompletions] = useState<Record<string, string>>({});
+  const { t } = useI18n();
 
-    useEffect(() => {
-        try { setCompletions(JSON.parse(localStorage.getItem("optiz-completions") || "{}")); } catch { }
-    }, []);
+  const defaultExercises = useMemo(() => {
+    return (workoutTask.exercises || []).map(toEditableExercise);
+  }, [workoutTask.exercises]);
 
-    const isCompletedToday = (taskId: string) => {
-        const d = completions[taskId];
-        if (!d) return false;
-        return (Date.now() - new Date(d).getTime()) < 24 * 60 * 60 * 1000;
+  const [isEditing, setIsEditing] = useState(true);
+  const [roundDuration, setRoundDuration] = useState(60);
+  const [exercises, setExercises] = useState<EditableExercise[]>(defaultExercises);
+  const [infoExercise, setInfoExercise] = useState<EditableExercise | null>(null);
+
+  const [isRunning, setIsRunning] = useState(false);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [checkedBlocks, setCheckedBlocks] = useState<Set<number>>(new Set());
+  const [soundOn, setSoundOn] = useState<boolean>(() => isSoundEnabled());
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastBeepRef = useRef<number>(-1);
+
+  const blocks = useMemo(() => {
+    return exercises.flatMap((exercise) =>
+      Array.from({ length: Math.max(1, exercise.sets) }, (_, setIndex) => ({
+        exercise,
+        setIndex: setIndex + 1,
+      }))
+    );
+  }, [exercises]);
+
+  const totalDuration = blocks.length * roundDuration;
+  const currentBlockIndex = Math.min(Math.floor(elapsedSeconds / roundDuration), Math.max(0, blocks.length - 1));
+  const currentBlock = blocks[currentBlockIndex];
+  const secondsIntoCurrentBlock = elapsedSeconds % roundDuration;
+  const secondsLeftInCurrentBlock = Math.max(0, roundDuration - secondsIntoCurrentBlock);
+  const workoutDoneByTimer = elapsedSeconds >= totalDuration && totalDuration > 0;
+  const allChecked = checkedBlocks.size === blocks.length && blocks.length > 0;
+
+  useEffect(() => {
+    if (!isRunning || workoutDoneByTimer) return;
+
+    timerRef.current = setInterval(() => {
+      setElapsedSeconds((prev) => {
+        const next = prev + 1;
+        if (next >= totalDuration) {
+          setIsRunning(false);
+          playFinishSound();
+        }
+        return Math.min(next, totalDuration);
+      });
+    }, 1000);
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
     };
+  }, [isRunning, workoutDoneByTimer, totalDuration]);
 
-    const completed = tasks.filter(t => t.completed || isCompletedToday(t.id)).length;
-    const total = tasks.length;
-    const progressPercent = total > 0 ? (completed / total) * 100 : 0;
-    const totalXpEarned = tasks.filter(t => t.completed).reduce((sum, t) => sum + t.xpReward, 0);
-    const totalXpPossible = tasks.reduce((sum, t) => sum + t.xpReward, 0);
+  useEffect(() => {
+    if (!isRunning || !soundOn || workoutDoneByTimer || blocks.length === 0) return;
 
-    // Active workout view
-    if (activeTask) {
-        return (
-            <EMOMWorkout
-                task={activeTask}
-                onBack={() => setActiveTask(null)}
-                onFinish={() => {
-                    onCompleteTask(activeTask.id);
-                    setActiveTask(null);
-                    try { setCompletions(JSON.parse(localStorage.getItem("optiz-completions") || "{}")); } catch { }
-                }}
-            />
-        );
+    if (secondsLeftInCurrentBlock <= 3 && secondsLeftInCurrentBlock > 0 && lastBeepRef.current !== elapsedSeconds) {
+      lastBeepRef.current = elapsedSeconds;
+      playBeepSound();
     }
 
-    // ── Program overview ──
+    if (secondsIntoCurrentBlock === 0 && elapsedSeconds > 0) {
+      playStartSound();
+    }
+  }, [
+    elapsedSeconds,
+    isRunning,
+    soundOn,
+    workoutDoneByTimer,
+    secondsIntoCurrentBlock,
+    secondsLeftInCurrentBlock,
+    blocks.length,
+  ]);
 
+  const estimatedMinutes = Math.max(1, Math.round(totalDuration / 60));
+
+  const updateExercise = (id: string, update: Partial<EditableExercise>) => {
+    setExercises((prev) => prev.map((exercise) => (exercise.id === id ? { ...exercise, ...update } : exercise)));
+  };
+
+  const handleStart = () => {
+    setIsEditing(false);
+    setIsRunning(true);
+    playStartSound();
+  };
+
+  const handlePause = () => setIsRunning(false);
+  const handleResume = () => {
+    setIsRunning(true);
+    playStartSound();
+  };
+
+  const handleResetWorkout = () => {
+    setIsRunning(false);
+    setElapsedSeconds(0);
+    setCheckedBlocks(new Set());
+    setIsEditing(true);
+  };
+
+  const handleSkipBlock = () => {
+    if (blocks.length === 0) return;
+    const nextStart = (currentBlockIndex + 1) * roundDuration;
+    setElapsedSeconds(Math.min(nextStart, totalDuration));
+    playStartSound();
+  };
+
+  const handleToggleBlock = (index: number) => {
+    setCheckedBlocks((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) {
+        next.delete(index);
+      } else {
+        next.add(index);
+        playCompleteSound();
+      }
+      return next;
+    });
+  };
+
+  const handleToggleSound = () => {
+    const next = !soundOn;
+    setSoundOn(next);
+    setSoundEnabled(next);
+  };
+
+  const handleFinishWorkout = () => {
+    if (workoutTask.completed || completingTaskId === workoutTask.id) return;
+    onCompleteTask(workoutTask.id);
+  };
+
+  if (workoutTask.completed) {
     return (
-        <div className="pb-8">
-            {/* Back */}
-            <motion.button
-                onClick={onBack}
-                className="flex items-center gap-1.5 text-sm text-gray-8 hover:text-gray-12 transition-colors mb-5"
-                initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }}
-                whileTap={{ scale: 0.95 }}
-            >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
-                {t("back")}
-            </motion.button>
+      <div className="pb-8">
+        <motion.button
+          onClick={onBack}
+          className="flex items-center gap-1.5 text-sm text-gray-8 hover:text-gray-12 transition-colors mb-5"
+          whileTap={{ scale: 0.95 }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+          {t("back")}
+        </motion.button>
 
-            {/* Hero card */}
-            <motion.div
-                className="rounded-2xl overflow-hidden mb-6 border border-gray-5/20"
-                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-            >
-                <div className="relative h-32 w-full">
-                    <Image src="/Challenge1.jpeg" alt={challengeTitle} fill className="object-cover object-top" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[var(--gray-2)] via-[var(--gray-2)]/60 to-transparent" />
-                    <div className="absolute bottom-3 left-4 right-4">
-                        <h2 className="text-lg font-bold text-white">{challengeTitle}</h2>
-                        <p className="text-[10px] text-white/50 font-medium mt-0.5">
-                            Programme Haltères / Dips / Tractions · {total} séances
-                        </p>
-                    </div>
+        <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/5 p-5 text-center">
+          <h2 className="text-lg font-bold text-gray-12 mb-1">{t("doneToday")}</h2>
+          <p className="text-sm text-gray-8 mb-2">{workoutTask.name}</p>
+          <p className="text-xs text-gray-7">{t("dailyResetHint")}</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="pb-24">
+      <motion.button
+        onClick={onBack}
+        className="flex items-center gap-1.5 text-sm text-gray-8 hover:text-gray-12 transition-colors mb-5"
+        whileTap={{ scale: 0.95 }}
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="15 18 9 12 15 6" />
+        </svg>
+        {t("back")}
+      </motion.button>
+
+      <motion.div
+        className="rounded-2xl border border-gray-5/40 bg-gradient-to-br from-gray-2 via-gray-2 to-[#170909] p-5 mb-5"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <p className="text-[10px] uppercase tracking-[0.2em] text-gray-7 font-semibold mb-1">{challengeTitle}</p>
+        <h2 className="text-xl font-black text-gray-12 tracking-tight leading-tight mb-2">{workoutTask.name.replace(/^[🟥🟦🟩🟪]\s*/, "")}</h2>
+        <p className="text-xs text-gray-8 mb-3">{t("dailyResetHint")}</p>
+        <div className="flex items-center gap-2 text-[10px] text-gray-8 font-medium">
+          <span className="rounded-full px-2.5 py-1 bg-gray-4/45 border border-gray-5/30">+{workoutTask.xpReward} XP</span>
+          <span className="rounded-full px-2.5 py-1 bg-gray-4/45 border border-gray-5/30">{blocks.length} {t("totalSets")}</span>
+          <span className="rounded-full px-2.5 py-1 bg-gray-4/45 border border-gray-5/30">~{estimatedMinutes} {t("minutesShort")}</span>
+        </div>
+      </motion.div>
+
+      {isEditing ? (
+        <motion.div
+          className="space-y-3"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div className="rounded-2xl border border-gray-5/35 bg-gray-3/25 p-4">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-semibold text-gray-11">{t("roundDuration")}</p>
+              <p className="text-xs font-semibold text-gray-8 tabular-nums">{roundDuration}s</p>
+            </div>
+            <input
+              type="range"
+              min={40}
+              max={90}
+              step={5}
+              value={roundDuration}
+              onChange={(e) => setRoundDuration(Number(e.target.value))}
+              className="w-full accent-[#E80000]"
+            />
+            <p className="text-[10px] text-gray-7 mt-2">{t("roundDurationHint")}</p>
+          </div>
+
+          <div className="space-y-2.5">
+            {exercises.map((exercise, index) => (
+              <div key={exercise.id} className="rounded-2xl border border-gray-5/35 bg-gray-3/20 p-3.5">
+                <div className="flex items-center gap-2 mb-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-gray-4/55 border border-gray-5/30 text-gray-11 flex items-center justify-center">
+                    {getExerciseIcon(exercise.name, 15)}
+                  </div>
+                  <input
+                    value={exercise.name}
+                    onChange={(e) => updateExercise(exercise.id, { name: e.target.value })}
+                    className="flex-1 bg-gray-4/35 border border-gray-5/35 rounded-lg px-2.5 py-2 text-[13px] font-semibold text-gray-12 focus:outline-none focus:border-[#E80000]/50"
+                    placeholder={t("exerciseName")}
+                  />
+                  <button
+                    onClick={() => setInfoExercise(exercise)}
+                    className="w-8 h-8 rounded-lg bg-gray-4/35 border border-gray-5/35 text-gray-8"
+                  >
+                    i
+                  </button>
                 </div>
-                <div className="p-4 bg-gray-3/20">
-                    <div className="flex justify-between text-xs mb-2">
-                        <span className="text-gray-7 font-medium">{t("progress")}</span>
-                        <span className="text-gray-11 font-bold tabular-nums">{completed}/{total} séances</span>
+
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="rounded-xl bg-gray-4/30 border border-gray-5/35 p-2.5">
+                    <p className="text-[10px] text-gray-7 uppercase tracking-wider font-bold mb-1.5">{t("sets")}</p>
+                    <div className="flex items-center justify-between gap-1">
+                      <button
+                        onClick={() => updateExercise(exercise.id, { sets: Math.max(1, exercise.sets - 1) })}
+                        className="w-7 h-7 rounded-md bg-gray-4/60 text-gray-11 font-bold"
+                      >
+                        -
+                      </button>
+                      <span className="text-sm font-bold text-gray-12 tabular-nums">{exercise.sets}</span>
+                      <button
+                        onClick={() => updateExercise(exercise.id, { sets: Math.min(8, exercise.sets + 1) })}
+                        className="w-7 h-7 rounded-md bg-gray-4/60 text-gray-11 font-bold"
+                      >
+                        +
+                      </button>
                     </div>
-                    <div className="h-1.5 w-full bg-gray-4/40 rounded-full overflow-hidden">
-                        <motion.div
-                            className="h-full rounded-full optiz-gradient-bg"
-                            initial={{ width: 0 }}
-                            animate={{ width: `${progressPercent}%` }}
-                            transition={{ duration: 0.6, ease: "easeOut" }}
-                        />
+                  </div>
+
+                  <div className="rounded-xl bg-gray-4/30 border border-gray-5/35 p-2.5">
+                    <p className="text-[10px] text-gray-7 uppercase tracking-wider font-bold mb-1.5">{t("reps")}</p>
+                    <input
+                      value={exercise.reps}
+                      onChange={(e) => updateExercise(exercise.id, { reps: e.target.value })}
+                      className="w-full bg-gray-4/60 border border-gray-5/35 rounded-md px-2 py-1.5 text-xs font-semibold text-gray-12 text-center focus:outline-none focus:border-[#E80000]/50"
+                      placeholder="8-12"
+                    />
+                  </div>
+
+                  <div className="rounded-xl bg-gray-4/30 border border-gray-5/35 p-2.5">
+                    <p className="text-[10px] text-gray-7 uppercase tracking-wider font-bold mb-1.5">{t("rest")}</p>
+                    <div className="flex items-center justify-between gap-1">
+                      <button
+                        onClick={() => updateExercise(exercise.id, { restSec: Math.max(20, exercise.restSec - 10) })}
+                        className="w-7 h-7 rounded-md bg-gray-4/60 text-gray-11 font-bold"
+                      >
+                        -
+                      </button>
+                      <span className="text-xs font-bold text-gray-12 tabular-nums">{exercise.restSec}s</span>
+                      <button
+                        onClick={() => updateExercise(exercise.id, { restSec: Math.min(180, exercise.restSec + 10) })}
+                        className="w-7 h-7 rounded-md bg-gray-4/60 text-gray-11 font-bold"
+                      >
+                        +
+                      </button>
                     </div>
-                    <div className="flex items-center gap-1.5 mt-2.5">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#E80000" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10" />
-                        </svg>
-                        <span className="text-[11px] font-bold text-gray-11 tabular-nums">{totalXpEarned}</span>
-                        <span className="text-[11px] text-gray-7">/ {totalXpPossible} {t("xpLabel")}</span>
-                    </div>
+                  </div>
                 </div>
-            </motion.div>
 
-            {/* Session cards */}
-            <span className="text-[10px] font-bold text-gray-7 uppercase tracking-widest block mb-3">Séances</span>
-            <div className="space-y-2.5">
-                {tasks.map((task, i) => {
-                    const exercises = task.exercises || [];
-                    const doneToday = isCompletedToday(task.id) || task.completed;
-                    const sessionName = task.name.replace(/^[🟥🟦🟩🟪]\s*/, "");
+                <p className="text-[10px] text-gray-7 mt-2">#{index + 1} · {exercise.muscles}</p>
+              </div>
+            ))}
+          </div>
 
-                    return (
-                        <motion.div
-                            key={task.id}
-                            className={`rounded-2xl overflow-hidden transition-all ${doneToday ? "" : "active:scale-[0.98]"}`}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.08 + i * 0.06 }}
-                            onClick={() => { if (!doneToday) setActiveTask(task); }}
-                            style={{ cursor: doneToday ? "default" : "pointer" }}
-                        >
-                            <div className={`border rounded-2xl overflow-hidden transition-all ${
-                                doneToday 
-                                    ? "bg-gray-3/10 border-emerald-500/15 opacity-60"
-                                    : "bg-gray-3/20 border-gray-5/20 hover:border-gray-5/40"
-                            }`}>
-                                {/* Top accent line */}
-                                <div className="h-[2px] w-full" style={{ background: doneToday ? "#10B981" : "#E80000" }} />
-                                
-                                <div className="p-4">
-                                    {/* Top row: number + name + XP badge */}
-                                    <div className="flex items-start justify-between mb-3">
-                                        <div className="flex items-center gap-3">
-                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                                                doneToday ? "bg-emerald-500/10" : "bg-[#E80000]/8"
-                                            }`}>
-                                                {doneToday ? (
-                                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                                                        <polyline points="20 6 9 17 4 12" />
-                                                    </svg>
-                                                ) : (
-                                                    <span className="text-xs font-black text-[#E80000]/60 tabular-nums">{String(i + 1).padStart(2, "0")}</span>
-                                                )}
-                                            </div>
-                                            <div>
-                                                <h4 className="text-[14px] font-bold text-gray-12 leading-tight">{sessionName}</h4>
-                                                <p className="text-[11px] text-gray-7 mt-0.5">{exercises.length} exercices · {doneToday ? "Terminé" : `+${task.xpReward} XP`}</p>
-                                            </div>
-                                        </div>
-                                        {!doneToday && (
-                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-6 mt-1 shrink-0">
-                                                <polyline points="9 18 15 12 9 6" />
-                                            </svg>
-                                        )}
-                                    </div>
-                                    
-                                    {/* Exercise preview chips */}
-                                    <div className="flex flex-wrap gap-1.5">
-                                        {exercises.slice(0, 4).map((ex, j) => (
-                                            <span key={j} className="text-[10px] text-gray-8 bg-gray-4/25 px-2.5 py-1 rounded-lg font-medium">
-                                                {ex.name.split("(")[0].trim().split("—")[0].trim()}
-                                            </span>
-                                        ))}
-                                        {exercises.length > 4 && (
-                                            <span className="text-[10px] text-gray-6 bg-gray-4/15 px-2.5 py-1 rounded-lg font-medium">
-                                                +{exercises.length - 4}
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        </motion.div>
-                    );
-                })}
+          <motion.button
+            onClick={handleStart}
+            className="w-full py-3.5 rounded-xl font-bold text-sm text-white optiz-gradient-bg"
+            whileTap={{ scale: 0.98 }}
+          >
+            {t("startWorkout")}
+          </motion.button>
+        </motion.div>
+      ) : (
+        <div className="-mx-4 sm:-mx-6 pb-24">
+          <div className="sticky top-0 z-20 bg-gray-1/95 backdrop-blur-xl border-b border-gray-5/30 px-4 sm:px-6 py-3">
+            <div className="flex items-center justify-between">
+              <button onClick={handleResetWorkout} className="text-sm text-gray-8 hover:text-gray-12">{t("reset")}</button>
+              <div className="flex items-center gap-3">
+                <span className="text-[11px] text-gray-8 tabular-nums">{currentBlockIndex + 1}/{Math.max(1, blocks.length)}</span>
+                <button
+                  onClick={handleToggleSound}
+                  className="w-8 h-8 rounded-full bg-gray-3/70 border border-gray-5/35 text-gray-9"
+                >
+                  {soundOn ? "🔊" : "🔇"}
+                </button>
+              </div>
+            </div>
+            <div className="h-1.5 rounded-full bg-gray-4/45 overflow-hidden mt-2.5">
+              <motion.div
+                className="h-full optiz-gradient-bg"
+                animate={{ width: `${totalDuration === 0 ? 0 : (elapsedSeconds / totalDuration) * 100}%` }}
+              />
+            </div>
+          </div>
+
+          <div className="px-4 sm:px-6 pt-6">
+            {currentBlock ? (
+              <div className="text-center mb-5">
+                <p className="text-[11px] uppercase tracking-wider text-gray-7 font-semibold mb-1">{t("currentExercise")}</p>
+                <h3 className="text-lg font-bold text-gray-12">{currentBlock.exercise.name}</h3>
+                <p className="text-xs text-gray-8 mt-1">
+                  {t("setLabel", { current: currentBlock.setIndex, total: currentBlock.exercise.sets })} · {currentBlock.exercise.reps} {t("reps")}
+                </p>
+              </div>
+            ) : null}
+
+            <div className="rounded-2xl border border-gray-5/35 bg-gray-3/20 p-5 text-center mb-5">
+              <p className="text-5xl font-black text-gray-12 tabular-nums tracking-tight">{formatSeconds(secondsLeftInCurrentBlock)}</p>
+              <p className="text-xs text-gray-7 mt-1">{t("timeLeftInRound")}</p>
+
+              <div className="flex items-center justify-center gap-3 mt-4">
+                <motion.button
+                  onClick={handleResetWorkout}
+                  className="w-11 h-11 rounded-full bg-gray-3/70 border border-gray-5/35 text-gray-10 flex items-center justify-center"
+                  whileTap={{ scale: 0.88 }}
+                >
+                  <ResetIcon size={16} />
+                </motion.button>
+
+                <motion.button
+                  onClick={isRunning ? handlePause : handleResume}
+                  className="w-14 h-14 rounded-full optiz-gradient-bg text-white flex items-center justify-center"
+                  whileTap={{ scale: 0.9 }}
+                >
+                  {isRunning ? <PauseIcon size={22} /> : <PlayIcon size={22} />}
+                </motion.button>
+
+                <motion.button
+                  onClick={handleSkipBlock}
+                  className="w-11 h-11 rounded-full bg-gray-3/70 border border-gray-5/35 text-gray-10 flex items-center justify-center"
+                  whileTap={{ scale: 0.88 }}
+                >
+                  <SkipIcon size={16} />
+                </motion.button>
+              </div>
             </div>
 
-            {/* All done */}
-            {completed === total && total > 0 && (
-                <motion.div
-                    className="mt-6 text-center py-6 rounded-2xl bg-emerald-500/5 border border-emerald-500/15"
-                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
-                >
-                    <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto mb-3">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="20 6 9 17 4 12" />
-                        </svg>
+            <div className="space-y-2">
+              {blocks.map((block, blockIndex) => {
+                const isChecked = checkedBlocks.has(blockIndex);
+                const isCurrent = blockIndex === currentBlockIndex && !workoutDoneByTimer;
+
+                return (
+                  <motion.button
+                    key={`${block.exercise.id}-${blockIndex}`}
+                    onClick={() => handleToggleBlock(blockIndex)}
+                    className={`w-full rounded-xl border px-3 py-2.5 flex items-center gap-2.5 text-left transition-all ${
+                      isChecked
+                        ? "bg-emerald-500/8 border-emerald-500/20"
+                        : isCurrent
+                        ? "bg-gray-3/55 border-gray-5/45"
+                        : "bg-gray-3/20 border-gray-5/25"
+                    }`}
+                    whileTap={{ scale: 0.99 }}
+                  >
+                    <div
+                      className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+                        isChecked ? "bg-emerald-500" : "bg-gray-4/65"
+                      }`}
+                    >
+                      {isChecked ? "✓" : blockIndex + 1}
                     </div>
-                    <h3 className="text-sm font-bold text-gray-12">{t("allDone")}</h3>
-                    <p className="text-[11px] text-gray-8 mt-1">{t("xpEarned", { n: totalXpEarned })}</p>
-                </motion.div>
-            )}
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm font-semibold truncate ${isChecked ? "text-emerald-300" : "text-gray-12"}`}>
+                        {block.exercise.name}
+                      </p>
+                      <p className="text-[11px] text-gray-8">
+                        {t("setLabel", { current: block.setIndex, total: block.exercise.sets })} · {block.exercise.reps} {t("reps")}
+                      </p>
+                    </div>
+                  </motion.button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-[var(--gray-1)] via-[var(--gray-1)]/95 to-transparent pointer-events-none">
+            <motion.button
+              onClick={handleFinishWorkout}
+              disabled={completingTaskId === workoutTask.id || (!workoutDoneByTimer && !allChecked)}
+              className={`pointer-events-auto w-full max-w-sm mx-auto py-3.5 rounded-xl font-bold text-sm ${
+                workoutDoneByTimer || allChecked
+                  ? "optiz-gradient-bg text-white"
+                  : "bg-gray-3 border border-gray-5/40 text-gray-7 opacity-70"
+              } ${completingTaskId === workoutTask.id ? "opacity-60 cursor-not-allowed" : ""}`}
+              whileTap={workoutDoneByTimer || allChecked ? { scale: 0.98 } : {}}
+            >
+              {completingTaskId === workoutTask.id
+                ? t("savingWorkout")
+                : workoutDoneByTimer || allChecked
+                ? `${t("completeWorkoutCta")} · +${workoutTask.xpReward} XP`
+                : t("completeWorkoutProgress", { done: checkedBlocks.size, total: blocks.length })}
+            </motion.button>
+          </div>
         </div>
-    );
+      )}
+
+      <ExerciseInfoSheet exercise={infoExercise} isOpen={!!infoExercise} onClose={() => setInfoExercise(null)} />
+    </div>
+  );
 }

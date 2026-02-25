@@ -4,6 +4,15 @@ import { createServerSupabase } from "@/lib/supabase";
 import { fetchWhopUserProfile } from "@/lib/authentication";
 import { OPTIZ_MAX_CHALLENGE } from "@/app/components/rankSystem";
 
+function normalizeTaskName(name: string): string {
+    return name
+        .replace(/^[^\w]+/u, "")
+        .replace(/[—-]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .toLowerCase();
+}
+
 // ══════════════════════════════════════
 // Server Actions — called from client with userId passed from SSR
 // userId MUST come from verifyUser() in the server component, NOT from client
@@ -101,10 +110,10 @@ export async function loadUserData(userId: string) {
             if (!challengeErr && seededChallenge) {
                 fetchedChallenges = [seededChallenge];
                 const tasksToInsert = [
-                    { id: "a0000001-0000-0000-0000-000000000001", challenge_id: seededChallenge.id, name: "🟥 Push 1 — Pecs / Épaules / Triceps", emoji: "🟥", xp_reward: 50, sort_order: 1 },
-                    { id: "a0000001-0000-0000-0000-000000000002", challenge_id: seededChallenge.id, name: "🟦 Pull 1 — Dos / Biceps / Épaules", emoji: "🟦", xp_reward: 50, sort_order: 2 },
-                    { id: "a0000001-0000-0000-0000-000000000003", challenge_id: seededChallenge.id, name: "🟩 Legs — Jambes / Fessiers / Gainage", emoji: "🟩", xp_reward: 50, sort_order: 3 },
-                    { id: "a0000001-0000-0000-0000-000000000004", challenge_id: seededChallenge.id, name: "🟪 Upper — Rappel Haut du Corps", emoji: "🟪", xp_reward: 50, sort_order: 4 },
+                    { id: "a0000001-0000-0000-0000-000000000001", challenge_id: seededChallenge.id, name: "🟥 Push I — Chest / Shoulders / Triceps", emoji: "🟥", xp_reward: 50, sort_order: 1 },
+                    { id: "a0000001-0000-0000-0000-000000000002", challenge_id: seededChallenge.id, name: "🟦 Pull I — Back / Biceps / Rear Delts", emoji: "🟦", xp_reward: 50, sort_order: 2 },
+                    { id: "a0000001-0000-0000-0000-000000000003", challenge_id: seededChallenge.id, name: "🟩 Legs — Quads / Glutes / Core", emoji: "🟩", xp_reward: 50, sort_order: 3 },
+                    { id: "a0000001-0000-0000-0000-000000000004", challenge_id: seededChallenge.id, name: "🟪 Upper — Full Upper Body", emoji: "🟪", xp_reward: 50, sort_order: 4 },
                 ];
                 const { data: seededTasks } = await db.from("challenge_tasks").insert(tasksToInsert).select();
                 fetchedTasks = seededTasks || tasksToInsert;
@@ -116,7 +125,7 @@ export async function loadUserData(userId: string) {
 
     // Map exercise data from OPTIZ_MAX_CHALLENGE onto tasks from DB
     const exerciseMap = new Map(
-        OPTIZ_MAX_CHALLENGE.tasks.map(t => [t.name, { exercises: t.exercises, color: t.color }])
+        OPTIZ_MAX_CHALLENGE.tasks.map(t => [normalizeTaskName(t.name), { exercises: t.exercises, color: t.color }])
     );
 
     // Assemble challenges with tasks
@@ -135,7 +144,7 @@ export async function loadUserData(userId: string) {
             joined: joinedIds.has(c.id as string),
             tasks: tasks.map((t: Record<string, unknown>) => {
                 const name = t.name as string;
-                const match = exerciseMap.get(name);
+                const match = exerciseMap.get(normalizeTaskName(name));
                 return {
                     id: t.id as string,
                     name,

@@ -1,165 +1,125 @@
 "use client";
 
 import { motion } from "framer-motion";
-import Image from "next/image";
-import { formatNumber, type Challenge } from "./rankSystem";
 import { useI18n } from "./i18n";
 
-interface ChallengesScreenProps {
-    challenges: Challenge[];
-    onOpenChallenge: (challenge: Challenge) => void;
-    onGoToProgram: (challengeId: string) => void;
+export interface WorkoutCardItem {
+  id: string;
+  title: string;
+  subtitle: string;
+  focus: string;
+  xpReward: number;
+  exerciseCount: number;
+  estimatedMinutes: number;
+  completed: boolean;
+  accent: string;
 }
 
-export function ChallengesScreen({
-    challenges,
-    onOpenChallenge,
-    onGoToProgram,
-}: ChallengesScreenProps) {
-    const { t } = useI18n();
+interface ChallengesScreenProps {
+  workouts: WorkoutCardItem[];
+  onOpenWorkout: (workoutId: string) => void;
+}
 
-    return (
-        <div className="pb-8">
-            {/* Header — natural fade in */}
-            <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.4 }}
+export function ChallengesScreen({ workouts, onOpenWorkout }: ChallengesScreenProps) {
+  const { t } = useI18n();
+
+  return (
+    <div className="pb-8">
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35 }}
+        className="mb-5"
+      >
+        <h2 className="text-xl font-bold text-gray-12 mb-1.5">{t("workoutsTitle")}</h2>
+        <p className="text-sm text-gray-8">{t("workoutsSub")}</p>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1, duration: 0.35 }}
+        className="mb-5 rounded-2xl border border-[#E80000]/25 bg-gradient-to-br from-[#1A0B0B] via-gray-2 to-gray-2 p-4"
+      >
+        <p className="text-[11px] font-semibold text-gray-10 leading-relaxed">
+          {t("dailyResetHint")}
+        </p>
+      </motion.div>
+
+      <div className="space-y-3.5">
+        {workouts.map((workout, i) => {
+          const actionLabel = workout.completed ? t("reviewWorkout") : t("startWorkout");
+
+          return (
+            <motion.button
+              key={workout.id}
+              onClick={() => onOpenWorkout(workout.id)}
+              className="group w-full text-left rounded-2xl overflow-hidden border border-gray-5/35 bg-gray-3/25 hover:border-gray-5/65 transition-all"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.38, delay: 0.14 + i * 0.07 }}
+              whileTap={{ scale: 0.985 }}
             >
-                <h2 className="text-xl font-bold text-gray-12 mb-1">{t("challengesTitle")}</h2>
-                <p className="text-sm text-gray-8 mb-5">{t("challengesSub")}</p>
-            </motion.div>
+              <div
+                className="h-1.5"
+                style={{
+                  background: `linear-gradient(90deg, ${workout.accent}, #E80000)`,
+                  opacity: workout.completed ? 0.45 : 0.95,
+                }}
+              />
 
-            <div className="space-y-3">
-                {challenges.map((challenge, i) => {
-                    const isJoined = challenge.joined;
-                    const completedTasks = challenge.tasks.filter(t => t.completed).length;
+              <div className="p-4">
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div className="min-w-0">
+                    <p className="text-[11px] uppercase tracking-[0.18em] text-gray-7 font-semibold mb-1">
+                      {workout.subtitle}
+                    </p>
+                    <h3 className="text-[17px] font-black text-gray-12 tracking-tight leading-tight truncate">
+                      {workout.title}
+                    </h3>
+                    <p className="text-[11px] text-gray-8 mt-1 truncate">{workout.focus}</p>
+                  </div>
 
-                    return (
-                        <motion.div
-                            key={challenge.id}
-                            className={`rounded-2xl overflow-hidden transition-all ${isJoined
-                                ? "bg-gray-3/40 border border-gray-5/60"
-                                : "bg-gray-3/25 border border-gray-5/35 hover:border-gray-5/60"
-                                }`}
-                            initial={{ opacity: 0, y: 12 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.35, delay: 0.02 + i * 0.04, ease: [0.25, 0.1, 0.25, 1] }}
-                            whileTap={{ scale: 0.985 }}
-                        >
-                            {/* Hero image with Illustration1 */}
-                            <div className="w-full aspect-[2.4/1] overflow-hidden relative">
-                                <Image
-                                    src="/Challenge1.jpeg"
-                                    alt={challenge.title}
-                                    fill
-                                    className="object-cover object-top"
-                                    sizes="(max-width: 768px) 100vw, 500px"
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-gray-1/90 via-gray-1/20 to-transparent" />
-
-                                {/* Member count */}
-                                <motion.div
-                                    className="absolute bottom-3 left-3 flex items-center gap-1.5 bg-black/50 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10"
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    transition={{ delay: 0.15 + i * 0.04 }}
-                                >
-                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-10">
-                                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                                        <circle cx="9" cy="7" r="4" />
-                                        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                                    </svg>
-                                    <span className="text-[10px] font-bold text-white tabular-nums">
-                                        {formatNumber(challenge.participantCount)}
-                                    </span>
-                                    <span className="text-[9px] text-gray-10 font-medium">{t("members")}</span>
-                                </motion.div>
-
-                                {/* Difficulty badge */}
-                                <div className="absolute top-3 right-3">
-                                    <span className={`text-[9px] font-bold px-2 py-1 rounded-full uppercase tracking-wider backdrop-blur-md border ${challenge.difficulty === "Hard"
-                                        ? "bg-orange-500/20 text-orange-300 border-orange-500/20"
-                                        : challenge.difficulty === "Extreme"
-                                            ? "bg-red-500/20 text-red-300 border-red-500/20"
-                                            : challenge.difficulty === "Medium"
-                                                ? "bg-yellow-500/20 text-yellow-300 border-yellow-500/20"
-                                                : "bg-green-500/20 text-green-300 border-green-500/20"
-                                        }`}>
-                                        {challenge.difficulty}
-                                    </span>
-                                </div>
-                            </div>
-
-                            {/* Content */}
-                            <div className="p-3.5 pt-2.5">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex-1 min-w-0">
-                                        <h3 className="text-[14px] font-bold text-gray-12 truncate">{challenge.title}</h3>
-                                        <div className="flex items-center gap-2 mt-1 text-[10px] text-gray-7 font-medium">
-                                            <span className="flex items-center gap-0.5">
-                                                <span className="text-[#E80000] font-bold">{challenge.totalXp}</span>
-                                                <span className="text-[#E80000] text-[8px] font-extrabold">{t("xpLabel")}</span>
-                                            </span>
-                                            <span>·</span>
-                                            <span>{challenge.tasks.length} {t("tasks")}</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="shrink-0 ml-3">
-                                        {isJoined ? (
-                                            <motion.button
-                                                onClick={() => onGoToProgram(challenge.id)}
-                                                className="px-3.5 py-2 rounded-xl font-semibold text-[11px] bg-gray-4/60 border border-gray-5/40 text-gray-12 hover:bg-gray-4 transition-all"
-                                                whileTap={{ scale: 0.92 }}
-                                            >
-                                                {t("open")}
-                                            </motion.button>
-                                        ) : (
-                                            <motion.button
-                                                onClick={() => onOpenChallenge(challenge)}
-                                                className="px-3.5 py-2 rounded-xl font-bold text-[11px] optiz-gradient-bg text-white transition-all"
-                                                whileTap={{ scale: 0.92 }}
-                                                whileHover={{ scale: 1.03 }}
-                                            >
-                                                {t("join")}
-                                            </motion.button>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {isJoined && (
-                                    <div className="mt-2.5">
-                                        <div className="h-1 w-full bg-gray-4/60 rounded-full overflow-hidden">
-                                            <motion.div
-                                                className="h-full rounded-full optiz-gradient-bg"
-                                                initial={{ width: 0 }}
-                                                animate={{ width: `${(completedTasks / challenge.tasks.length) * 100}%` }}
-                                                transition={{ duration: 0.4, ease: "easeOut", delay: 0.1 }}
-                                            />
-                                        </div>
-                                        <p className="text-[9px] text-gray-6 mt-1 tabular-nums">
-                                            {completedTasks}/{challenge.tasks.length} {t("done")}
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-                        </motion.div>
-                    );
-                })}
-            </div>
-
-            <motion.div
-                className="mt-6 text-center"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.5 }}
-            >
-                <div className="rounded-2xl p-5 border border-dashed border-gray-5/30 bg-gray-3/15">
-                    <p className="text-sm text-gray-7 font-medium">{t("moreComingSoon")}</p>
+                  <div className="shrink-0 text-right">
+                    <p className="text-[10px] text-gray-7 uppercase tracking-wider font-semibold">{t("reward")}</p>
+                    <p className="text-sm font-bold text-[#FF4242] tabular-nums">+{workout.xpReward} XP</p>
+                  </div>
                 </div>
-            </motion.div>
-        </div>
-    );
+
+                <div className="flex items-center justify-between gap-3 text-[10px] font-medium text-gray-8">
+                  <div className="flex items-center gap-2.5">
+                    <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 bg-gray-4/45 border border-gray-5/30">
+                      {workout.exerciseCount} {t("exercises")}
+                    </span>
+                    <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 bg-gray-4/45 border border-gray-5/30 tabular-nums">
+                      ~{workout.estimatedMinutes} {t("minutesShort")}
+                    </span>
+                  </div>
+
+                  <span
+                    className={`inline-flex items-center rounded-full px-2.5 py-1 border text-[10px] font-bold uppercase tracking-wider ${
+                      workout.completed
+                        ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/25"
+                        : "bg-[#E80000]/10 text-[#FF5A5A] border-[#E80000]/30"
+                    }`}
+                  >
+                    {workout.completed ? t("doneToday") : t("ready")}
+                  </span>
+                </div>
+
+                <div className="mt-3.5 flex items-center justify-between">
+                  <p className="text-[10px] text-gray-7 font-medium">
+                    {workout.completed ? t("resetsTomorrow") : t("openWorkoutHint")}
+                  </p>
+                  <span className="text-[11px] font-bold text-gray-12 group-hover:text-white transition-colors">
+                    {actionLabel} →
+                  </span>
+                </div>
+              </div>
+            </motion.button>
+          );
+        })}
+      </div>
+    </div>
+  );
 }

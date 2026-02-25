@@ -1,12 +1,11 @@
 "use client";
 
-import { useState, useCallback, useTransition, useRef } from "react";
+import { useState, useCallback, useTransition, useRef, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Tabs } from "@whop/react/components";
 import { HomeScreen } from "./HomeScreen";
-import { ChallengesScreen } from "./ChallengesScreen";
+import { ChallengesScreen, type WorkoutCardItem } from "./ChallengesScreen";
 import { ChallengeProgram } from "./ChallengeProgram";
-import { ChallengeDetailModal } from "./ChallengeDetailModal";
 import { LeaderboardScreen } from "./LeaderboardScreen";
 import { SettingsSheet } from "./SettingsSheet";
 import { TaskCompleteAnimation } from "./TaskCompleteAnimation";
@@ -21,7 +20,6 @@ import { I18nProvider, useI18n } from "./i18n";
 import {
   getLevelProgress,
   getRankForLevel,
-  formatNumber,
   type TodoItem,
   type Challenge,
 } from "./rankSystem";
@@ -31,7 +29,6 @@ import {
   toggleTodo as serverToggleTodo,
   deleteTodo as serverDeleteTodo,
   awardXp as serverAwardXp,
-  joinChallenge as serverJoinChallenge,
   updateProfile as serverUpdateProfile,
 } from "@/lib/actions";
 
@@ -58,7 +55,15 @@ export interface InitialData {
     participantCount: number;
     totalXp: number;
     joined: boolean;
-    tasks: { id: string; name: string; emoji: string; xpReward: number; completed: boolean }[];
+    tasks: {
+      id: string;
+      name: string;
+      emoji: string;
+      xpReward: number;
+      completed: boolean;
+      color?: string;
+      exercises?: { name: string; sets: string; muscles: string; youtubeUrl: string }[];
+    }[];
   }[];
   weeklyProgress: boolean[];
   totalTasksCompleted: number;
@@ -67,7 +72,7 @@ export interface InitialData {
 function DashboardInner({ userId, initialData }: { userId: string; initialData: InitialData }) {
   const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<TabType>("home");
-  const [viewingProgram, setViewingProgram] = useState<string | null>(null);
+  const [activeWorkout, setActiveWorkout] = useState<{ challengeId: string; taskId: string } | null>(null);
   const [, startTransition] = useTransition();
 
   // Profile state — initialized from SSR data
@@ -93,7 +98,6 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
   );
 
   // UI state
-  const [challengeModalData, setChallengeModalData] = useState<Challenge | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isInfoOpen, setIsInfoOpen] = useState(false);
   const [isStreakModalOpen, setIsStreakModalOpen] = useState(false);
@@ -197,18 +201,6 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
     });
   }, [userId]);
 
-  const handleJoinChallenge = useCallback((challengeId: string) => {
-    setChallenges(prev => prev.map(c => c.id === challengeId ? { ...c, joined: true } : c));
-    startTransition(async () => {
-      try {
-        await serverJoinChallenge(userId, challengeId);
-      } catch (err) {
-        console.error("Failed to join challenge:", err);
-        setChallenges(prev => prev.map(c => c.id === challengeId ? { ...c, joined: false } : c));
-      }
-    });
-  }, [userId]);
-
   const handleCompleteTask = useCallback((taskId: string) => {
     const challenge = challenges.find(c => c.tasks.some(t => t.id === taskId));
     if (!challenge) return;
@@ -296,8 +288,44 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
     }
   }, [userId]);
 
-  const activeChallenge = viewingProgram ? challenges.find(c => c.id === viewingProgram) : null;
-  const joinedCount = challenges.filter(c => c.joined).length;
+  const workoutCards = useMemo<WorkoutCardItem[]>(() => {
+    const accents = ["#E80000", "#FF6A00", "#3B82F6", "#10B981", "#8B5CF6"];
+
+    return challenges.flatMap((challenge) =>
+      challenge.tasks.map((task, index) => {
+        const cleanName = task.name.replace(/^[🟥🟦🟩🟪]\s*/, "");
+        const parts = cleanName.split("—").map((p) => p.trim());
+        const title = parts[0] || cleanName;
+        const focus = parts[1] || challenge.description || "";
+        const exerciseCount = task.exercises?.length ?? 5;
+        const estimatedMinutes = Math.max(18, exerciseCount * 4);
+
+        return {
+          id: task.id,
+          title,
+          subtitle: `${t("sessionLabel")} ${index + 1}`,
+          focus,
+          xpReward: task.xpReward,
+          exerciseCount,
+          estimatedMinutes,
+          completed: task.completed,
+          accent: task.color || accents[index % accents.length],
+        };
+      })
+    );
+  }, [challenges, t]);
+
+  const selectedWorkout = useMemo(() => {
+    if (!activeWorkout) return null;
+    const challenge = challenges.find((c) => c.id === activeWorkout.challengeId);
+    const workoutTask = challenge?.tasks.find((task) => task.id === activeWorkout.taskId);
+    if (!challenge || !workoutTask) return null;
+    return { challenge, workoutTask };
+  }, [activeWorkout, challenges]);
+
+  const completedWorkouts = challenges.reduce((sum, challenge) => {
+    return sum + challenge.tasks.filter((task) => task.completed).length;
+  }, 0);
 
   return (
     <div className="min-h-screen bg-gray-1 text-gray-12 flex flex-col w-full relative">
@@ -368,7 +396,7 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
           </div>
         </div>
 
-        {!viewingProgram && (
+        {!activeWorkout && (
           <Tabs.Root value={activeTab} onValueChange={(v) => setActiveTab(v as TabType)}>
             <Tabs.List className="[&_[data-state=active]]:!border-b-[#E80000] [&_[data-state=active]]:!border-b-2 [&_[data-state=active]]:!text-gray-12">
               <Tabs.Trigger value="home">{t("home")}</Tabs.Trigger>
@@ -380,13 +408,13 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
       </header>
 
       <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 scroll-smooth">
-        {viewingProgram && activeChallenge ? (
+        {selectedWorkout ? (
           <ChallengeProgram
-            challengeTitle={activeChallenge.title}
-            challengeEmoji={activeChallenge.emoji}
-            tasks={activeChallenge.tasks}
+            key={selectedWorkout.workoutTask.id}
+            challengeTitle={selectedWorkout.challenge.title}
+            workoutTask={selectedWorkout.workoutTask}
             onCompleteTask={handleCompleteTask}
-            onBack={() => setViewingProgram(null)}
+            onBack={() => setActiveWorkout(null)}
             completingTaskId={completingTaskId}
           />
         ) : activeTab === "home" ? (
@@ -410,9 +438,12 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
           />
         ) : activeTab === "challenges" ? (
           <ChallengesScreen
-            challenges={challenges}
-            onOpenChallenge={(c) => setChallengeModalData(c)}
-            onGoToProgram={(id) => setViewingProgram(id)}
+            workouts={workoutCards}
+            onOpenWorkout={(taskId) => {
+              const challenge = challenges.find((c) => c.tasks.some((task) => task.id === taskId));
+              if (!challenge) return;
+              setActiveWorkout({ challengeId: challenge.id, taskId });
+            }}
           />
         ) : (
           <LeaderboardScreen
@@ -425,12 +456,11 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
         )}
       </main>
 
-      <ChallengeDetailModal challenge={challengeModalData} isOpen={!!challengeModalData} onClose={() => setChallengeModalData(null)} onJoin={handleJoinChallenge} onGoToProgram={(id) => { setActiveTab("challenges"); setViewingProgram(id); }} />
       <SettingsSheet
         isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)}
         level={levelData.level} totalXp={totalXp} rankFullName={rankData.fullName}
         tier={rankData.tier} streakDays={streakDays} tasksCompleted={totalTasksCompleted}
-        challengesJoined={joinedCount} userName={userName} userPhoto={userPhoto}
+        challengesJoined={completedWorkouts} userName={userName} userPhoto={userPhoto}
         onUpdateName={handleUpdateName} onUpdatePhoto={handleUpdatePhoto}
       />
       <InfoModal isOpen={isInfoOpen} onClose={() => setIsInfoOpen(false)} />
