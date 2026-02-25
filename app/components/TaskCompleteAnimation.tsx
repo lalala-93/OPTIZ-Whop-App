@@ -24,7 +24,7 @@ export function TaskCompleteAnimation({
 }: TaskCompleteAnimationProps) {
     useEffect(() => {
         if (isVisible) {
-            const timer = setTimeout(onComplete, 1400); // Faster auto-dismiss
+            const timer = setTimeout(onComplete, 2200);
             return () => clearTimeout(timer);
         }
     }, [isVisible, onComplete]);

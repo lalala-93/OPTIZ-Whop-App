@@ -2,6 +2,7 @@
 
 import { createServerSupabase } from "@/lib/supabase";
 import { fetchWhopUserProfile } from "@/lib/authentication";
+import { OPTIZ_MAX_CHALLENGE } from "@/app/components/rankSystem";
 
 // ══════════════════════════════════════
 // Server Actions — called from client with userId passed from SSR
@@ -100,15 +101,10 @@ export async function loadUserData(userId: string) {
             if (!challengeErr && seededChallenge) {
                 fetchedChallenges = [seededChallenge];
                 const tasksToInsert = [
-                    { id: "t1", challenge_id: "optiz-max", name: "Morning Run — 5km", emoji: "🏃‍♂️", xp_reward: 50, sort_order: 1 },
-                    { id: "t2", challenge_id: "optiz-max", name: "100 Push-ups", emoji: "💪", xp_reward: 50, sort_order: 2 },
-                    { id: "t3", challenge_id: "optiz-max", name: "Yoga Session — 20min", emoji: "🧘‍♀️", xp_reward: 30, sort_order: 3 },
-                    { id: "t4", challenge_id: "optiz-max", name: "Drink 3L Water", emoji: "💧", xp_reward: 20, sort_order: 4 },
-                    { id: "t5", challenge_id: "optiz-max", name: "Eat Clean — No Junk", emoji: "🥗", xp_reward: 40, sort_order: 5 },
-                    { id: "t6", challenge_id: "optiz-max", name: "Cold Shower", emoji: "🥶", xp_reward: 50, sort_order: 6 },
-                    { id: "t7", challenge_id: "optiz-max", name: "200 Sit-ups", emoji: "🔥", xp_reward: 50, sort_order: 7 },
-                    { id: "t8", challenge_id: "optiz-max", name: "10min Meditation", emoji: "🧠", xp_reward: 40, sort_order: 8 },
-                    { id: "t9", challenge_id: "optiz-max", name: "Read 30 Pages", emoji: "📖", xp_reward: 50, sort_order: 9 },
+                    { id: "a0000001-0000-0000-0000-000000000001", challenge_id: seededChallenge.id, name: "🟥 Push 1 — Pecs / Épaules / Triceps", emoji: "🟥", xp_reward: 50, sort_order: 1 },
+                    { id: "a0000001-0000-0000-0000-000000000002", challenge_id: seededChallenge.id, name: "🟦 Pull 1 — Dos / Biceps / Épaules", emoji: "🟦", xp_reward: 50, sort_order: 2 },
+                    { id: "a0000001-0000-0000-0000-000000000003", challenge_id: seededChallenge.id, name: "🟩 Legs — Jambes / Fessiers / Gainage", emoji: "🟩", xp_reward: 50, sort_order: 3 },
+                    { id: "a0000001-0000-0000-0000-000000000004", challenge_id: seededChallenge.id, name: "🟪 Upper — Rappel Haut du Corps", emoji: "🟪", xp_reward: 50, sort_order: 4 },
                 ];
                 const { data: seededTasks } = await db.from("challenge_tasks").insert(tasksToInsert).select();
                 fetchedTasks = seededTasks || tasksToInsert;
@@ -117,6 +113,11 @@ export async function loadUserData(userId: string) {
             console.error("[OPTIZ] Auto-seed failed", e);
         }
     }
+
+    // Map exercise data from OPTIZ_MAX_CHALLENGE onto tasks from DB
+    const exerciseMap = new Map(
+        OPTIZ_MAX_CHALLENGE.tasks.map(t => [t.name, { exercises: t.exercises, color: t.color }])
+    );
 
     // Assemble challenges with tasks
     const challenges = fetchedChallenges.map((c: Record<string, unknown>) => {
@@ -132,13 +133,19 @@ export async function loadUserData(userId: string) {
             participantCount: participantCounts[c.id as string] || 0,
             totalXp: (c.total_xp as number) || 0,
             joined: joinedIds.has(c.id as string),
-            tasks: tasks.map((t: Record<string, unknown>) => ({
-                id: t.id as string,
-                name: t.name as string,
-                emoji: (t.emoji as string) || "⚡",
-                xpReward: (t.xp_reward as number) ?? 10,
-                completed: completedTaskIds.has(t.id as string),
-            })),
+            tasks: tasks.map((t: Record<string, unknown>) => {
+                const name = t.name as string;
+                const match = exerciseMap.get(name);
+                return {
+                    id: t.id as string,
+                    name,
+                    emoji: (t.emoji as string) || "⚡",
+                    xpReward: (t.xp_reward as number) ?? 10,
+                    completed: completedTaskIds.has(t.id as string),
+                    exercises: match?.exercises,
+                    color: match?.color,
+                };
+            }),
         };
     });
 
