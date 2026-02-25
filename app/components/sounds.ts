@@ -61,8 +61,8 @@ export function playStartSound(): void {
   if (!isSoundEnabled()) return;
   const ctx = getAudioContext();
   const now = ctx.currentTime;
-  playTone(500, 0.08, 0.25, now);
-  playTone(700, 0.08, 0.25, now + 0.09);
+  playTone(480, 0.07, 0.2, now, "triangle");
+  playTone(640, 0.07, 0.22, now + 0.08, "triangle");
 }
 
 export function playCompleteSound(): void {
@@ -78,8 +78,27 @@ export function playFinishSound(): void {
   if (!isSoundEnabled()) return;
   const ctx = getAudioContext();
   const now = ctx.currentTime;
-  playTone(400, 0.12, 0.25, now);
-  playTone(500, 0.12, 0.25, now + 0.13);
-  playTone(600, 0.12, 0.25, now + 0.26);
-  playTone(800, 0.22, 0.3, now + 0.39);
+  playTone(420, 0.1, 0.2, now, "triangle");
+  playTone(560, 0.1, 0.22, now + 0.11, "triangle");
+  playTone(720, 0.14, 0.25, now + 0.22, "triangle");
+  playTone(920, 0.18, 0.28, now + 0.36, "triangle");
+}
+
+export function playRoundStartSound(): void {
+  if (!isSoundEnabled()) return;
+  const ctx = getAudioContext();
+  const now = ctx.currentTime;
+  playTone(520, 0.08, 0.21, now, "square");
+  playTone(700, 0.08, 0.21, now + 0.09, "square");
+  playTone(860, 0.08, 0.23, now + 0.18, "square");
+}
+
+export function playWorkoutCompleteSound(): void {
+  if (!isSoundEnabled()) return;
+  const ctx = getAudioContext();
+  const now = ctx.currentTime;
+  playTone(360, 0.1, 0.2, now, "sine");
+  playTone(520, 0.1, 0.22, now + 0.11, "sine");
+  playTone(740, 0.12, 0.24, now + 0.23, "sine");
+  playTone(980, 0.2, 0.3, now + 0.36, "triangle");
 }

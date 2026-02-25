@@ -5,7 +5,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   CheckCircle2,
-  Clock3,
   ExternalLink,
   Pause,
   Play,
@@ -19,8 +18,9 @@ import { useI18n } from "./i18n";
 import {
   isSoundEnabled,
   playBeepSound,
-  playFinishSound,
+  playRoundStartSound,
   playStartSound,
+  playWorkoutCompleteSound,
   setSoundEnabled,
 } from "./sounds";
 
@@ -36,17 +36,9 @@ interface ChallengeProgramProps {
 
 interface WorkoutExercise {
   name: string;
-  target: string;
+  reps: string;
   muscles: string;
   youtubeUrl: string;
-}
-
-interface WorkoutMinute {
-  index: number;
-  minute: number;
-  round: number;
-  exerciseIndex: number;
-  exercise: WorkoutExercise;
 }
 
 interface ExerciseSheetProps {
@@ -57,82 +49,19 @@ interface ExerciseSheetProps {
 
 const MINUTE_SECONDS = 60;
 
-function toTargetLabel(raw: string): string {
-  const clean = raw.replace(/\s+/g, " ").trim();
-  if (!clean) return "8 reps";
-  const compact = clean.replace(/^\d+\s*(?:x|×)\s*/i, "");
-  return compact;
+function toReps(raw: string): string {
+  const match = raw.match(/\d+/);
+  const reps = match ? Number(match[0]) : 8;
+  return `${reps} reps`;
 }
 
 function toWorkoutExercise(exercise: Exercise): WorkoutExercise {
   return {
     name: exercise.name,
-    target: toTargetLabel(exercise.sets),
+    reps: toReps(exercise.sets),
     muscles: exercise.muscles,
     youtubeUrl: exercise.youtubeUrl,
   };
-}
-
-function buildMinutes(exercises: WorkoutExercise[], rounds: number): WorkoutMinute[] {
-  const minutes: WorkoutMinute[] = [];
-  let minute = 1;
-
-  for (let round = 1; round <= rounds; round++) {
-    exercises.forEach((exercise, exerciseIndex) => {
-      minutes.push({
-        index: minutes.length,
-        minute,
-        round,
-        exerciseIndex,
-        exercise,
-      });
-      minute += 1;
-    });
-  }
-
-  return minutes;
-}
-
-function CircularMinuteTimer({ secondsLeft, isRunning }: { secondsLeft: number; isRunning: boolean }) {
-  const radius = 94;
-  const circumference = 2 * Math.PI * radius;
-  const progress = Math.max(0, Math.min(1, secondsLeft / MINUTE_SECONDS));
-  const dashOffset = circumference * (1 - progress);
-
-  return (
-    <div className="relative mx-auto w-[234px] h-[234px]">
-      <motion.div
-        className="absolute inset-0 rounded-full"
-        style={{
-          background:
-            "radial-gradient(55% 55% at 50% 50%, rgba(232,0,0,0.18) 0%, rgba(232,0,0,0.08) 50%, rgba(232,0,0,0) 100%)",
-        }}
-        animate={isRunning ? { opacity: [0.3, 0.55, 0.3], scale: [0.98, 1.02, 0.98] } : { opacity: 0.3, scale: 1 }}
-        transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
-      />
-
-      <svg width="234" height="234" className="-rotate-90 relative z-10">
-        <circle cx="117" cy="117" r={radius} fill="none" stroke="rgba(255,255,255,0.09)" strokeWidth="12" />
-        <motion.circle
-          cx="117"
-          cy="117"
-          r={radius}
-          fill="none"
-          stroke="#E80000"
-          strokeWidth="12"
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={dashOffset}
-          transition={{ duration: 0.25, ease: "linear" }}
-        />
-      </svg>
-
-      <div className="absolute inset-0 z-20 flex flex-col items-center justify-center pointer-events-none">
-        <span className="text-[56px] leading-none tabular-nums font-semibold text-gray-12">{secondsLeft}</span>
-        <span className="mt-2 text-[10px] uppercase tracking-[0.26em] text-gray-7">sec</span>
-      </div>
-    </div>
-  );
 }
 
 function ExerciseSheet({ exercise, isOpen, onClose }: ExerciseSheetProps) {
@@ -160,7 +89,7 @@ function ExerciseSheet({ exercise, isOpen, onClose }: ExerciseSheetProps) {
             <div className="flex items-start justify-between gap-3 mb-4">
               <div>
                 <h3 className="text-lg font-semibold text-gray-12">{exercise.name}</h3>
-                <p className="text-sm text-gray-8 mt-1">{exercise.target}</p>
+                <p className="text-sm text-gray-8 mt-1">{exercise.reps}</p>
               </div>
               <button
                 onClick={onClose}
@@ -192,6 +121,48 @@ function ExerciseSheet({ exercise, isOpen, onClose }: ExerciseSheetProps) {
   );
 }
 
+function CircularMinuteTimer({ secondsLeft, isRunning }: { secondsLeft: number; isRunning: boolean }) {
+  const radius = 100;
+  const circumference = 2 * Math.PI * radius;
+  const progress = Math.max(0, Math.min(1, secondsLeft / MINUTE_SECONDS));
+  const dashOffset = circumference * (1 - progress);
+
+  return (
+    <div className="relative mx-auto w-[250px] h-[250px] sm:w-[270px] sm:h-[270px]">
+      <motion.div
+        className="absolute inset-0 rounded-full"
+        style={{
+          background:
+            "radial-gradient(55% 55% at 50% 50%, rgba(232,0,0,0.2) 0%, rgba(232,0,0,0.08) 55%, rgba(232,0,0,0) 100%)",
+        }}
+        animate={isRunning ? { opacity: [0.3, 0.6, 0.3], scale: [0.98, 1.02, 0.98] } : { opacity: 0.3, scale: 1 }}
+        transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+      />
+
+      <svg width="100%" height="100%" viewBox="0 0 270 270" className="-rotate-90 relative z-10">
+        <circle cx="135" cy="135" r={radius} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="13" />
+        <motion.circle
+          cx="135"
+          cy="135"
+          r={radius}
+          fill="none"
+          stroke="#E80000"
+          strokeWidth="13"
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={dashOffset}
+          transition={{ duration: 0.25, ease: "linear" }}
+        />
+      </svg>
+
+      <div className="absolute inset-0 z-20 flex flex-col items-center justify-center">
+        <span className="text-[58px] sm:text-[62px] leading-none tabular-nums font-semibold text-gray-12">{secondsLeft}</span>
+        <span className="mt-2 text-[10px] uppercase tracking-[0.26em] text-gray-7">sec</span>
+      </div>
+    </div>
+  );
+}
+
 export function ChallengeProgram({
   challengeTitle,
   workoutTask,
@@ -205,7 +176,6 @@ export function ChallengeProgram({
 
   const rounds = workoutTask.rounds ?? 4;
   const exercises = useMemo(() => (workoutTask.exercises || []).map(toWorkoutExercise), [workoutTask.exercises]);
-  const minutes = useMemo(() => buildMinutes(exercises, rounds), [exercises, rounds]);
 
   const [hasStarted, setHasStarted] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
@@ -214,13 +184,17 @@ export function ChallengeProgram({
   const [sheetExercise, setSheetExercise] = useState<WorkoutExercise | null>(null);
 
   const lastBeepSecondRef = useRef(-1);
-  const totalSeconds = minutes.length * MINUTE_SECONDS;
+  const lastMinuteIndexRef = useRef(0);
+
+  const totalMinutes = exercises.length * rounds;
+  const totalSeconds = totalMinutes * MINUTE_SECONDS;
+
   const isFinished = hasStarted && totalSeconds > 0 && elapsedSeconds >= totalSeconds;
-  const currentMinuteIndex = Math.min(Math.floor(elapsedSeconds / MINUTE_SECONDS), Math.max(0, minutes.length - 1));
-  const currentMinute = minutes[currentMinuteIndex];
+  const currentMinuteIndex = Math.min(Math.floor(elapsedSeconds / MINUTE_SECONDS), Math.max(0, totalMinutes - 1));
+  const currentExerciseIndex = exercises.length > 0 ? currentMinuteIndex % exercises.length : 0;
+  const currentRound = exercises.length > 0 ? Math.floor(currentMinuteIndex / exercises.length) + 1 : 1;
   const secondInMinute = elapsedSeconds % MINUTE_SECONDS;
   const secondsLeft = isFinished ? 0 : Math.max(1, MINUTE_SECONDS - secondInMinute);
-  const totalMinutes = minutes.length;
   const progressPercent = totalSeconds > 0 ? Math.min(100, (elapsedSeconds / totalSeconds) * 100) : 0;
 
   useEffect(() => {
@@ -231,7 +205,7 @@ export function ChallengeProgram({
         const next = prev + 1;
         if (next >= totalSeconds) {
           setIsRunning(false);
-          playFinishSound();
+          playWorkoutCompleteSound();
           return totalSeconds;
         }
         return next;
@@ -250,15 +224,26 @@ export function ChallengeProgram({
     }
 
     if (elapsedSeconds > 0 && secondInMinute === 0) {
-      playStartSound();
+      const newMinuteIndex = Math.floor(elapsedSeconds / MINUTE_SECONDS);
+      const isRoundStart = exercises.length > 0 && newMinuteIndex % exercises.length === 0;
+
+      if (newMinuteIndex !== lastMinuteIndexRef.current) {
+        if (isRoundStart) {
+          playRoundStartSound();
+        } else {
+          playStartSound();
+        }
+      }
+      lastMinuteIndexRef.current = newMinuteIndex;
     }
-  }, [hasStarted, isRunning, soundOn, isFinished, secondsLeft, elapsedSeconds, secondInMinute]);
+  }, [hasStarted, isRunning, soundOn, isFinished, secondsLeft, elapsedSeconds, secondInMinute, exercises.length]);
 
   const startWorkout = () => {
-    if (!minutes.length) return;
+    if (!exercises.length) return;
     setHasStarted(true);
     setIsRunning(true);
     setElapsedSeconds(0);
+    lastMinuteIndexRef.current = 0;
     playStartSound();
   };
 
@@ -276,6 +261,7 @@ export function ChallengeProgram({
     setIsRunning(false);
     setElapsedSeconds(0);
     lastBeepSecondRef.current = -1;
+    lastMinuteIndexRef.current = 0;
   };
 
   const skipMinute = () => {
@@ -314,60 +300,41 @@ export function ChallengeProgram({
   }
 
   return (
-    <div className="pb-24">
+    <div className="pb-[92px]">
       <button onClick={onBack} className="inline-flex items-center gap-1.5 text-sm text-gray-8 hover:text-gray-12 mb-5">
         <ArrowLeft size={16} /> {t("back")}
       </button>
 
-      <motion.div
-        className="relative overflow-hidden rounded-3xl border border-gray-5/45 bg-gradient-to-br from-gray-2 via-gray-2 to-[#130909] p-5 mb-4"
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        <motion.div
-          className="absolute -inset-14 pointer-events-none"
-          style={{
-            background:
-              "radial-gradient(40% 45% at 75% 80%, rgba(232,0,0,0.18) 0%, rgba(232,0,0,0) 68%)",
-          }}
-          animate={{ opacity: [0.28, 0.5, 0.28] }}
-          transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
-        />
-
-        <p className="relative text-[10px] uppercase tracking-[0.18em] text-gray-7 font-semibold mb-1">{challengeTitle}</p>
-        <h2 className="relative text-[28px] font-semibold leading-tight text-gray-12 mb-1">{workoutDisplayName || workoutTask.name}</h2>
-        {workoutFocus ? <p className="relative text-sm text-gray-8 mb-2">{workoutFocus}</p> : null}
-
-        <div className="relative flex flex-wrap gap-2 mt-3 text-[11px]">
-          <span className="rounded-full px-2.5 py-1 bg-gray-4/45 border border-gray-5/35 text-gray-10">{exercises.length} {t("exercises")}</span>
-          <span className="rounded-full px-2.5 py-1 bg-gray-4/45 border border-gray-5/35 text-gray-10">{rounds} {t("series")}</span>
-          <span className="rounded-full px-2.5 py-1 bg-gray-4/45 border border-gray-5/35 text-gray-10">{totalMinutes} {t("minutesShort")}</span>
-          <span className="rounded-full px-2.5 py-1 bg-[#E80000]/15 border border-[#E80000]/35 text-[#FF6666]">+{workoutTask.xpReward} XP</span>
-        </div>
-      </motion.div>
-
       {!hasStarted ? (
-        <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
+        <>
+          <motion.div
+            className="relative overflow-hidden rounded-3xl border border-gray-5/45 bg-gradient-to-br from-gray-2 via-gray-2 to-[#130909] p-5 mb-4"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <p className="text-[10px] uppercase tracking-[0.18em] text-gray-7 font-semibold mb-1">{challengeTitle}</p>
+            <h2 className="text-[28px] font-semibold leading-tight text-gray-12 mb-1">{workoutDisplayName || workoutTask.name}</h2>
+            {workoutFocus ? <p className="text-sm text-gray-8 mb-2">{workoutFocus}</p> : null}
+
+            <div className="flex flex-wrap gap-2 mt-3 text-[11px]">
+              <span className="rounded-full px-2.5 py-1 bg-gray-4/45 border border-gray-5/35 text-gray-10">{exercises.length} {t("exercises")}</span>
+              <span className="rounded-full px-2.5 py-1 bg-gray-4/45 border border-gray-5/35 text-gray-10">{rounds} {t("series")}</span>
+              <span className="rounded-full px-2.5 py-1 bg-gray-4/45 border border-gray-5/35 text-gray-10">{totalMinutes} {t("minutesShort")}</span>
+              <span className="rounded-full px-2.5 py-1 bg-[#E80000]/15 border border-[#E80000]/35 text-[#FF6666]">+100 XP</span>
+            </div>
+          </motion.div>
+
           <div className="rounded-2xl border border-gray-5/38 bg-gray-3/18 p-3.5 mb-4">
             <p className="text-[11px] text-gray-9 leading-relaxed">{t("emomRuleIntro")}</p>
           </div>
 
           <div className="space-y-2.5 mb-5">
             {exercises.map((exercise, index) => (
-              <motion.div
-                key={`${exercise.name}-${index}`}
-                className="rounded-2xl border border-gray-5/35 bg-gray-3/20 px-3.5 py-3"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.04 }}
-              >
+              <div key={`${exercise.name}-${index}`} className="rounded-2xl border border-gray-5/35 bg-gray-3/20 px-3.5 py-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-[10px] uppercase tracking-[0.15em] text-gray-7 font-semibold mb-1">
-                      {t("minuteLabel", { n: index + 1 })}
-                    </p>
                     <h3 className="text-[16px] font-semibold leading-tight text-gray-12 truncate">{exercise.name}</h3>
-                    <p className="text-[12px] text-gray-8 mt-1 truncate">{exercise.target} · {exercise.muscles}</p>
+                    <p className="text-[12px] text-gray-8 mt-1 truncate">{exercise.reps} · {exercise.muscles}</p>
                   </div>
                   <button
                     onClick={() => setSheetExercise(exercise)}
@@ -377,7 +344,7 @@ export function ChallengeProgram({
                     <ExternalLink size={13} className="mx-auto" />
                   </button>
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
 
@@ -388,13 +355,13 @@ export function ChallengeProgram({
           >
             {t("startWorkout")}
           </motion.button>
-        </motion.div>
+        </>
       ) : (
-        <div className="-mx-4 sm:-mx-6 pb-24">
+        <div className="-mx-4 sm:-mx-6">
           <div className="sticky top-0 z-20 bg-gray-1/95 backdrop-blur-xl border-b border-gray-5/35 px-4 sm:px-6 py-3">
             <div className="flex items-center justify-between gap-2">
-              <div className="text-[11px] text-gray-8 tabular-nums">{currentMinuteIndex + 1}/{minutes.length}</div>
-              <div className="text-[11px] text-gray-8 tabular-nums">{t("roundLabel", { current: currentMinute?.round ?? rounds, total: rounds })}</div>
+              <div className="text-[11px] text-gray-8 tabular-nums">{currentMinuteIndex + 1}/{totalMinutes}</div>
+              <div className="text-[11px] text-gray-8 tabular-nums">{t("roundLabel", { current: currentRound, total: rounds })}</div>
               <button
                 onClick={toggleSound}
                 className="w-8 h-8 rounded-full border border-gray-5/35 bg-gray-3/50 text-gray-9 flex items-center justify-center"
@@ -408,35 +375,28 @@ export function ChallengeProgram({
             </div>
           </div>
 
-          <div className="px-4 sm:px-6 pt-5">
-            <div className="mb-4">
-              <CircularMinuteTimer secondsLeft={secondsLeft} isRunning={isRunning} />
-            </div>
+          <div className="px-4 sm:px-6 pt-4 pb-28">
+            <CircularMinuteTimer secondsLeft={secondsLeft} isRunning={isRunning} />
 
-            <motion.div
-              className="rounded-2xl border border-[#E80000]/35 bg-[#E80000]/10 p-4 mb-3"
-              animate={{ borderColor: isRunning ? "rgba(232,0,0,0.45)" : "rgba(232,0,0,0.3)" }}
-            >
-              <p className="text-[10px] uppercase tracking-[0.18em] text-[#FF8F8F] font-semibold mb-1">{t("currentExercise")}</p>
-              <h3 className="text-[22px] font-semibold leading-tight text-gray-12">{currentMinute?.exercise.name}</h3>
-              <p className="text-sm text-gray-8 mt-1">{currentMinute?.exercise.target} · {currentMinute?.exercise.muscles}</p>
-            </motion.div>
+            <p className="text-center text-[22px] sm:text-[24px] font-semibold text-[#FF5757] mt-5 mb-4 truncate">
+              {exercises[currentExerciseIndex]?.name || ""}
+            </p>
 
-            <div className="flex items-center justify-center gap-2.5 mb-4">
-              <motion.button
-                onClick={togglePlay}
-                className="w-14 h-14 rounded-full optiz-gradient-bg text-white flex items-center justify-center shadow-[0_12px_30px_rgba(232,0,0,0.24)]"
-                whileTap={{ scale: 0.92 }}
-              >
-                {isRunning ? <Pause size={24} /> : <Play size={24} />}
-              </motion.button>
-
+            <div className="flex items-center justify-center gap-3 mb-4">
               <motion.button
                 onClick={skipMinute}
                 className="w-11 h-11 rounded-full border border-gray-5/40 bg-gray-3/55 text-gray-10 flex items-center justify-center"
                 whileTap={{ scale: 0.92 }}
               >
                 <SkipForward size={17} />
+              </motion.button>
+
+              <motion.button
+                onClick={togglePlay}
+                className="w-14 h-14 rounded-full optiz-gradient-bg text-white flex items-center justify-center shadow-[0_12px_30px_rgba(232,0,0,0.24)]"
+                whileTap={{ scale: 0.92 }}
+              >
+                {isRunning ? <Pause size={24} /> : <Play size={24} />}
               </motion.button>
 
               <motion.button
@@ -449,47 +409,34 @@ export function ChallengeProgram({
             </div>
 
             <div className="space-y-2.5">
-              {minutes.map((minute) => {
-                const isCurrent = minute.index === currentMinuteIndex && !isFinished;
-                const isDone = minute.index < currentMinuteIndex || isFinished;
-
+              {exercises.map((exercise, index) => {
+                const isCurrent = index === currentExerciseIndex && !isFinished;
                 return (
-                  <motion.div
-                    key={`${minute.round}-${minute.exerciseIndex}`}
+                  <div
+                    key={`${exercise.name}-${index}`}
                     className={`rounded-2xl border px-3.5 py-3 transition-all ${
-                      isCurrent
-                        ? "bg-[#E80000]/12 border-[#E80000]/35"
-                        : isDone
-                        ? "bg-gray-3/18 border-gray-5/26"
-                        : "bg-gray-3/22 border-gray-5/30"
+                      isCurrent ? "bg-[#E80000]/12 border-[#E80000]/35" : "bg-gray-3/20 border-gray-5/28"
                     }`}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.01 * minute.index }}
                   >
                     <div className="flex items-center justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="text-[10px] uppercase tracking-[0.14em] text-gray-7 font-semibold mb-1">
-                          {t("roundShort", { n: minute.round })} · {t("minuteLabel", { n: minute.exerciseIndex + 1 })}
-                        </p>
                         <p className={`text-sm font-semibold truncate ${isCurrent ? "text-[#FF7777]" : "text-gray-12"}`}>
-                          {minute.exercise.name}
+                          {exercise.name}
                         </p>
-                        <p className="text-[11px] text-gray-8 truncate">{minute.exercise.target}</p>
+                        <p className="text-[11px] text-gray-8 truncate">{exercise.reps}</p>
                       </div>
-
                       <button
-                        onClick={() => setSheetExercise(minute.exercise)}
+                        onClick={() => setSheetExercise(exercise)}
                         className={`w-8 h-8 rounded-lg border shrink-0 flex items-center justify-center ${
                           isCurrent
                             ? "border-[#E80000]/35 bg-[#E80000]/15 text-[#FF7070]"
                             : "border-gray-5/35 bg-gray-4/40 text-gray-8"
                         }`}
                       >
-                        <Clock3 size={13} />
+                        <ExternalLink size={13} />
                       </button>
                     </div>
-                  </motion.div>
+                  </div>
                 );
               })}
             </div>
@@ -499,16 +446,12 @@ export function ChallengeProgram({
             <motion.button
               onClick={completeWorkout}
               disabled={completingTaskId === workoutTask.id || !isFinished}
-              className={`pointer-events-auto w-full max-w-sm mx-auto py-3.5 rounded-xl font-semibold text-sm ${
+              className={`pointer-events-auto w-full max-w-[560px] mx-auto h-12 rounded-xl font-semibold text-sm ${
                 isFinished ? "optiz-gradient-bg text-white" : "bg-gray-3 border border-gray-5/40 text-gray-7"
               } ${completingTaskId === workoutTask.id ? "opacity-60 cursor-not-allowed" : ""}`}
               whileTap={isFinished ? { scale: 0.985 } : {}}
             >
-              {completingTaskId === workoutTask.id
-                ? t("savingWorkout")
-                : isFinished
-                ? `${t("completeWorkoutCta")} · +${workoutTask.xpReward} XP`
-                : t("finishWhenDone")}
+              {completingTaskId === workoutTask.id ? t("savingWorkout") : t("validate")}
             </motion.button>
           </div>
         </div>
