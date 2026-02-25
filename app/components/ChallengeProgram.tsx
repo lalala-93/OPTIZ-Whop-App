@@ -682,12 +682,13 @@ function EMOMWorkout({ task, onFinish, onBack }: {
             <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-[var(--gray-1)] via-[var(--gray-1)]/95 to-transparent pointer-events-none flex justify-center z-20">
                 <motion.button
                     onClick={handleFinish}
+                    disabled={!isWorkoutDone && !allChecked}
                     className={`pointer-events-auto w-full max-w-sm py-3.5 rounded-xl font-bold text-sm transition-all ${
                         isWorkoutDone || allChecked
-                            ? "optiz-gradient-bg text-white"
-                            : "bg-gray-3 border border-gray-5/40 text-gray-8"
+                            ? "optiz-gradient-bg text-white active:scale-[0.97]"
+                            : "bg-gray-3 border border-gray-5/40 text-gray-7 cursor-not-allowed opacity-60"
                     }`}
-                    whileTap={{ scale: 0.97 }}
+                    whileTap={isWorkoutDone || allChecked ? { scale: 0.97 } : {}}
                 >
                     {isWorkoutDone || allChecked
                         ? `Terminer · +${task.xpReward} XP`
@@ -744,7 +745,6 @@ export function ChallengeProgram({
     }
 
     // ── Program overview ──
-    const accentColors = ["#E80000", "#3B82F6", "#10B981", "#8B5CF6"];
 
     return (
         <div className="pb-8">
@@ -802,74 +802,66 @@ export function ChallengeProgram({
             <div className="space-y-2.5">
                 {tasks.map((task, i) => {
                     const exercises = task.exercises || [];
-                    const accent = task.color || accentColors[i % accentColors.length];
                     const doneToday = isCompletedToday(task.id) || task.completed;
                     const sessionName = task.name.replace(/^[🟥🟦🟩🟪]\s*/, "");
 
                     return (
                         <motion.div
                             key={task.id}
-                            className={`rounded-2xl overflow-hidden transition-all ${doneToday ? "opacity-50" : "hover:scale-[1.005]"}`}
+                            className={`rounded-2xl overflow-hidden transition-all ${doneToday ? "" : "active:scale-[0.98]"}`}
                             initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: doneToday ? 0.5 : 1, y: 0 }}
+                            animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.08 + i * 0.06 }}
                             onClick={() => { if (!doneToday) setActiveTask(task); }}
-                            whileTap={doneToday ? undefined : { scale: 0.98 }}
                             style={{ cursor: doneToday ? "default" : "pointer" }}
                         >
-                            <div className="bg-gray-3/20 border border-gray-5/20 rounded-2xl overflow-hidden">
-                                <div className="flex items-stretch">
-                                    <div className="w-1 shrink-0 rounded-l-2xl" style={{ background: doneToday ? "#10B981" : accent }} />
-                                    <div className="flex-1 p-3.5">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <div className="flex items-center gap-2.5">
-                                                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                                                    doneToday ? "bg-emerald-500/10" : "bg-gray-4/40"
-                                                }`}>
-                                                    {doneToday ? (
-                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                                                            <polyline points="20 6 9 17 4 12" />
-                                                        </svg>
-                                                    ) : (
-                                                        <DumbbellIcon size={18} className="text-gray-9" />
-                                                    )}
-                                                </div>
-                                                <div>
-                                                    <h4 className="text-[13px] font-bold text-gray-12 leading-tight">{sessionName}</h4>
-                                                    <p className="text-[10px] text-gray-7 mt-0.5">{exercises.length} exercices</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-2 shrink-0">
-                                                {doneToday && (
-                                                    <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/8 px-2 py-1 rounded-md border border-emerald-500/15">Fait</span>
-                                                )}
-                                                <span className="text-[10px] font-bold px-2 py-1 rounded-lg"
-                                                    style={{
-                                                        background: doneToday ? "var(--gray-3)" : `${accent}08`,
-                                                        color: doneToday ? "var(--gray-6)" : accent,
-                                                        border: `1px solid ${doneToday ? "var(--gray-4)" : `${accent}15`}`,
-                                                    }}>
-                                                    +{task.xpReward} XP
-                                                </span>
-                                                {!doneToday && (
-                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-6">
-                                                        <polyline points="9 18 15 12 9 6" />
+                            <div className={`border rounded-2xl overflow-hidden transition-all ${
+                                doneToday 
+                                    ? "bg-gray-3/10 border-emerald-500/15 opacity-60"
+                                    : "bg-gray-3/20 border-gray-5/20 hover:border-gray-5/40"
+                            }`}>
+                                {/* Top accent line */}
+                                <div className="h-[2px] w-full" style={{ background: doneToday ? "#10B981" : "#E80000" }} />
+                                
+                                <div className="p-4">
+                                    {/* Top row: number + name + XP badge */}
+                                    <div className="flex items-start justify-between mb-3">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                                                doneToday ? "bg-emerald-500/10" : "bg-[#E80000]/8"
+                                            }`}>
+                                                {doneToday ? (
+                                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                                        <polyline points="20 6 9 17 4 12" />
                                                     </svg>
+                                                ) : (
+                                                    <span className="text-xs font-black text-[#E80000]/60 tabular-nums">{String(i + 1).padStart(2, "0")}</span>
                                                 )}
                                             </div>
+                                            <div>
+                                                <h4 className="text-[14px] font-bold text-gray-12 leading-tight">{sessionName}</h4>
+                                                <p className="text-[11px] text-gray-7 mt-0.5">{exercises.length} exercices · {doneToday ? "Terminé" : `+${task.xpReward} XP`}</p>
+                                            </div>
                                         </div>
-                                        <div className="flex flex-wrap gap-1.5">
-                                            {exercises.slice(0, 3).map((ex, j) => (
-                                                <span key={j} className="text-[9px] text-gray-8 bg-gray-4/30 px-2 py-0.5 rounded-md font-medium">
-                                                    {ex.name.split("(")[0].trim()}
-                                                </span>
-                                            ))}
-                                            {exercises.length > 3 && (
-                                                <span className="text-[9px] text-gray-6 bg-gray-4/20 px-2 py-0.5 rounded-md font-medium">
-                                                    +{exercises.length - 3}
-                                                </span>
-                                            )}
-                                        </div>
+                                        {!doneToday && (
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-6 mt-1 shrink-0">
+                                                <polyline points="9 18 15 12 9 6" />
+                                            </svg>
+                                        )}
+                                    </div>
+                                    
+                                    {/* Exercise preview chips */}
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {exercises.slice(0, 4).map((ex, j) => (
+                                            <span key={j} className="text-[10px] text-gray-8 bg-gray-4/25 px-2.5 py-1 rounded-lg font-medium">
+                                                {ex.name.split("(")[0].trim().split("—")[0].trim()}
+                                            </span>
+                                        ))}
+                                        {exercises.length > 4 && (
+                                            <span className="text-[10px] text-gray-6 bg-gray-4/15 px-2.5 py-1 rounded-lg font-medium">
+                                                +{exercises.length - 4}
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
                             </div>

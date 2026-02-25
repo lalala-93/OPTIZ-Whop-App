@@ -3,7 +3,6 @@
 import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AnimatedFireIcon } from "./AnimatedIcons";
-import { useI18n } from "./i18n";
 
 interface StreakEarnedAnimationProps {
     isVisible: boolean;
@@ -11,12 +10,9 @@ interface StreakEarnedAnimationProps {
 }
 
 export function StreakEarnedAnimation({ isVisible, onComplete }: StreakEarnedAnimationProps) {
-    const { t } = useI18n();
-
-    // Reliable timer-based dismiss
     useEffect(() => {
         if (!isVisible) return;
-        const timer = setTimeout(onComplete, 1500); // Faster auto-dismiss
+        const timer = setTimeout(onComplete, 2000);
         return () => clearTimeout(timer);
     }, [isVisible, onComplete]);
 
@@ -24,67 +20,21 @@ export function StreakEarnedAnimation({ isVisible, onComplete }: StreakEarnedAni
         <AnimatePresence>
             {isVisible && (
                 <motion.div
-                    className="fixed inset-0 z-[60] flex items-center justify-center cursor-pointer"
-                    onClick={onComplete}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
+                    className="fixed top-4 left-0 right-0 z-[90] flex justify-center pointer-events-none px-4"
+                    initial={{ opacity: 0, y: -40 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -40 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
                 >
-                    {/* Radial glow backdrop */}
-                    <motion.div
-                        className="absolute inset-0"
-                        style={{ background: "radial-gradient(circle, rgba(255,107,0,0.12) 0%, transparent 60%)" }}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: [0, 1, 1, 0] }}
-                        transition={{ duration: 2.5, times: [0, 0.2, 0.7, 1] }}
-                    />
-
-                    {/* Center card */}
-                    <motion.div
-                        className="flex flex-col items-center gap-2"
-                        initial={{ scale: 0.3, opacity: 0 }}
-                        animate={{ scale: [0.3, 1.1, 1], opacity: [0, 1, 1, 0] }}
-                        transition={{ duration: 2.5, times: [0, 0.25, 0.65, 1], ease: "easeOut" }}
-                    >
-                        {/* Fire burst */}
-                        <motion.div
-                            animate={{ scale: [1, 1.3, 1], rotate: [0, -5, 5, 0] }}
-                            transition={{ duration: 1.2, ease: "easeInOut" }}
-                            style={{ filter: "drop-shadow(0 0 30px rgba(255,107,0,0.6))" }}
-                        >
-                            <AnimatedFireIcon size={56} />
-                        </motion.div>
-
-                        {/* Ring burst particles */}
-                        {Array.from({ length: 8 }).map((_, i) => (
-                            <motion.div
-                                key={i}
-                                className="absolute w-2 h-2 rounded-full"
-                                style={{ background: i % 2 === 0 ? "#FF6B00" : "#FFD700" }}
-                                initial={{
-                                    x: 0, y: 0, opacity: 1, scale: 0,
-                                }}
-                                animate={{
-                                    x: Math.cos((i / 8) * Math.PI * 2) * 70,
-                                    y: Math.sin((i / 8) * Math.PI * 2) * 70,
-                                    opacity: [0, 1, 0],
-                                    scale: [0, 1, 0],
-                                }}
-                                transition={{ duration: 1, delay: 0.15, ease: "easeOut" }}
-                            />
-                        ))}
-
-                        {/* Text */}
-                        <motion.p
-                            className="text-sm font-bold text-orange-400 whitespace-nowrap"
-                            initial={{ opacity: 0, y: 8 }}
-                            animate={{ opacity: [0, 1, 1, 0], y: [8, 0, 0, -8] }}
-                            transition={{ duration: 2.5, times: [0, 0.3, 0.7, 1] }}
-                            style={{ textShadow: "0 0 20px rgba(255,107,0,0.4)" }}
-                        >
-                            {t("streakEarned")}
-                        </motion.p>
-                    </motion.div>
+                    <div className="pointer-events-auto bg-gray-2 border border-gray-5/50 shadow-[0_8px_32px_rgba(0,0,0,0.5)] rounded-2xl px-5 py-3 flex items-center gap-3 max-w-xs">
+                        <div className="shrink-0" style={{ filter: "drop-shadow(0 0 8px rgba(255,107,0,0.4))" }}>
+                            <AnimatedFireIcon size={28} />
+                        </div>
+                        <div>
+                            <p className="text-sm font-bold text-gray-12">Streak maintenu !</p>
+                            <p className="text-[10px] text-gray-7 font-medium">Continue comme ça</p>
+                        </div>
+                    </div>
                 </motion.div>
             )}
         </AnimatePresence>

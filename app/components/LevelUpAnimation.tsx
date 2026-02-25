@@ -30,7 +30,7 @@ export function LevelUpAnimation({
 
     useEffect(() => {
         if (isVisible) {
-            const timer = setTimeout(onComplete, 1800); // Faster auto-dismiss
+            const timer = setTimeout(onComplete, 2000);
             return () => clearTimeout(timer);
         }
     }, [isVisible, onComplete]);
@@ -48,7 +48,7 @@ export function LevelUpAnimation({
                 >
                     {/* Backdrop */}
                     <motion.div
-                        className="absolute inset-0 bg-black/60 backdrop-blur-lg"
+                        className="absolute inset-0 bg-black/75 backdrop-blur-lg"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}

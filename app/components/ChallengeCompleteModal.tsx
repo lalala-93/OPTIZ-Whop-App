@@ -22,12 +22,12 @@ export function ChallengeCompleteModal({
 }: ChallengeCompleteModalProps) {
 
     const handleShare = async () => {
-        const text = `🏆 I just completed the "${challengeTitle}" challenge on OPTIZ!\n🔥 ${tasksCompleted} tasks done · ⚡ ${totalXpEarned} XP earned\n\n#OPTIZ #FitnessChallenge`;
+        const text = `✅ J'ai terminé le programme "${challengeTitle}" sur OPTIZ !\n🔥 ${tasksCompleted} séances terminées · ⚡ ${totalXpEarned} XP gagnés\n\n#OPTIZ #FitnessChallenge`;
 
         if (navigator.share) {
             try {
                 await navigator.share({
-                    title: `OPTIZ: ${challengeTitle} Complete!`,
+                    title: `OPTIZ : ${challengeTitle} terminé !`,
                     text,
                 });
             } catch {
@@ -41,7 +41,7 @@ export function ChallengeCompleteModal({
 
     const handleDownload = () => {
         // Simple text copy as fallback
-        const text = `🏆 ${challengeTitle} completed!\n⚡ ${totalXpEarned} XP · ${tasksCompleted} tasks`;
+        const text = `✅ ${challengeTitle} terminé !\n⚡ ${totalXpEarned} XP · ${tasksCompleted} séances`;
         navigator.clipboard?.writeText(text);
     };
 
@@ -71,12 +71,14 @@ export function ChallengeCompleteModal({
                         <div className="p-6 text-center">
                             {/* Trophy */}
                             <motion.div
-                                className="text-5xl mb-4"
+                                className="w-14 h-14 rounded-full bg-[#E80000] flex items-center justify-center mb-4 shadow-[0_0_30px_rgba(232,0,0,0.3)]"
                                 initial={{ scale: 0, rotate: -20 }}
                                 animate={{ scale: 1, rotate: 0 }}
                                 transition={{ delay: 0.2, type: "spring", stiffness: 200, damping: 15 }}
                             >
-                                🏆
+                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="20 6 9 17 4 12" />
+                                </svg>
                             </motion.div>
 
                             {/* Title */}
@@ -86,7 +88,7 @@ export function ChallengeCompleteModal({
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.35 }}
                             >
-                                Challenge Complete!
+                                Programme terminé !
                             </motion.h2>
 
                             <motion.p
@@ -95,7 +97,7 @@ export function ChallengeCompleteModal({
                                 animate={{ opacity: 1 }}
                                 transition={{ delay: 0.45 }}
                             >
-                                You crushed <span className="font-bold text-gray-12">{challengeTitle}</span>
+                                Tu as terminé <span className="font-bold text-gray-12">{challengeTitle}</span>
                             </motion.p>
 
                             {/* Stats card */}
@@ -108,12 +110,12 @@ export function ChallengeCompleteModal({
                                 <div className="flex items-center justify-center gap-6">
                                     <div className="text-center">
                                         <p className="text-2xl font-black text-gray-12">{tasksCompleted}</p>
-                                        <p className="text-[9px] text-gray-7 font-medium uppercase tracking-wider mt-0.5">Tasks</p>
+                                        <p className="text-[9px] text-gray-7 font-medium uppercase tracking-wider mt-0.5">Séances</p>
                                     </div>
                                     <div className="w-px h-10 bg-gray-5/30" />
                                     <div className="text-center">
                                         <p className="text-2xl font-black text-[#E80000]">+{totalXpEarned}</p>
-                                        <p className="text-[9px] text-gray-7 font-medium uppercase tracking-wider mt-0.5">XP Earned</p>
+                                        <p className="text-[9px] text-gray-7 font-medium uppercase tracking-wider mt-0.5">XP gagnés</p>
                                     </div>
                                 </div>
                             </motion.div>
@@ -152,13 +154,13 @@ export function ChallengeCompleteModal({
                                         <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
                                         <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
                                     </svg>
-                                    Share Achievement
+                                    Partager
                                 </button>
                                 <button
                                     onClick={onClose}
                                     className="w-full py-3 rounded-xl font-semibold text-sm bg-gray-3 border border-gray-5/40 text-gray-12 hover:bg-gray-4 transition-all active:scale-[0.98]"
                                 >
-                                    Done
+                                    Fermer
                                 </button>
                             </motion.div>
                         </div>

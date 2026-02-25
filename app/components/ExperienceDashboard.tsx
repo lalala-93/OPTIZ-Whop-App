@@ -229,6 +229,9 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
       setTotalTasksCompleted(prev => prev + 1);
       setCompletingTaskId(null);
 
+      // Before showing task complete, dismiss others
+      setLevelUpAnim(prev => ({ ...prev, visible: false }));
+      setStreakAnim(false);
       setTaskCompleteAnim({ visible: true, xp: task.xpReward });
 
       // Server: award XP
@@ -243,8 +246,12 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
         }
       });
 
+      // Level up delay: 2000ms (task anim) + 100ms buffer = 2100ms
       if (newLevelData.level > prevLevel) {
-        setTimeout(() => setLevelUpAnim({ visible: true, newLevel: newLevelData.level }), 2400);
+        setTimeout(() => {
+          setTaskCompleteAnim(prev => ({ ...prev, visible: false }));
+          setLevelUpAnim({ visible: true, newLevel: newLevelData.level });
+        }, 2100);
       }
 
       const updatedChallenge = updatedChallenges.find(c => c.id === challenge.id);
@@ -253,11 +260,13 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
         if (allDone) {
           const totalChallengeXp = updatedChallenge.tasks.reduce((s, t) => s + t.xpReward, 0);
           setTimeout(() => {
+            setTaskCompleteAnim(prev => ({ ...prev, visible: false }));
+            setLevelUpAnim(prev => ({ ...prev, visible: false }));
             setChallengeCompleteData({
               visible: true, title: updatedChallenge.title, emoji: updatedChallenge.emoji,
               xp: totalChallengeXp, tasks: updatedChallenge.tasks.length,
             });
-          }, newLevelData.level > prevLevel ? 6000 : 2600);
+          }, newLevelData.level > prevLevel ? 4200 : 2200);
         }
       }
     }, 600);

@@ -24,7 +24,7 @@ export function TaskCompleteAnimation({
 }: TaskCompleteAnimationProps) {
     useEffect(() => {
         if (isVisible) {
-            const timer = setTimeout(onComplete, 2200);
+            const timer = setTimeout(onComplete, 2000);
             return () => clearTimeout(timer);
         }
     }, [isVisible, onComplete]);
@@ -41,7 +41,7 @@ export function TaskCompleteAnimation({
                 >
                     {/* Backdrop */}
                     <motion.div
-                        className="absolute inset-0 bg-black/40 backdrop-blur-md"
+                        className="absolute inset-0 bg-black/70 backdrop-blur-md"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
@@ -125,7 +125,7 @@ export function TaskCompleteAnimation({
                             transition={{ delay: 0.35 }}
                         >
                             <h2 className="text-xl font-black text-gray-12 tracking-wide uppercase">
-                                Task Complete!
+                                Séance terminée !
                             </h2>
                             <motion.p
                                 className="text-2xl font-black mt-1.5 tabular-nums"
