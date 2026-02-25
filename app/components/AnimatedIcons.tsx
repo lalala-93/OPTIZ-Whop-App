@@ -34,6 +34,7 @@ export function AnimatedFireIcon({ size = 16, className = "" }: AnimatedFireIcon
             />
             {/* Inner flame */}
             <motion.path
+                initial={{ d: "M12 8C11 10 9.5 11.5 9.5 13.5C9.5 15.5 10.6 17 12 17C13.4 17 14.5 15.5 14.5 13.5C14.5 11.5 13 10 12 8Z" }}
                 d="M12 8C11 10 9.5 11.5 9.5 13.5C9.5 15.5 10.6 17 12 17C13.4 17 14.5 15.5 14.5 13.5C14.5 11.5 13 10 12 8Z"
                 fill="url(#fire-grad-inner)"
                 animate={{
@@ -83,17 +84,13 @@ export function AnimatedBoltIcon({ size = 16, className = "" }: AnimatedBoltIcon
         >
             {/* Bolt body */}
             <motion.path
-                initial={{ d: "M12 10V4L7 11H10V18L15 9H12V10Z" }}
-                d="M12 10V4L7 11H10V18L15 9H12V10Z"
-                fill="url(#fire-grad-inner)"
-                animate={{
-                    d: [
-                        "M12 10V4L7 11H10V18L15 9H12V10Z",
-                        "M12 10.5V4.5L7.5 11.5H10.5V18.5L15.5 9.5H12V10.5Z",
-                        "M12 10V4L7 11H10V18L15 9H12V10Z",
-                    ]
-                }}
-                transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut", delay: 0.2 }}
+                d="M13 2L4.5 13H11L10 22L19.5 11H13L13 2Z"
+                fill="url(#bolt-grad)"
+                stroke="url(#bolt-stroke-grad)"
+                strokeWidth="0.5"
+                strokeLinejoin="round"
+                animate={{ opacity: [0.9, 1, 0.9] }}
+                transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
             />
             {/* Glow center highlight */}
             <path

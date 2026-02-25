@@ -172,6 +172,7 @@ export function RankBadge({ colors, glowColor, tierName, size = 80, className = 
                         <motion.path
                             d="M14 50 Q6 35 18 22 Q24 32 20 45 Z"
                             fill={cfg.accent}
+                            initial={{ d: "M14 50 Q6 35 18 22 Q24 32 20 45 Z" }}
                             animate={{
                                 d: [
                                     "M14 50 Q6 35 18 22 Q24 32 20 45 Z",
@@ -184,6 +185,7 @@ export function RankBadge({ colors, glowColor, tierName, size = 80, className = 
                         <motion.path
                             d="M86 50 Q94 35 82 22 Q76 32 80 45 Z"
                             fill={cfg.accent}
+                            initial={{ d: "M86 50 Q94 35 82 22 Q76 32 80 45 Z" }}
                             animate={{
                                 d: [
                                     "M86 50 Q94 35 82 22 Q76 32 80 45 Z",

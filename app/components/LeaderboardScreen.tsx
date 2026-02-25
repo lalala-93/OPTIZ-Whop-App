@@ -15,6 +15,7 @@ interface LeaderboardEntry {
     streak_days: number | null;
     position: number;
     isMe?: boolean;
+    isBot?: boolean;
 }
 
 interface LeaderboardScreenProps {
@@ -31,6 +32,14 @@ export function LeaderboardScreen({ userId, userXp, userLevel, userName = "You",
     const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [, startTransition] = useTransition();
+
+    // Bot entries — these merge with real users and can be overtaken
+    const BOT_ENTRIES: LeaderboardEntry[] = [
+        { whop_user_id: "bot-hakim", display_name: "Hakim Zwar", avatar_url: "/HakimProfil.jpg", total_xp: 85000, streak_days: 120, position: 0, isBot: true },
+        { whop_user_id: "bot-amen", display_name: "Amen", avatar_url: "/AmenProfil.jpg", total_xp: 42000, streak_days: 67, position: 0, isBot: true },
+        { whop_user_id: "bot-isaac", display_name: "Isaac", avatar_url: "/Isaac.jpg", total_xp: 18500, streak_days: 34, position: 0, isBot: true },
+        { whop_user_id: "bot-pierre", display_name: "Pierre", avatar_url: null, total_xp: 7200, streak_days: 15, position: 0, isBot: true },
+    ];
 
     // Fetch leaderboard via Server Action
     useEffect(() => {
@@ -57,22 +66,32 @@ export function LeaderboardScreen({ userId, userXp, userLevel, userName = "You",
                         position: data.userPosition || lb.length + 1,
                         isMe: true,
                     });
-                    lb.sort((a, b) => (b.total_xp ?? 0) - (a.total_xp ?? 0));
-                    lb.forEach((e, i) => { e.position = i + 1; });
                 }
 
-                setEntries(lb);
+                // Merge bots with real users
+                const merged = [...lb, ...BOT_ENTRIES];
+                merged.sort((a, b) => (b.total_xp ?? 0) - (a.total_xp ?? 0));
+                merged.forEach((e, i) => { e.position = i + 1; });
+
+                setEntries(merged);
             } catch (err) {
                 console.error("[OPTIZ] Leaderboard error:", err);
-                setEntries([{
-                    whop_user_id: userId,
-                    display_name: userName,
-                    avatar_url: userPhoto || null,
-                    total_xp: userXp,
-                    streak_days: null,
-                    position: 1,
-                    isMe: true,
-                }]);
+                // On error, show bots + user
+                const fallback = [...BOT_ENTRIES];
+                if (userXp > 0) {
+                    fallback.push({
+                        whop_user_id: userId,
+                        display_name: userName,
+                        avatar_url: userPhoto || null,
+                        total_xp: userXp,
+                        streak_days: null,
+                        position: 0,
+                        isMe: true,
+                    });
+                }
+                fallback.sort((a, b) => (b.total_xp ?? 0) - (a.total_xp ?? 0));
+                fallback.forEach((e, i) => { e.position = i + 1; });
+                setEntries(fallback);
             } finally {
                 if (!cancelled) setIsLoading(false);
             }

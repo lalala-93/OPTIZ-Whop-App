@@ -1,6 +1,7 @@
 "use server";
 
 import { createServerSupabase } from "@/lib/supabase";
+import { fetchWhopUserProfile } from "@/lib/authentication";
 
 // ══════════════════════════════════════
 // Server Actions — called from client with userId passed from SSR
@@ -21,15 +22,36 @@ export async function loadUserData(userId: string) {
             .single();
 
         if (error && error.code === "PGRST116") {
-            // No row found — auto-create
+            // No row found — auto-create with Whop profile data
+            const whopProfile = await fetchWhopUserProfile(userId);
             const { data: newProfile } = await db
                 .from("user_profiles")
-                .insert({ whop_user_id: userId })
+                .insert({
+                    whop_user_id: userId,
+                    display_name: whopProfile.displayName || null,
+                    avatar_url: whopProfile.avatarUrl || null,
+                })
                 .select("total_xp, streak_days, display_name, avatar_url, locale")
                 .single();
             profile = newProfile;
         } else {
             profile = data;
+            // Sync Whop profile if display_name is default or avatar is missing
+            if (profile && (!profile.display_name || profile.display_name === "User" || !profile.avatar_url)) {
+                const whopProfile = await fetchWhopUserProfile(userId);
+                const updates: Record<string, string> = {};
+                if (whopProfile.displayName && (!profile.display_name || profile.display_name === "User")) {
+                    updates.display_name = whopProfile.displayName;
+                    profile.display_name = whopProfile.displayName;
+                }
+                if (whopProfile.avatarUrl && !profile.avatar_url) {
+                    updates.avatar_url = whopProfile.avatarUrl;
+                    profile.avatar_url = whopProfile.avatarUrl;
+                }
+                if (Object.keys(updates).length > 0) {
+                    await db.from("user_profiles").update(updates).eq("whop_user_id", userId);
+                }
+            }
         }
     } catch (err) {
         console.error("[OPTIZ] Profile load error:", err);

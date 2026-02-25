@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AnimatedFireIcon } from "./AnimatedIcons";
 import { useI18n } from "./i18n";
@@ -12,6 +13,13 @@ interface StreakEarnedAnimationProps {
 export function StreakEarnedAnimation({ isVisible, onComplete }: StreakEarnedAnimationProps) {
     const { t } = useI18n();
 
+    // Reliable timer-based dismiss — not dependent on Framer Motion lifecycle
+    useEffect(() => {
+        if (!isVisible) return;
+        const timer = setTimeout(onComplete, 2800);
+        return () => clearTimeout(timer);
+    }, [isVisible, onComplete]);
+
     return (
         <AnimatePresence>
             {isVisible && (
@@ -20,9 +28,6 @@ export function StreakEarnedAnimation({ isVisible, onComplete }: StreakEarnedAni
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    onAnimationComplete={() => {
-                        setTimeout(onComplete, 1800);
-                    }}
                 >
                     {/* Radial glow backdrop */}
                     <motion.div
@@ -30,7 +35,7 @@ export function StreakEarnedAnimation({ isVisible, onComplete }: StreakEarnedAni
                         style={{ background: "radial-gradient(circle, rgba(255,107,0,0.12) 0%, transparent 60%)" }}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: [0, 1, 1, 0] }}
-                        transition={{ duration: 2, times: [0, 0.2, 0.7, 1] }}
+                        transition={{ duration: 2.5, times: [0, 0.2, 0.7, 1] }}
                     />
 
                     {/* Center card */}
@@ -38,7 +43,7 @@ export function StreakEarnedAnimation({ isVisible, onComplete }: StreakEarnedAni
                         className="flex flex-col items-center gap-2"
                         initial={{ scale: 0.3, opacity: 0 }}
                         animate={{ scale: [0.3, 1.1, 1], opacity: [0, 1, 1, 0] }}
-                        transition={{ duration: 2, times: [0, 0.25, 0.6, 1], ease: "easeOut" }}
+                        transition={{ duration: 2.5, times: [0, 0.25, 0.65, 1], ease: "easeOut" }}
                     >
                         {/* Fire burst */}
                         <motion.div
@@ -73,7 +78,7 @@ export function StreakEarnedAnimation({ isVisible, onComplete }: StreakEarnedAni
                             className="text-sm font-bold text-orange-400 whitespace-nowrap"
                             initial={{ opacity: 0, y: 8 }}
                             animate={{ opacity: [0, 1, 1, 0], y: [8, 0, 0, -8] }}
-                            transition={{ duration: 2, times: [0, 0.3, 0.7, 1] }}
+                            transition={{ duration: 2.5, times: [0, 0.3, 0.7, 1] }}
                             style={{ textShadow: "0 0 20px rgba(255,107,0,0.4)" }}
                         >
                             {t("streakEarned")}

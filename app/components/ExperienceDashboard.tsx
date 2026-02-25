@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useTransition } from "react";
+import { useState, useCallback, useTransition, useRef } from "react";
 import { motion } from "framer-motion";
 import { Tabs } from "@whop/react/components";
 import { HomeScreen } from "./HomeScreen";
@@ -115,50 +115,59 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
   // HANDLERS — Server Action backed mutations
   // ═══════════════════════════════════════
 
+  // Guard against rapid concurrent toggles on the same todo
+  const pendingTodoIds = useRef<Set<string>>(new Set());
+
   const handleToggleTodo = useCallback((id: string) => {
-    setTodos(prev => {
-      const todo = prev.find(t => t.id === id);
-      if (!todo) return prev;
+    // Prevent concurrent toggles on the same todo
+    if (pendingTodoIds.current.has(id)) return;
 
-      if (!todo.completed) {
-        const TODO_XP = 3;
-        const prevLevel = getLevelProgress(totalXp).level;
-        const newTotalXp = totalXp + TODO_XP;
-        const newLevelData = getLevelProgress(newTotalXp);
+    const todo = todos.find(t => t.id === id);
+    if (!todo) return;
 
-        // Optimistic UI update
-        setTotalTasksCompleted(tc => tc + 1);
-        setTotalXp(newTotalXp);
-        setTodoXpAnim({ id, xp: TODO_XP });
-        setTimeout(() => setTodoXpAnim(null), 1200);
+    // Only allow checking (completing), not unchecking
+    if (todo.completed) return;
 
-        if (newLevelData.level > prevLevel) {
-          setTimeout(() => setLevelUpAnim({ visible: true, newLevel: newLevelData.level }), 1000);
+    pendingTodoIds.current.add(id);
+
+    const TODO_XP = 3;
+    const prevLevel = getLevelProgress(totalXp).level;
+    const newTotalXp = totalXp + TODO_XP;
+    const newLevelData = getLevelProgress(newTotalXp);
+
+    // Optimistic UI update
+    setTodos(prev => prev.map(t => t.id === id ? { ...t, completed: true } : t));
+    setTotalTasksCompleted(tc => tc + 1);
+    setTotalXp(newTotalXp);
+    setTodoXpAnim({ id, xp: TODO_XP });
+    setTimeout(() => setTodoXpAnim(null), 1200);
+
+    if (newLevelData.level > prevLevel) {
+      setTimeout(() => setLevelUpAnim({ visible: true, newLevel: newLevelData.level }), 1000);
+    }
+
+    // Server: toggle todo + award XP
+    startTransition(async () => {
+      try {
+        await serverToggleTodo(userId, id, true);
+        const result = await serverAwardXp(userId, TODO_XP, "todo");
+        // Sync server values
+        setTotalXp(result.totalXp);
+        setStreakDays(result.streakDays);
+        if (result.streakEarned) {
+          setStreakAnim(true);
         }
-
-        // Server: toggle todo + award XP
-        startTransition(async () => {
-          try {
-            await serverToggleTodo(userId, id, true);
-            const result = await serverAwardXp(userId, TODO_XP, "todo");
-            // Sync server values
-            setTotalXp(result.totalXp);
-            setStreakDays(result.streakDays);
-            if (result.streakEarned) {
-              setStreakAnim(true);
-            }
-          } catch (err) {
-            console.error("Failed to toggle todo:", err);
-            // Revert optimistic update on failure
-            setTodos(prev => prev.map(t => t.id === id ? { ...t, completed: false } : t));
-            setTotalXp((prev) => prev - TODO_XP);
-            setTotalTasksCompleted((prev) => prev - 1);
-          }
-        });
+      } catch (err) {
+        console.error("Failed to toggle todo:", err);
+        // Revert optimistic update on failure
+        setTodos(prev => prev.map(t => t.id === id ? { ...t, completed: false } : t));
+        setTotalXp((prev) => prev - TODO_XP);
+        setTotalTasksCompleted((prev) => prev - 1);
+      } finally {
+        pendingTodoIds.current.delete(id);
       }
-      return prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t);
     });
-  }, [totalXp, userId]);
+  }, [totalXp, userId, todos]);
 
   const handleAddTodo = useCallback((text: string) => {
     const tempId = `temp-${Date.now()}`;

@@ -46,7 +46,13 @@ export function SettingsSheet({
 
     const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (file) onUpdatePhoto(URL.createObjectURL(file));
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+            const dataUrl = reader.result as string;
+            onUpdatePhoto(dataUrl);
+        };
+        reader.readAsDataURL(file);
     };
 
     const currentLang = LANGUAGE_OPTIONS.find(l => l.code === locale) || LANGUAGE_OPTIONS[0];
@@ -201,8 +207,8 @@ export function SettingsSheet({
                                                         key={lang.code}
                                                         onClick={() => { setLocale(lang.code); setShowLanguagePicker(false); }}
                                                         className={`flex items-center justify-between w-full px-3.5 py-2.5 transition-all ${locale === lang.code
-                                                                ? "bg-[#E80000]/8 text-gray-12"
-                                                                : "text-gray-10 hover:bg-gray-4/50"
+                                                            ? "bg-[#E80000]/8 text-gray-12"
+                                                            : "text-gray-10 hover:bg-gray-4/50"
                                                             }`}
                                                         whileTap={{ scale: 0.98 }}
                                                     >

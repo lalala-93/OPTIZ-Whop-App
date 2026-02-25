@@ -13,6 +13,27 @@ export async function verifyUser(headers: Headers) {
 }
 
 /**
+ * Fetch the Whop user's public profile (display name, profile picture).
+ * Used to auto-populate OPTIZ profiles on first visit.
+ */
+export async function fetchWhopUserProfile(userId: string): Promise<{
+  displayName: string | null;
+  avatarUrl: string | null;
+}> {
+  try {
+    const user = await whop.users.retrieve(userId);
+    const u = user as unknown as Record<string, unknown>;
+    return {
+      displayName: (u.name as string | null) ?? (u.username as string | null) ?? null,
+      avatarUrl: (u.profile_pic_url as string | null) ?? null,
+    };
+  } catch (err) {
+    console.error("[OPTIZ] fetchWhopUserProfile failed:", err);
+    return { displayName: null, avatarUrl: null };
+  }
+}
+
+/**
  * Check if a user has access to a specific experience.
  * Used in Experience views to gate content behind membership access.
  *
