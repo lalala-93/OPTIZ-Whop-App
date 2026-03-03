@@ -136,7 +136,7 @@ export async function loadUserData(userId: string) {
         // V2: breathwork sessions count today
         db.from("breathwork_sessions").select("id", { count: "exact", head: true }).eq("user_id", userId).gte("completed_at", `${today}T00:00:00`).lte("completed_at", `${today}T23:59:59`),
         // V2: workout completions today
-        db.from("workout_logs").select("program_id, session_id").eq("user_id", userId).gte("completed_at", `${today}T00:00:00`).lte("completed_at", `${today}T23:59:59`),
+        db.from("workout_logs").select("program_id, session_id").eq("user_id", userId).eq("completed_date", today),
     ]);
 
     // Compute participant counts
@@ -452,6 +452,7 @@ export async function saveWorkoutLog(userId: string, payload: WorkoutLogPayload)
             program_title: payload.programTitle,
             session_id: payload.sessionId,
             session_name: payload.sessionName,
+            completed_date: today,
             total_volume: payload.totalVolume,
             improved_sets: payload.improvedSets,
             xp_earned: payload.xpEarned,

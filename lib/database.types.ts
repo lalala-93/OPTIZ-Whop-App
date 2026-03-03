@@ -308,6 +308,7 @@ export type Database = {
           session_id: string
           session_name: string
           completed_at: string | null
+          completed_date: string
           total_volume: number | null
           improved_sets: number | null
           xp_earned: number | null
@@ -320,6 +321,7 @@ export type Database = {
           session_id: string
           session_name: string
           completed_at?: string | null
+          completed_date?: string
           total_volume?: number | null
           improved_sets?: number | null
           xp_earned?: number | null
@@ -332,6 +334,7 @@ export type Database = {
           session_id?: string
           session_name?: string
           completed_at?: string | null
+          completed_date?: string
           total_volume?: number | null
           improved_sets?: number | null
           xp_earned?: number | null

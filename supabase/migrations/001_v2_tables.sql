@@ -24,11 +24,12 @@ CREATE TABLE IF NOT EXISTS workout_logs (
   session_id text NOT NULL,
   session_name text NOT NULL,
   completed_at timestamptz DEFAULT now(),
+  completed_date date NOT NULL DEFAULT CURRENT_DATE,
   total_volume numeric DEFAULT 0,
   improved_sets integer DEFAULT 0,
-  xp_earned integer DEFAULT 0
+  xp_earned integer DEFAULT 0,
+  CONSTRAINT workout_logs_daily UNIQUE (user_id, program_id, session_id, completed_date)
 );
-CREATE UNIQUE INDEX IF NOT EXISTS workout_logs_daily ON workout_logs(user_id, program_id, session_id, (completed_at::date));
 CREATE INDEX IF NOT EXISTS idx_workout_logs_user ON workout_logs(user_id, completed_at DESC);
 
 -- 3. Individual set logs within a workout
