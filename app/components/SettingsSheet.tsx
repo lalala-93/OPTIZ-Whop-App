@@ -152,18 +152,6 @@ export function SettingsSheet({
                             <div className="space-y-1 mb-4">
                                 <h3 className="text-[10px] font-bold text-gray-7 uppercase tracking-wider mb-2 px-1">{t("settings")}</h3>
 
-                                {/* Notifications */}
-                                <div className="flex items-center justify-between p-3 rounded-xl bg-gray-3/40 border border-gray-5/30">
-                                    <div className="flex items-center gap-2.5">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-8">
-                                            <path d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2a2 2 0 0 1-.6 1.4L4 17h5" />
-                                            <path d="M9 17a3 3 0 0 0 6 0" />
-                                        </svg>
-                                        <span className="text-sm text-gray-12 font-medium">{t("notifications")}</span>
-                                    </div>
-                                    <span className="text-xs text-gray-8">{t("on")}</span>
-                                </div>
-
                                 {/* Theme */}
                                 <div className="flex items-center justify-between p-3 rounded-xl bg-gray-3/40 border border-gray-5/30">
                                     <div className="flex items-center gap-2.5">

@@ -9,6 +9,13 @@ const translations = {
     home: "Home",
     challenges: "Workouts",
     leaderboard: "Leaderboard",
+    trainingTab: "Training",
+    stepsTab: "Steps",
+    dietTab: "Diet",
+    breathworkTab: "Breathwork",
+    leaderboardSnapshot: "Leaderboard Snapshot",
+    openCta: "Open",
+    newQuote: "New quote",
 
     xpLabel: "XP",
 
@@ -153,6 +160,13 @@ const translations = {
     home: "Accueil",
     challenges: "Workouts",
     leaderboard: "Classement",
+    trainingTab: "Training",
+    stepsTab: "Pas",
+    dietTab: "Nutrition",
+    breathworkTab: "Respiration",
+    leaderboardSnapshot: "Aperçu classement",
+    openCta: "Ouvrir",
+    newQuote: "Nouvelle citation",
 
     xpLabel: "XP",
 
