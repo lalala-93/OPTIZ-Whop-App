@@ -1,13 +1,22 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Footprints, Target } from "lucide-react";
 import { XPToast, type XPToastData } from "./XPToast";
+import { useI18n } from "./i18n";
+import { upsertDailySteps, awardXpEvent } from "@/lib/actions";
 
 interface StepsScreenProps {
   userId: string;
-  onAwardXp: (xp: number) => Promise<void>;
+  onAwardXpEvent: (source: string, referenceId: string, xpAmount: number) => Promise<void>;
+  initialData: {
+    baseline: number;
+    goal: number;
+    done: number;
+    milestonesAwarded: number[];
+    goalHit: boolean;
+  } | null;
 }
 
 interface StepsState {
@@ -16,31 +25,13 @@ interface StepsState {
   done: number;
 }
 
-interface StepsRewardsState {
-  date: string;
-  milestones: number[];
-  goalHit: boolean;
-}
-
-function storageKey(userId: string) {
-  return `optiz-steps-v2-${userId}`;
-}
-
-function rewardsKey(userId: string) {
-  return `optiz-steps-rewards-v1-${userId}`;
-}
-
-function todayKey() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
 function clampInt(value: number) {
   if (!Number.isFinite(value)) return 0;
   return Math.max(0, Math.round(value));
+}
+
+function getTodayISO() {
+  return new Date().toISOString().split("T")[0];
 }
 
 function RunnerIcon() {
@@ -54,51 +45,34 @@ function RunnerIcon() {
   );
 }
 
-export function StepsScreen({ userId, onAwardXp }: StepsScreenProps) {
-  const [state, setState] = useState<StepsState>({ baseline: 6000, goal: 8000, done: 0 });
+export function StepsScreen({ userId, onAwardXpEvent, initialData }: StepsScreenProps) {
+  const { t } = useI18n();
+
+  const [state, setState] = useState<StepsState>(() => ({
+    baseline: initialData?.baseline ?? 6000,
+    goal: initialData?.goal ?? 8000,
+    done: initialData?.done ?? 0,
+  }));
   const [toast, setToast] = useState<XPToastData | null>(null);
   const [deltaBubble, setDeltaBubble] = useState(0);
+  const [milestonesAwarded, setMilestonesAwarded] = useState<number[]>(initialData?.milestonesAwarded ?? []);
+  const [goalHit, setGoalHit] = useState(initialData?.goalHit ?? false);
 
-  const [rewards, setRewards] = useState<StepsRewardsState>({
-    date: todayKey(),
-    milestones: [],
-    goalHit: false,
-  });
+  // Debounced server persist
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const rawState = localStorage.getItem(storageKey(userId));
-    if (rawState) {
-      try {
-        setState(JSON.parse(rawState) as StepsState);
-      } catch (error) {
-        console.error("Failed to parse steps state", error);
-      }
-    }
-
-    const rawRewards = localStorage.getItem(rewardsKey(userId));
-    if (rawRewards) {
-      try {
-        const parsed = JSON.parse(rawRewards) as StepsRewardsState;
-        if (parsed.date === todayKey()) {
-          setRewards(parsed);
-        }
-      } catch (error) {
-        console.error("Failed to parse steps rewards", error);
-      }
-    }
-  }, [userId]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    localStorage.setItem(storageKey(userId), JSON.stringify(state));
-  }, [state, userId]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    localStorage.setItem(rewardsKey(userId), JSON.stringify(rewards));
-  }, [rewards, userId]);
+  const persistToServer = (next: StepsState, milestones: number[], goal: boolean) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      upsertDailySteps(userId, getTodayISO(), {
+        baseline: next.baseline,
+        goal: next.goal,
+        done: next.done,
+        milestonesAwarded: milestones,
+        goalHit: goal,
+      }).catch((err) => console.error("[OPTIZ] Steps persist error:", err));
+    }, 800);
+  };
 
   const progress = useMemo(() => {
     if (state.goal <= 0) return 0;
@@ -107,43 +81,70 @@ export function StepsScreen({ userId, onAwardXp }: StepsScreenProps) {
 
   const remaining = Math.max(0, state.goal - state.done);
 
-  const showReward = (title: string, subtitle: string, xp: number) => {
+  const showReward = (title: string, subtitle: string, xp: number, source: string, refId: string) => {
     const id = `${Date.now()}-${Math.random()}`;
     setToast({ id, title, subtitle, xp });
     setTimeout(() => setToast((prev) => (prev?.id === id ? null : prev)), 2200);
-    void onAwardXp(xp).catch((error) => {
+    void onAwardXpEvent(source, refId, xp).catch((error) => {
       console.error("Failed to award steps XP", error);
     });
   };
 
+  // Check milestones and goal on progress change
   useEffect(() => {
-    const today = todayKey();
-    if (rewards.date !== today) {
-      setRewards({ date: today, milestones: [], goalHit: false });
-      return;
-    }
-
+    const today = getTodayISO();
     const thresholds = [
       { pct: 25, xp: 8 },
       { pct: 50, xp: 12 },
       { pct: 75, xp: 16 },
     ];
 
+    let updated = false;
+    let newMilestones = [...milestonesAwarded];
+    let newGoalHit = goalHit;
+
     thresholds.forEach((item) => {
-      if (progress >= item.pct && !rewards.milestones.includes(item.pct)) {
-        setRewards((prev) => ({ ...prev, milestones: [...prev.milestones, item.pct] }));
-        showReward("Palier pas valide", `${item.pct}% de l'objectif quotidien`, item.xp);
+      if (progress >= item.pct && !newMilestones.includes(item.pct)) {
+        newMilestones = [...newMilestones, item.pct];
+        updated = true;
+        showReward(
+          t("stepsMilestoneTitle"),
+          t("stepsMilestoneSubtitle", { pct: String(item.pct) }),
+          item.xp,
+          "steps_milestone",
+          `steps-${item.pct}-${today}`,
+        );
       }
     });
 
-    if (!rewards.goalHit && progress >= 100) {
-      setRewards((prev) => ({ ...prev, goalHit: true }));
-      showReward("Objectif pas valide", "Excellente depense aujourd'hui", 30);
+    if (!newGoalHit && progress >= 100) {
+      newGoalHit = true;
+      updated = true;
+      showReward(
+        t("stepsGoalTitle"),
+        t("stepsGoalSubtitle"),
+        30,
+        "steps_goal",
+        `steps-goal-${today}`,
+      );
     }
-  }, [progress, rewards]);
+
+    if (updated) {
+      setMilestonesAwarded(newMilestones);
+      setGoalHit(newGoalHit);
+      persistToServer(state, newMilestones, newGoalHit);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [progress]);
+
+  const updateState = (next: StepsState) => {
+    setState(next);
+    persistToServer(next, milestonesAwarded, goalHit);
+  };
 
   const shiftDone = (delta: number) => {
-    setState((prev) => ({ ...prev, done: clampInt(prev.done + delta) }));
+    const next = { ...state, done: clampInt(state.done + delta) };
+    updateState(next);
     setDeltaBubble(delta);
     setTimeout(() => setDeltaBubble(0), 320);
   };
@@ -153,58 +154,58 @@ export function StepsScreen({ userId, onAwardXp }: StepsScreenProps) {
       <XPToast toast={toast} />
 
       <div>
-        <h2 className="text-[26px] leading-tight font-semibold text-gray-12 mb-1.5">Steps</h2>
+        <h2 className="text-[26px] leading-tight font-semibold text-gray-12 mb-1.5">{t("stepsTitle")}</h2>
         <p className="text-sm text-gray-8 leading-relaxed">
-          Tracking simple: fixe ton objectif, ajoute tes pas rapidement, et visualise ta progression sur la journee.
+          {t("stepsSubtitle")}
         </p>
       </div>
 
       <motion.section className="rounded-3xl border border-gray-5/35 bg-gray-2/82 p-4" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
         <div className="flex items-center justify-between gap-2 mb-3">
           <h3 className="text-[15px] font-semibold text-gray-12 inline-flex items-center gap-1.5">
-            <Footprints size={15} /> Objectif quotidien
+            <Footprints size={15} /> {t("stepsDailyGoal")}
           </h3>
           <span className="text-[13px] font-semibold text-[#FF6A6A] tabular-nums">{progress}%</span>
         </div>
 
         <div className="grid grid-cols-3 gap-2 mb-2.5">
           <label className="text-[10px] text-gray-7">
-            Base
+            {t("stepsBase")}
             <input
               type="number"
               value={state.baseline}
               min={0}
               onChange={(event) => {
                 const next = clampInt(Number(event.target.value || "0"));
-                setState((prev) => ({ ...prev, baseline: next, goal: Math.max(prev.goal, next + 500) }));
+                updateState({ ...state, baseline: next, goal: Math.max(state.goal, next + 500) });
               }}
               className="mt-1 h-10 w-full rounded-lg bg-gray-3/35 border border-gray-5/35 px-2.5 text-sm text-gray-12"
             />
           </label>
 
           <label className="text-[10px] text-gray-7">
-            Objectif
+            {t("stepsGoal")}
             <input
               type="number"
               value={state.goal}
               min={0}
               onChange={(event) => {
                 const next = clampInt(Number(event.target.value || "0"));
-                setState((prev) => ({ ...prev, goal: Math.max(next, prev.baseline + 500) }));
+                updateState({ ...state, goal: Math.max(next, state.baseline + 500) });
               }}
               className="mt-1 h-10 w-full rounded-lg bg-gray-3/35 border border-gray-5/35 px-2.5 text-sm text-gray-12"
             />
           </label>
 
           <label className="text-[10px] text-gray-7">
-            Realise
+            {t("stepsDone")}
             <input
               type="number"
               value={state.done}
               min={0}
               onChange={(event) => {
                 const next = clampInt(Number(event.target.value || "0"));
-                setState((prev) => ({ ...prev, done: next }));
+                updateState({ ...state, done: next });
               }}
               className="mt-1 h-10 w-full rounded-lg bg-gray-3/35 border border-gray-5/35 px-2.5 text-sm text-gray-12"
             />
@@ -214,17 +215,17 @@ export function StepsScreen({ userId, onAwardXp }: StepsScreenProps) {
         <div className="flex gap-2 mb-3">
           <button
             type="button"
-            onClick={() => setState((prev) => ({ ...prev, goal: prev.goal + 500 }))}
+            onClick={() => updateState({ ...state, goal: state.goal + 500 })}
             className="h-9 px-3 rounded-lg border border-gray-5/35 bg-gray-3/30 text-xs text-gray-11 font-semibold"
           >
-            +500 objectif
+            +500 {t("stepsGoal").toLowerCase()}
           </button>
           <button
             type="button"
-            onClick={() => setState((prev) => ({ ...prev, goal: prev.goal + 1000 }))}
+            onClick={() => updateState({ ...state, goal: state.goal + 1000 })}
             className="h-9 px-3 rounded-lg border border-gray-5/35 bg-gray-3/30 text-xs text-gray-11 font-semibold"
           >
-            +1000 objectif
+            +1000 {t("stepsGoal").toLowerCase()}
           </button>
         </div>
 
@@ -244,8 +245,8 @@ export function StepsScreen({ userId, onAwardXp }: StepsScreenProps) {
           </motion.div>
 
           <div className="mt-3 flex items-center justify-between text-[12px]">
-            <span className="text-gray-8 tabular-nums">{state.done} / {state.goal} pas</span>
-            <span className="text-gray-9 tabular-nums">{remaining} restants</span>
+            <span className="text-gray-8 tabular-nums">{state.done} / {state.goal} {t("stepsUnit")}</span>
+            <span className="text-gray-9 tabular-nums">{remaining} {t("stepsRemaining")}</span>
           </div>
 
           <AnimatePresence>
@@ -283,14 +284,7 @@ export function StepsScreen({ userId, onAwardXp }: StepsScreenProps) {
       <section className="rounded-3xl border border-gray-5/30 bg-gray-3/18 p-4">
         <p className="text-[12px] text-gray-9 leading-relaxed inline-flex items-start gap-1.5">
           <Target size={14} className="mt-0.5 shrink-0" />
-          Objectif coach: augmente ton goal de +500 a +1500 au-dessus de ta base pour progresser sans nuire a ta recuperation.
-        </p>
-      </section>
-
-      <section className="rounded-3xl border border-gray-5/30 bg-gray-3/18 p-4">
-        <p className="text-[12px] text-gray-9 leading-relaxed">
-          Auto-tracking en temps reel dans une app Whop web est limite: pas d'acces direct fiable aux capteurs HealthKit/Google Fit depuis un iframe web.
-          Solution actuelle: tracking manuel ultra-rapide. Solution avancee possible: sync via API wearable/server.
+          {t("stepsCoachTip")}
         </p>
       </section>
     </div>

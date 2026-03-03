@@ -1,13 +1,41 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Apple, Droplets, Flame, Plus, UtensilsCrossed } from "lucide-react";
 import { XPToast, type XPToastData } from "./XPToast";
+import { useI18n } from "./i18n";
+import {
+  upsertDailyNutrition,
+  addNutritionMeal as serverAddNutritionMeal,
+} from "@/lib/actions";
 
 interface DietScreenProps {
   userId: string;
-  onAwardXp: (xp: number) => Promise<void>;
+  onAwardXpEvent: (source: string, referenceId: string, xpAmount: number) => Promise<void>;
+  initialData: {
+    id: string;
+    calorieGoal: number;
+    proteinGoal: number;
+    carbsGoal: number;
+    fatsGoal: number;
+    waterGoalL: number;
+    waterInL: number;
+    proteinGoalHit: boolean;
+    caloriesOnTarget: boolean;
+    hydrationGoalHit: boolean;
+    mealRewardsCount: number;
+    meals: {
+      id: string;
+      mealType: string;
+      name: string;
+      calories: number;
+      protein: number;
+      carbs: number;
+      fats: number;
+      createdAt: string;
+    }[];
+  } | null;
 }
 
 interface MealEntry {
@@ -17,13 +45,8 @@ interface MealEntry {
   protein: number;
   carbs: number;
   fats: number;
-  mealTypeId: string;
+  mealType: string;
   createdAt: string;
-}
-
-interface MealType {
-  id: string;
-  label: string;
 }
 
 interface DietState {
@@ -33,50 +56,30 @@ interface DietState {
   fatsGoal: number;
   waterGoalL: number;
   waterInL: number;
-  streakDays: boolean[];
   meals: MealEntry[];
 }
 
 interface DietRewardsState {
-  date: string;
   mealRewards: number;
   proteinGoalHit: boolean;
   caloriesOnTarget: boolean;
   hydrationGoalHit: boolean;
 }
 
+interface MealType {
+  id: string;
+  labelKey: string;
+}
+
 const MEAL_TYPES: MealType[] = [
-  { id: "breakfast", label: "Breakfast" },
-  { id: "lunch", label: "Lunch" },
-  { id: "snack", label: "Snack" },
-  { id: "dinner", label: "Dinner" },
+  { id: "breakfast", labelKey: "dietBreakfast" },
+  { id: "lunch", labelKey: "dietLunch" },
+  { id: "snack", labelKey: "dietSnack" },
+  { id: "dinner", labelKey: "dietDinner" },
 ];
 
-const DEFAULT_STATE: DietState = {
-  calorieGoal: 2500,
-  proteinGoal: 160,
-  carbsGoal: 260,
-  fatsGoal: 80,
-  waterGoalL: 2.8,
-  waterInL: 0.5,
-  streakDays: [true, true, false, false, false, false, false],
-  meals: [],
-};
-
-function storageKey(userId: string) {
-  return `optiz-diet-v3-${userId}`;
-}
-
-function rewardKey(userId: string) {
-  return `optiz-diet-rewards-v1-${userId}`;
-}
-
-function getTodayKey() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+function getTodayISO() {
+  return new Date().toISOString().split("T")[0];
 }
 
 function roundToQuarter(value: number) {
@@ -99,10 +102,29 @@ function MacroProgress({ label, current, goal }: { label: string; current: numbe
   );
 }
 
-export function DietScreen({ userId, onAwardXp }: DietScreenProps) {
-  const [state, setState] = useState<DietState>(DEFAULT_STATE);
-  const [activeMealType, setActiveMealType] = useState<string>(MEAL_TYPES[0].id);
+export function DietScreen({ userId, onAwardXpEvent, initialData }: DietScreenProps) {
+  const { t } = useI18n();
 
+  const [state, setState] = useState<DietState>(() => ({
+    calorieGoal: initialData?.calorieGoal ?? 2500,
+    proteinGoal: initialData?.proteinGoal ?? 160,
+    carbsGoal: initialData?.carbsGoal ?? 260,
+    fatsGoal: initialData?.fatsGoal ?? 80,
+    waterGoalL: initialData?.waterGoalL ?? 2.8,
+    waterInL: initialData?.waterInL ?? 0,
+    meals: (initialData?.meals ?? []).map((m) => ({
+      id: m.id,
+      name: m.name,
+      calories: m.calories,
+      protein: m.protein,
+      carbs: m.carbs,
+      fats: m.fats,
+      mealType: m.mealType,
+      createdAt: m.createdAt,
+    })),
+  }));
+
+  const [activeMealType, setActiveMealType] = useState<string>(MEAL_TYPES[0].id);
   const [mealName, setMealName] = useState("");
   const [mealCalories, setMealCalories] = useState(450);
   const [mealProtein, setMealProtein] = useState(30);
@@ -110,49 +132,34 @@ export function DietScreen({ userId, onAwardXp }: DietScreenProps) {
   const [mealFats, setMealFats] = useState(15);
 
   const [rewards, setRewards] = useState<DietRewardsState>({
-    date: getTodayKey(),
-    mealRewards: 0,
-    proteinGoalHit: false,
-    caloriesOnTarget: false,
-    hydrationGoalHit: false,
+    mealRewards: initialData?.mealRewardsCount ?? 0,
+    proteinGoalHit: initialData?.proteinGoalHit ?? false,
+    caloriesOnTarget: initialData?.caloriesOnTarget ?? false,
+    hydrationGoalHit: initialData?.hydrationGoalHit ?? false,
   });
 
   const [toast, setToast] = useState<XPToastData | null>(null);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
+  // Debounced server persist for goals/water
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const rawState = localStorage.getItem(storageKey(userId));
-    if (rawState) {
-      try {
-        setState(JSON.parse(rawState) as DietState);
-      } catch (error) {
-        console.error("Failed to parse diet state", error);
-      }
-    }
-
-    const rawRewards = localStorage.getItem(rewardKey(userId));
-    if (rawRewards) {
-      try {
-        const parsed = JSON.parse(rawRewards) as DietRewardsState;
-        if (parsed.date === getTodayKey()) {
-          setRewards(parsed);
-        }
-      } catch (error) {
-        console.error("Failed to parse diet rewards", error);
-      }
-    }
-  }, [userId]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    localStorage.setItem(storageKey(userId), JSON.stringify(state));
-  }, [state, userId]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    localStorage.setItem(rewardKey(userId), JSON.stringify(rewards));
-  }, [rewards, userId]);
+  const persistGoals = (nextState: DietState, nextRewards: DietRewardsState) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      upsertDailyNutrition(userId, getTodayISO(), {
+        calorieGoal: nextState.calorieGoal,
+        proteinGoal: nextState.proteinGoal,
+        carbsGoal: nextState.carbsGoal,
+        fatsGoal: nextState.fatsGoal,
+        waterGoalL: nextState.waterGoalL,
+        waterInL: nextState.waterInL,
+        proteinGoalHit: nextRewards.proteinGoalHit,
+        caloriesOnTarget: nextRewards.caloriesOnTarget,
+        hydrationGoalHit: nextRewards.hydrationGoalHit,
+        mealRewardsCount: nextRewards.mealRewards,
+      }).catch((err) => console.error("[OPTIZ] Nutrition persist error:", err));
+    }, 800);
+  };
 
   const totals = useMemo(() => {
     return state.meals.reduce(
@@ -178,67 +185,64 @@ export function DietScreen({ userId, onAwardXp }: DietScreenProps) {
     });
 
     state.meals.forEach((meal) => {
-      if (!map[meal.mealTypeId]) map[meal.mealTypeId] = [];
-      map[meal.mealTypeId].push(meal);
+      if (!map[meal.mealType]) map[meal.mealType] = [];
+      map[meal.mealType].push(meal);
     });
 
     return map;
   }, [state.meals]);
 
-  const streakCount = state.streakDays.filter(Boolean).length;
-
-  const showReward = (title: string, subtitle: string, xp: number) => {
+  const showReward = (title: string, subtitle: string, xp: number, source: string, refId: string) => {
     const id = `${Date.now()}-${Math.random()}`;
     setToast({ id, title, subtitle, xp });
     setTimeout(() => setToast((prev) => (prev?.id === id ? null : prev)), 2200);
-
-    void onAwardXp(xp).catch((error) => {
+    void onAwardXpEvent(source, refId, xp).catch((error) => {
       console.error("Failed to award diet XP", error);
     });
   };
 
+  // Check nutrition rewards
   useEffect(() => {
-    const today = getTodayKey();
+    const today = getTodayISO();
+    let updated = false;
+    let next = { ...rewards };
 
-    if (rewards.date !== today) {
-      setRewards({
-        date: today,
-        mealRewards: 0,
-        proteinGoalHit: false,
-        caloriesOnTarget: false,
-        hydrationGoalHit: false,
-      });
-      return;
-    }
-
-    if (!rewards.proteinGoalHit && totals.protein >= state.proteinGoal) {
-      setRewards((prev) => ({ ...prev, proteinGoalHit: true }));
-      showReward("Objectif proteines valide", "Apport proteique atteint", 20);
+    if (!next.proteinGoalHit && totals.protein >= state.proteinGoal) {
+      next = { ...next, proteinGoalHit: true };
+      updated = true;
+      showReward(t("dietProteinGoalTitle"), t("dietProteinGoalSubtitle"), 20, "protein_goal", `protein-goal-${today}`);
     }
 
     const inCalorieZone = totals.calories >= state.calorieGoal * 0.95 && totals.calories <= state.calorieGoal * 1.05;
-    if (!rewards.caloriesOnTarget && inCalorieZone) {
-      setRewards((prev) => ({ ...prev, caloriesOnTarget: true }));
-      showReward("Calories dans la cible", "Apport quotidien bien calibre", 20);
+    if (!next.caloriesOnTarget && inCalorieZone) {
+      next = { ...next, caloriesOnTarget: true };
+      updated = true;
+      showReward(t("dietCaloriesOnTargetTitle"), t("dietCaloriesOnTargetSubtitle"), 20, "calories_on_target", `calories-target-${today}`);
     }
 
-    if (!rewards.hydrationGoalHit && state.waterInL >= state.waterGoalL) {
-      setRewards((prev) => ({ ...prev, hydrationGoalHit: true }));
-      showReward("Hydratation validee", "Objectif hydratation atteint", 15);
+    if (!next.hydrationGoalHit && state.waterInL >= state.waterGoalL) {
+      next = { ...next, hydrationGoalHit: true };
+      updated = true;
+      showReward(t("dietHydrationGoalTitle"), t("dietHydrationGoalSubtitle"), 15, "hydration_goal", `hydration-goal-${today}`);
     }
-  }, [
-    rewards,
-    totals.protein,
-    totals.calories,
-    state.proteinGoal,
-    state.calorieGoal,
-    state.waterInL,
-    state.waterGoalL,
-  ]);
 
-  const addMeal = () => {
+    if (updated) {
+      setRewards(next);
+      persistGoals(state, next);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [totals.protein, totals.calories, state.proteinGoal, state.calorieGoal, state.waterInL, state.waterGoalL]);
+
+  const updateGoals = (patch: Partial<DietState>) => {
+    const next = { ...state, ...patch };
+    setState(next);
+    persistGoals(next, rewards);
+  };
+
+  const addMeal = async () => {
     if (!mealName.trim()) return;
 
+    const today = getTodayISO();
     const meal: MealEntry = {
       id: `meal-${Date.now()}`,
       name: mealName.trim(),
@@ -246,28 +250,42 @@ export function DietScreen({ userId, onAwardXp }: DietScreenProps) {
       protein: Math.max(0, mealProtein),
       carbs: Math.max(0, mealCarbs),
       fats: Math.max(0, mealFats),
-      mealTypeId: activeMealType,
+      mealType: activeMealType,
       createdAt: new Date().toISOString(),
     };
 
-    setState((prev) => ({ ...prev, meals: [meal, ...prev.meals].slice(0, 300) }));
+    // Optimistic local update
+    setState((prev) => ({ ...prev, meals: [meal, ...prev.meals] }));
     setMealName("");
 
-    if (rewards.date !== getTodayKey()) {
-      setRewards({
-        date: getTodayKey(),
-        mealRewards: 1,
-        proteinGoalHit: false,
-        caloriesOnTarget: false,
-        hydrationGoalHit: false,
+    // Persist to server
+    try {
+      const serverMeal = await serverAddNutritionMeal(userId, today, {
+        mealType: meal.mealType,
+        name: meal.name,
+        calories: meal.calories,
+        protein: meal.protein,
+        carbs: meal.carbs,
+        fats: meal.fats,
       });
-      showReward("Repas ajoute", "Repas ajoute dans ton suivi", 8);
-      return;
+
+      // Replace temp ID with server ID
+      if (serverMeal) {
+        setState((prev) => ({
+          ...prev,
+          meals: prev.meals.map((m) => (m.id === meal.id ? { ...m, id: serverMeal.id } : m)),
+        }));
+      }
+    } catch (err) {
+      console.error("[OPTIZ] Failed to add meal", err);
     }
 
+    // Meal XP reward (max 4 per day)
     if (rewards.mealRewards < 4) {
-      setRewards((prev) => ({ ...prev, mealRewards: prev.mealRewards + 1 }));
-      showReward("Repas ajoute", "Repas ajoute dans ton suivi", 8);
+      const nextRewards = { ...rewards, mealRewards: rewards.mealRewards + 1 };
+      setRewards(nextRewards);
+      showReward(t("dietMealAdded"), t("dietMealAddedSubtitle"), 8, "meal_added", `meal-${rewards.mealRewards + 1}-${today}`);
+      persistGoals(state, nextRewards);
     }
   };
 
@@ -276,9 +294,9 @@ export function DietScreen({ userId, onAwardXp }: DietScreenProps) {
       <XPToast toast={toast} />
 
       <div>
-        <h2 className="text-[26px] leading-tight font-semibold text-gray-12 mb-1.5">Nutrition</h2>
+        <h2 className="text-[26px] leading-tight font-semibold text-gray-12 mb-1.5">{t("dietTitle")}</h2>
         <p className="text-sm text-gray-8 leading-relaxed">
-          Plan clair de coach: vise tes calories, valide tes macros, hydrate-toi en litres, et garde une execution reguliere.
+          {t("dietSubtitle")}
         </p>
       </div>
 
@@ -308,61 +326,41 @@ export function DietScreen({ userId, onAwardXp }: DietScreenProps) {
 
           <div className="flex-1 min-w-0">
             <p className="text-[15px] text-gray-12 font-semibold inline-flex items-center gap-1.5">
-              <Flame size={15} /> Calories du jour
+              <Flame size={15} /> {t("dietCaloriesToday")}
             </p>
-            <p className="text-[12px] text-gray-8 mt-1">Objectif {state.calorieGoal} · Restant {caloriesRemaining}</p>
+            <p className="text-[12px] text-gray-8 mt-1">{t("dietGoalLabel")} {state.calorieGoal} · {t("dietRemainingLabel")} {caloriesRemaining}</p>
 
             <div className="mt-3 grid grid-cols-2 gap-2">
               <label className="text-[10px] text-gray-7">
-                Objectif kcal
+                {t("dietCalorieGoalInput")}
                 <input
                   type="number"
                   min={1200}
                   value={state.calorieGoal}
-                  onChange={(event) => setState((prev) => ({ ...prev, calorieGoal: Math.max(1200, Number(event.target.value || "1200")) }))}
+                  onChange={(event) => updateGoals({ calorieGoal: Math.max(1200, Number(event.target.value || "1200")) })}
                   className="mt-1 h-9 w-full rounded-lg bg-gray-3/40 border border-gray-5/35 px-2 text-sm text-gray-12"
                 />
               </label>
 
               <div className="rounded-lg border border-gray-5/30 bg-gray-3/22 p-2">
-                <p className="text-[10px] text-gray-7">Serie nutrition</p>
-                <p className="text-[21px] leading-none font-semibold text-gray-12 tabular-nums mt-1">{streakCount}/7</p>
+                <p className="text-[10px] text-gray-7">{t("dietMacroGoals")}</p>
+                <p className="text-[11px] text-gray-10 mt-1">P {state.proteinGoal}g · C {state.carbsGoal}g · F {state.fatsGoal}g</p>
               </div>
             </div>
-          </div>
-        </div>
-
-        <div className="mt-3 flex items-center justify-between">
-          <p className="text-[11px] text-gray-8">Regularite semaine</p>
-          <div className="flex items-center gap-1.5">
-            {state.streakDays.map((done, idx) => (
-              <button
-                key={`diet-streak-${idx}`}
-                type="button"
-                onClick={() =>
-                  setState((prev) => ({
-                    ...prev,
-                    streakDays: prev.streakDays.map((value, i) => (i === idx ? !value : value)),
-                  }))
-                }
-                className={`w-5 h-5 rounded-full border ${done ? "border-[#E80000]/45 bg-[#E80000]/18" : "border-gray-5/45 bg-gray-4/45"}`}
-                aria-label={`Day ${idx + 1}`}
-              />
-            ))}
           </div>
         </div>
       </motion.section>
 
       <section className="grid grid-cols-1 gap-2.5">
-        <MacroProgress label="Protein" current={totals.protein} goal={state.proteinGoal} />
-        <MacroProgress label="Carbs" current={totals.carbs} goal={state.carbsGoal} />
-        <MacroProgress label="Fats" current={totals.fats} goal={state.fatsGoal} />
+        <MacroProgress label={t("dietProtein")} current={totals.protein} goal={state.proteinGoal} />
+        <MacroProgress label={t("dietCarbs")} current={totals.carbs} goal={state.carbsGoal} />
+        <MacroProgress label={t("dietFats")} current={totals.fats} goal={state.fatsGoal} />
       </section>
 
       <section className="rounded-3xl border border-gray-5/35 bg-gray-2/82 p-4">
         <div className="flex items-center justify-between mb-2.5">
           <p className="text-[15px] font-semibold text-gray-12 inline-flex items-center gap-1.5">
-            <Droplets size={16} className="text-[#68A4FF]" /> Hydratation
+            <Droplets size={16} className="text-[#68A4FF]" /> {t("dietHydration")}
           </p>
           <p className="text-[12px] text-gray-8 tabular-nums">{state.waterInL.toFixed(2)} / {state.waterGoalL.toFixed(2)} L</p>
         </div>
@@ -391,10 +389,9 @@ export function DietScreen({ userId, onAwardXp }: DietScreenProps) {
               key={action.label}
               type="button"
               onClick={() =>
-                setState((prev) => ({
-                  ...prev,
-                  waterInL: roundToQuarter(Math.max(0, Math.min(prev.waterGoalL * 1.4, prev.waterInL + action.delta))),
-                }))
+                updateGoals({
+                  waterInL: roundToQuarter(Math.max(0, Math.min(state.waterGoalL * 1.4, state.waterInL + action.delta))),
+                })
               }
               className="h-9 rounded-lg border border-gray-5/35 bg-gray-3/30 text-[12px] text-gray-11 font-semibold"
             >
@@ -405,17 +402,14 @@ export function DietScreen({ userId, onAwardXp }: DietScreenProps) {
 
         <div className="mt-2.5 grid grid-cols-2 gap-2">
           <label className="text-[10px] text-gray-7">
-            Objectif eau (L)
+            {t("dietWaterGoalInput")}
             <input
               type="number"
               min={1}
               step={0.1}
               value={state.waterGoalL}
               onChange={(event) =>
-                setState((prev) => ({
-                  ...prev,
-                  waterGoalL: Math.max(1, Number(event.target.value || "1")),
-                }))
+                updateGoals({ waterGoalL: Math.max(1, Number(event.target.value || "1")) })
               }
               className="mt-1 h-9 w-full rounded-lg bg-gray-3/35 border border-gray-5/35 px-2 text-sm text-gray-12"
             />
@@ -426,9 +420,9 @@ export function DietScreen({ userId, onAwardXp }: DietScreenProps) {
       <section className="rounded-3xl border border-gray-5/35 bg-gray-2/82 p-4">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-[15px] font-semibold text-gray-12 inline-flex items-center gap-1.5">
-            <UtensilsCrossed size={15} /> Repas
+            <UtensilsCrossed size={15} /> {t("dietMeals")}
           </h3>
-          <p className="text-[11px] text-gray-8">Ajout simple et rapide</p>
+          <p className="text-[11px] text-gray-8">{t("dietQuickAdd")}</p>
         </div>
 
         <div className="space-y-2.5 mb-3">
@@ -447,8 +441,8 @@ export function DietScreen({ userId, onAwardXp }: DietScreenProps) {
                 }`}
               >
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-[13px] font-semibold text-gray-12">{type.label}</p>
-                      <p className="text-[11px] text-gray-8 tabular-nums">{meals.length} repas · {kcal} kcal</p>
+                  <p className="text-[13px] font-semibold text-gray-12">{t(type.labelKey as keyof typeof t)}</p>
+                      <p className="text-[11px] text-gray-8 tabular-nums">{meals.length} {t("dietMealCount")} · {kcal} kcal</p>
                 </div>
               </button>
             );
@@ -457,14 +451,14 @@ export function DietScreen({ userId, onAwardXp }: DietScreenProps) {
 
         <div className="rounded-xl border border-gray-5/30 bg-gray-3/20 p-3">
           <p className="text-[12px] text-gray-11 font-semibold inline-flex items-center gap-1.5 mb-2">
-            <Apple size={14} /> Ajouter un repas - {MEAL_TYPES.find((m) => m.id === activeMealType)?.label}
+            <Apple size={14} /> {t("dietAddMeal")} - {t(MEAL_TYPES.find((m) => m.id === activeMealType)?.labelKey as keyof typeof t)}
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
             <input
               value={mealName}
               onChange={(event) => setMealName(event.target.value)}
-              placeholder="Nom du repas"
+              placeholder={t("dietMealNamePlaceholder")}
               className="h-10 rounded-lg bg-gray-2 border border-gray-5/35 px-3 text-sm text-gray-12"
             />
             <input
@@ -483,7 +477,7 @@ export function DietScreen({ userId, onAwardXp }: DietScreenProps) {
               min={0}
               value={mealProtein}
               onChange={(event) => setMealProtein(Math.max(0, Number(event.target.value || "0")))}
-              placeholder="Protein"
+              placeholder={t("dietProtein")}
               className="h-10 rounded-lg bg-gray-2 border border-gray-5/35 px-3 text-sm text-gray-12"
             />
             <input
@@ -491,7 +485,7 @@ export function DietScreen({ userId, onAwardXp }: DietScreenProps) {
               min={0}
               value={mealCarbs}
               onChange={(event) => setMealCarbs(Math.max(0, Number(event.target.value || "0")))}
-              placeholder="Carbs"
+              placeholder={t("dietCarbs")}
               className="h-10 rounded-lg bg-gray-2 border border-gray-5/35 px-3 text-sm text-gray-12"
             />
             <input
@@ -499,7 +493,7 @@ export function DietScreen({ userId, onAwardXp }: DietScreenProps) {
               min={0}
               value={mealFats}
               onChange={(event) => setMealFats(Math.max(0, Number(event.target.value || "0")))}
-              placeholder="Fats"
+              placeholder={t("dietFats")}
               className="h-10 rounded-lg bg-gray-2 border border-gray-5/35 px-3 text-sm text-gray-12"
             />
           </div>
@@ -509,7 +503,7 @@ export function DietScreen({ userId, onAwardXp }: DietScreenProps) {
             onClick={addMeal}
             className="w-full h-10 rounded-xl optiz-gradient-bg text-white text-sm font-semibold inline-flex items-center justify-center gap-1.5"
           >
-            <Plus size={14} /> Valider le repas
+            <Plus size={14} /> {t("dietValidateMeal")}
           </button>
         </div>
 
@@ -527,7 +521,7 @@ export function DietScreen({ userId, onAwardXp }: DietScreenProps) {
           ))}
 
           {state.meals.length === 0 ? (
-            <p className="text-[12px] text-gray-8 py-2">Aucun repas logge pour le moment.</p>
+            <p className="text-[12px] text-gray-8 py-2">{t("dietNoMeals")}</p>
           ) : null}
         </div>
       </section>

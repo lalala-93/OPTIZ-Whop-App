@@ -87,6 +87,10 @@ export default async function ExperiencePage({
       challenges: [],
       weeklyProgress: [false, false, false, false, false, false, false],
       totalTasksCompleted: 0,
+      stepsToday: null,
+      nutritionToday: null,
+      breathworkSessionsToday: 0,
+      workoutCompletionsToday: [],
     };
   }
 

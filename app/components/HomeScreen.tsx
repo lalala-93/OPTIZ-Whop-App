@@ -35,12 +35,6 @@ interface LeaderboardRow {
   isMe?: boolean;
 }
 
-const BOT_ROWS: LeaderboardRow[] = [
-  { whop_user_id: "bot-hakim", display_name: "Hakim Zwar", avatar_url: "/HakimProfil.jpg", total_xp: 4200, position: 0 },
-  { whop_user_id: "bot-amen", display_name: "Amen", avatar_url: "/AmenProfil.jpg", total_xp: 2800, position: 0 },
-  { whop_user_id: "bot-isaac", display_name: "Isaac", avatar_url: "/Isaac.jpg", total_xp: 900, position: 0 },
-];
-
 function RankIcon({ level }: { level: number }) {
   const rank = getRankForLevel(level);
   return (
@@ -110,13 +104,12 @@ export function HomeScreen({
           });
         }
 
-        const merged = [...rows, ...BOT_ROWS];
-        merged.sort((a, b) => (b.total_xp ?? 0) - (a.total_xp ?? 0));
-        merged.forEach((row, idx) => {
+        rows.sort((a, b) => (b.total_xp ?? 0) - (a.total_xp ?? 0));
+        rows.forEach((row, idx) => {
           row.position = idx + 1;
         });
 
-        setEntries(merged.slice(0, 10));
+        setEntries(rows.slice(0, 10));
       } catch (error) {
         console.error("Failed to load leaderboard preview", error);
       } finally {
@@ -162,12 +155,12 @@ export function HomeScreen({
       >
         <div className="flex items-center justify-between">
           <p className="text-[15px] font-semibold text-gray-12 inline-flex items-center gap-1.5">
-            <Flame size={15} className="text-[#FF6D6D]" /> Streak
+            <Flame size={15} className="text-[#FF6D6D]" /> {t("homeStreak")}
           </p>
-          <p className="text-[12px] text-gray-8">Momentum actif</p>
+          <p className="text-[12px] text-gray-8">{t("homeMomentumActive")}</p>
         </div>
-        <p className="mt-2 text-[28px] leading-none font-semibold text-gray-12 tabular-nums">{streakDays} jour{streakDays > 1 ? "s" : ""}</p>
-        <p className="mt-1 text-[12px] text-gray-8">Continue a valider au moins une action utile chaque jour.</p>
+        <p className="mt-2 text-[28px] leading-none font-semibold text-gray-12 tabular-nums">{streakDays} {streakDays > 1 ? t("days") : t("day")}</p>
+        <p className="mt-1 text-[12px] text-gray-8">{t("homeKeepGoing")}</p>
       </motion.section>
 
       <motion.section
@@ -178,9 +171,9 @@ export function HomeScreen({
       >
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-[16px] font-semibold text-gray-12 inline-flex items-center gap-1.5">
-            <Trophy size={16} /> Leaderboard
+            <Trophy size={16} /> {t("homeLeaderboard")}
           </h3>
-          <span className="text-[11px] text-gray-8">Classement global</span>
+          <span className="text-[11px] text-gray-8">{t("homeGlobalRanking")}</span>
         </div>
 
         {loadingLeaderboard ? (
@@ -263,7 +256,7 @@ export function HomeScreen({
         transition={{ delay: 0.14 }}
       >
         <p className="text-[15px] text-gray-12 font-semibold inline-flex items-center gap-1.5 mb-2">
-          <Quote size={14} /> Citation
+          <Quote size={14} /> {t("homeQuote")}
         </p>
         <p className="text-[13px] text-gray-11 italic leading-relaxed">"{quote.text}"</p>
         <div className="mt-2 flex items-center justify-between">

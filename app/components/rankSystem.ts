@@ -209,13 +209,4 @@ export const OPTIZ_MAX_CHALLENGE: Challenge = {
     ],
 };
 
-export const MOCK_LEADERBOARD = [
-    { rank: 1, name: "Alex F.", xp: 12500, level: 18, emoji: "" },
-    { rank: 2, name: "Sarah M.", xp: 11200, level: 16, emoji: "" },
-    { rank: 3, name: "John D.", xp: 8400, level: 13, emoji: "" },
-    { rank: 4, name: "Emma L.", xp: 6200, level: 10, emoji: "" },
-    { rank: 5, name: "Mike R.", xp: 5100, level: 9, emoji: "" },
-    { rank: 6, name: "Lisa K.", xp: 4300, level: 8, emoji: "" },
-    { rank: 7, name: "Tom B.", xp: 3800, level: 7, emoji: "" },
-    { rank: 8, name: "Nina W.", xp: 2900, level: 6, emoji: "" },
-];
+

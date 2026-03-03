@@ -11,10 +11,12 @@ import {
   setSoundEnabled,
 } from "./sounds";
 import { XPToast, type XPToastData } from "./XPToast";
+import { useI18n } from "./i18n";
+import { completeBreathworkSession } from "@/lib/actions";
 
 interface BreathworkScreenProps {
   userId: string;
-  onAwardXp: (xp: number) => Promise<void>;
+  initialSessionsToday: number;
 }
 
 interface BreathState {
@@ -26,38 +28,17 @@ interface BreathState {
 
 interface Preset extends BreathState {
   id: string;
-  title: string;
+  titleKey: string;
   subtitle: string;
 }
 
-interface BreathRewardsState {
-  date: string;
-  sessionsDone: number;
-}
-
 const PRESETS: Preset[] = [
-  { id: "reset-quick", title: "Reset rapide", subtitle: "4-4-4 · 3 cycles", inhale: 4, hold: 4, exhale: 4, cycles: 3 },
-  { id: "focus", title: "Focus 2 min", subtitle: "4-2-6 · 10 cycles", inhale: 4, hold: 2, exhale: 6, cycles: 10 },
-  { id: "calm", title: "Calme 3 min", subtitle: "4-4-6 · 15 cycles", inhale: 4, hold: 4, exhale: 6, cycles: 15 },
+  { id: "reset-quick", titleKey: "breathworkPresetQuick", subtitle: "4-4-4 · 3 cycles", inhale: 4, hold: 4, exhale: 4, cycles: 3 },
+  { id: "focus", titleKey: "breathworkPresetFocus", subtitle: "4-2-6 · 10 cycles", inhale: 4, hold: 2, exhale: 6, cycles: 10 },
+  { id: "calm", titleKey: "breathworkPresetCalm", subtitle: "4-4-6 · 15 cycles", inhale: 4, hold: 4, exhale: 6, cycles: 15 },
 ];
 
 const DEFAULT_CONFIG = PRESETS[1];
-
-function storageKey(userId: string) {
-  return `optiz-breathwork-v3-${userId}`;
-}
-
-function rewardsKey(userId: string) {
-  return `optiz-breathwork-rewards-v1-${userId}`;
-}
-
-function todayKey() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
 
 function BreathRing({
   phaseProgress,
@@ -114,52 +95,33 @@ function BreathRing({
   );
 }
 
-export function BreathworkScreen({ userId, onAwardXp }: BreathworkScreenProps) {
+export function BreathworkScreen({ userId, initialSessionsToday }: BreathworkScreenProps) {
+  const { t } = useI18n();
   const [config, setConfig] = useState<BreathState>(DEFAULT_CONFIG);
   const [activePreset, setActivePreset] = useState(DEFAULT_CONFIG.id);
   const [running, setRunning] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [soundOn, setSoundOnState] = useState(() => isSoundEnabled());
   const [toast, setToast] = useState<XPToastData | null>(null);
-
-  const [rewards, setRewards] = useState<BreathRewardsState>({ date: todayKey(), sessionsDone: 0 });
+  const [sessionsToday, setSessionsToday] = useState(initialSessionsToday);
 
   const lastPhaseRef = useRef("Inspire");
 
+  // Keep config in localStorage as UI preference only
   useEffect(() => {
     if (typeof window === "undefined") return;
-
-    const rawState = localStorage.getItem(storageKey(userId));
-    if (rawState) {
+    const raw = localStorage.getItem(`optiz-breathwork-config-${userId}`);
+    if (raw) {
       try {
-        setConfig(JSON.parse(rawState) as BreathState);
-      } catch (error) {
-        console.error("Failed to parse breathwork state", error);
-      }
-    }
-
-    const rawRewards = localStorage.getItem(rewardsKey(userId));
-    if (rawRewards) {
-      try {
-        const parsed = JSON.parse(rawRewards) as BreathRewardsState;
-        if (parsed.date === todayKey()) {
-          setRewards(parsed);
-        }
-      } catch (error) {
-        console.error("Failed to parse breathwork rewards", error);
-      }
+        setConfig(JSON.parse(raw) as BreathState);
+      } catch { /* ignore */ }
     }
   }, [userId]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    localStorage.setItem(storageKey(userId), JSON.stringify(config));
+    localStorage.setItem(`optiz-breathwork-config-${userId}`, JSON.stringify(config));
   }, [config, userId]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    localStorage.setItem(rewardsKey(userId), JSON.stringify(rewards));
-  }, [rewards, userId]);
 
   const cycleSeconds = Math.max(1, config.inhale + config.hold + config.exhale);
   const totalSeconds = Math.max(1, cycleSeconds * Math.max(1, config.cycles));
@@ -176,19 +138,19 @@ export function BreathworkScreen({ userId, onAwardXp }: BreathworkScreenProps) {
           if (soundOn) playWorkoutCompleteSound();
 
           const id = `${Date.now()}-${Math.random()}`;
-          setToast({ id, title: "Breathwork termine", subtitle: "Session validee", xp: 25 });
+          setToast({ id, title: t("breathworkComplete"), subtitle: t("breathworkSessionValidated"), xp: 25 });
           setTimeout(() => setToast((prevToast) => (prevToast?.id === id ? null : prevToast)), 2200);
-          void onAwardXp(25).catch((error) => {
-            console.error("Failed to award breathwork XP", error);
-          });
 
-          const today = todayKey();
-          setRewards((prevRewards) => {
-            if (prevRewards.date !== today) {
-              return { date: today, sessionsDone: 1 };
-            }
-            return { ...prevRewards, sessionsDone: prevRewards.sessionsDone + 1 };
-          });
+          // Persist to server
+          completeBreathworkSession(userId, {
+            presetId: activePreset,
+            inhale: config.inhale,
+            holdSec: config.hold,
+            exhale: config.exhale,
+            cycles: config.cycles,
+          }).catch((err) => console.error("[OPTIZ] Failed to save breathwork session", err));
+
+          setSessionsToday((prev) => prev + 1);
 
           return totalSeconds;
         }
@@ -197,7 +159,7 @@ export function BreathworkScreen({ userId, onAwardXp }: BreathworkScreenProps) {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [running, totalSeconds, onAwardXp, soundOn]);
+  }, [running, totalSeconds, soundOn, userId, config, activePreset, t]);
 
   const currentInCycle = elapsed % cycleSeconds;
 
@@ -206,6 +168,12 @@ export function BreathworkScreen({ userId, onAwardXp }: BreathworkScreenProps) {
     if (currentInCycle < config.inhale + config.hold) return "Bloque";
     return "Expire";
   }, [currentInCycle, config]);
+
+  const phaseLabel = useMemo(() => {
+    if (phase === "Inspire") return t("breathworkInhale");
+    if (phase === "Bloque") return t("breathworkHold");
+    return t("breathworkExhale");
+  }, [phase, t]);
 
   useEffect(() => {
     if (!running || !soundOn) return;
@@ -258,9 +226,9 @@ export function BreathworkScreen({ userId, onAwardXp }: BreathworkScreenProps) {
       <XPToast toast={toast} />
 
       <div>
-        <h2 className="text-[26px] leading-tight font-semibold text-gray-12 mb-1.5">Breathwork</h2>
+        <h2 className="text-[26px] leading-tight font-semibold text-gray-12 mb-1.5">{t("breathworkTitle")}</h2>
         <p className="text-sm text-gray-8 leading-relaxed">
-          Respiration guidee, simple et efficace: suis le rythme, reste regulier, et reduis ton stress en quelques minutes.
+          {t("breathworkSubtitle")}
         </p>
       </div>
 
@@ -275,7 +243,7 @@ export function BreathworkScreen({ userId, onAwardXp }: BreathworkScreenProps) {
                 activePreset === preset.id ? "border-[#E80000]/35 bg-[#E80000]/12" : "border-gray-5/30 bg-gray-3/20"
               }`}
             >
-              <p className="text-[13px] font-semibold text-gray-12">{preset.title}</p>
+              <p className="text-[13px] font-semibold text-gray-12">{t(preset.titleKey as keyof typeof t)}</p>
               <p className="text-[11px] text-gray-8 mt-0.5">{preset.subtitle}</p>
             </button>
           ))}
@@ -294,14 +262,14 @@ export function BreathworkScreen({ userId, onAwardXp }: BreathworkScreenProps) {
         <BreathRing phaseProgress={phaseProgress} totalProgress={totalProgress} seconds={elapsed >= totalSeconds ? 0 : phaseSecondsLeft} scale={scale} />
 
         <div className="mt-3 text-center">
-          <p className="text-[17px] font-semibold text-[#FF6666]">{phase}</p>
-          <p className="text-[12px] text-gray-8">Cycle {cycleNumber}/{config.cycles}</p>
+          <p className="text-[17px] font-semibold text-[#FF6666]">{phaseLabel}</p>
+          <p className="text-[12px] text-gray-8">{t("breathworkCycle")} {cycleNumber}/{config.cycles}</p>
         </div>
 
         <div className="mt-3 grid grid-cols-3 gap-2 text-[11px]">
-          <div className="rounded-xl border border-gray-5/30 bg-gray-3/20 p-2 text-center text-gray-10">Inspire {config.inhale}s</div>
-          <div className="rounded-xl border border-gray-5/30 bg-gray-3/20 p-2 text-center text-gray-10">Bloque {config.hold}s</div>
-          <div className="rounded-xl border border-gray-5/30 bg-gray-3/20 p-2 text-center text-gray-10">Expire {config.exhale}s</div>
+          <div className="rounded-xl border border-gray-5/30 bg-gray-3/20 p-2 text-center text-gray-10">{t("breathworkInhale")} {config.inhale}s</div>
+          <div className="rounded-xl border border-gray-5/30 bg-gray-3/20 p-2 text-center text-gray-10">{t("breathworkHold")} {config.hold}s</div>
+          <div className="rounded-xl border border-gray-5/30 bg-gray-3/20 p-2 text-center text-gray-10">{t("breathworkExhale")} {config.exhale}s</div>
         </div>
 
         <div className="mt-4 flex items-center justify-center gap-2.5">
@@ -315,7 +283,7 @@ export function BreathworkScreen({ userId, onAwardXp }: BreathworkScreenProps) {
             }}
             className="h-11 px-5 rounded-xl optiz-gradient-bg text-white text-sm font-semibold inline-flex items-center gap-1.5"
           >
-            <Play size={14} /> Lancer
+            <Play size={14} /> {t("breathworkStart")}
           </button>
 
           <button
@@ -323,7 +291,7 @@ export function BreathworkScreen({ userId, onAwardXp }: BreathworkScreenProps) {
             onClick={() => setRunning((prev) => !prev)}
             className="h-11 px-5 rounded-xl border border-gray-5/35 bg-gray-3/35 text-sm text-gray-11 font-semibold inline-flex items-center gap-1.5"
           >
-            <Pause size={14} /> {running ? "Pause" : "Reprendre"}
+            <Pause size={14} /> {running ? t("breathworkPause") : t("breathworkResume")}
           </button>
 
           <button
@@ -335,14 +303,14 @@ export function BreathworkScreen({ userId, onAwardXp }: BreathworkScreenProps) {
             }}
             className="h-11 px-5 rounded-xl border border-gray-5/35 bg-gray-3/35 text-sm text-gray-11 font-semibold inline-flex items-center gap-1.5"
           >
-            <RotateCcw size={14} /> Reset
+            <RotateCcw size={14} /> {t("reset")}
           </button>
         </div>
       </section>
 
       <section className="rounded-3xl border border-gray-5/30 bg-gray-3/18 p-4">
         <p className="text-[12px] text-gray-9 leading-relaxed">
-          Regle simple: inspire par le nez, garde la cage thoracique stable, expire lentement. Si tu te sens tendu, diminue les cycles mais garde la regularite.
+          {t("breathworkTip")}
         </p>
       </section>
     </div>

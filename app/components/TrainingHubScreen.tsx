@@ -29,10 +29,20 @@ import {
   playWorkoutCompleteSound,
   setSoundEnabled,
 } from "./sounds";
+import {
+  saveWorkoutLog,
+  getWorkoutHistory,
+  getFreestyleTemplates,
+  saveFreestyleTemplate as serverSaveFreestyleTemplate,
+  deleteFreestyleTemplateAction,
+  type WorkoutLogPayload,
+} from "@/lib/actions";
+import { useI18n } from "./i18n";
 
 interface TrainingHubScreenProps {
   userId: string;
   onAwardXp: (xp: number) => Promise<void>;
+  initialCompletionsToday?: { programId: string; sessionId: string }[];
 }
 
 interface SessionSetLog {
@@ -87,19 +97,6 @@ interface DraftSet {
 }
 
 type MainView = { mode: "library" } | { mode: "freestyle-builder" };
-type SessionCompletions = Record<string, string>;
-
-function historyKey(userId: string) {
-  return `optiz-training-history-v4-${userId}`;
-}
-
-function freestyleKey(userId: string) {
-  return `optiz-freestyle-templates-v4-${userId}`;
-}
-
-function completionKey(userId: string) {
-  return `optiz-training-completions-v2-${userId}`;
-}
 
 function todayKey() {
   const now = new Date();
@@ -148,6 +145,7 @@ function SessionTracker({
   onBack,
   onSave,
 }: SessionTrackerProps) {
+  const { t } = useI18n();
   const [setsState, setSetsState] = useState<Record<string, DraftSet[]>>({});
   const [improvedKeys, setImprovedKeys] = useState<string[]>([]);
   const [flash, setFlash] = useState("");
@@ -312,7 +310,7 @@ function SessionTracker({
     const key = `${exercise.id}-${setIndex}`;
     if (!improvedKeys.includes(key) && compareProgress(current, previous)) {
       setImprovedKeys((prev) => [...prev, key]);
-      setFlash("Record battu");
+      setFlash(t("trainingRecordBeaten"));
       setTimeout(() => setFlash(""), 1300);
     }
   };
@@ -365,7 +363,7 @@ function SessionTracker({
           onClick={onBack}
           className="inline-flex items-center gap-1.5 text-sm text-gray-8 hover:text-gray-12"
         >
-          <ArrowLeft size={16} /> Retour
+          <ArrowLeft size={16} /> {t("back")}
         </button>
 
         <button
@@ -404,7 +402,7 @@ function SessionTracker({
         <div className="mt-3 h-1.5 rounded-full bg-gray-4/45 overflow-hidden">
           <motion.div className="h-full optiz-gradient-bg" animate={{ width: `${progress}%` }} />
         </div>
-        <p className="mt-2 text-[11px] text-gray-8 tabular-nums">{completedSets}/{totalSets} sets valides</p>
+        <p className="mt-2 text-[11px] text-gray-8 tabular-nums">{completedSets}/{totalSets} {t("trainingValidSets")}</p>
       </motion.div>
 
       <AnimatePresence>
@@ -415,7 +413,7 @@ function SessionTracker({
             exit={{ opacity: 0, y: -4 }}
             className="rounded-xl border border-[#E80000]/30 bg-[#E80000]/10 px-3 py-2 mb-3 flex items-center justify-between"
           >
-            <p className="text-[12px] text-[#FF7D7D] font-semibold">Repos {restLeft}s</p>
+            <p className="text-[12px] text-[#FF7D7D] font-semibold">{t("trainingRest")} {restLeft}s</p>
             <button
               type="button"
               onClick={() => setRestLeft(null)}
@@ -492,7 +490,7 @@ function SessionTracker({
                   onClick={() => applyPreviousToAllSets(exercise)}
                   className="h-7 px-2.5 rounded-lg border border-gray-5/30 bg-gray-2 text-[10px] text-gray-9 font-semibold"
                 >
-                  Copier prev
+                  {t("trainingCopyPrev")}
                 </button>
                 <button
                   type="button"
@@ -511,14 +509,14 @@ function SessionTracker({
               </div>
 
               <div className="grid grid-cols-[2rem_2rem_minmax(0,1fr)_3.8rem_3.8rem_3.8rem_2.6rem] md:grid-cols-[2.4rem_2.2rem_minmax(0,1fr)_4.6rem_4.6rem_4.6rem_2.8rem] gap-1.5 px-1 pb-1 text-[10px] uppercase tracking-[0.1em] text-gray-7">
-                <span className="text-center">Set</span>
-                <span className="text-center">Type</span>
-                <span className="text-center">Prev</span>
-                <span className="text-center">Kg</span>
-                <span className="text-center">Reps</span>
-                <span className="text-center">RPE</span>
-                <span />
-              </div>
+                    <span className="text-center">Set</span>
+                    <span className="text-center">Type</span>
+                    <span className="text-center">Prev</span>
+                    <span className="text-center">Kg</span>
+                    <span className="text-center">Reps</span>
+                    <span className="text-center">RPE</span>
+                    <span />
+                  </div>
 
               <div className="space-y-1.5">
                 {rows.map((row, rowIdx) => {
@@ -625,7 +623,7 @@ function SessionTracker({
                 : "bg-gray-3 border border-gray-5/40 text-gray-7"
             }`}
           >
-            Valider ma seance
+            {t("trainingValidateSession")}
           </button>
         </div>
       </div>
@@ -633,7 +631,8 @@ function SessionTracker({
   );
 }
 
-export function TrainingHubScreen({ userId, onAwardXp }: TrainingHubScreenProps) {
+export function TrainingHubScreen({ userId, onAwardXp, initialCompletionsToday }: TrainingHubScreenProps) {
+  const { t } = useI18n();
   const [mainView, setMainView] = useState<MainView>({ mode: "library" });
   const [activeTracker, setActiveTracker] = useState<{
     programId: string;
@@ -643,72 +642,77 @@ export function TrainingHubScreen({ userId, onAwardXp }: TrainingHubScreenProps)
 
   const [archives, setArchives] = useState<SessionArchive[]>([]);
   const [freestyleTemplates, setFreestyleTemplates] = useState<FreestyleTemplate[]>([]);
-  const [completions, setCompletions] = useState<SessionCompletions>({});
+  const [completions, setCompletions] = useState<Set<string>>(() => {
+    const set = new Set<string>();
+    (initialCompletionsToday || []).forEach((c) => set.add(sessionKey(c.programId, c.sessionId)));
+    return set;
+  });
   const [flash, setFlash] = useState("");
+  const [loaded, setLoaded] = useState(false);
 
   const [builderName, setBuilderName] = useState("Freestyle");
   const [builderRows, setBuilderRows] = useState<Array<{ exerciseId: string; sets: number; reps: number }>>([
     { exerciseId: EXERCISE_LIBRARY[0].id, sets: 3, reps: 10 },
   ]);
 
+  // Load history and freestyle templates from server
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    let canceled = false;
 
-    const rawHistory = localStorage.getItem(historyKey(userId));
-    if (rawHistory) {
+    async function load() {
       try {
-        setArchives(JSON.parse(rawHistory) as SessionArchive[]);
-      } catch (error) {
-        console.error("Failed to parse training history", error);
+        const [historyData, templatesData] = await Promise.all([
+          getWorkoutHistory(userId, 160),
+          getFreestyleTemplates(userId),
+        ]);
+
+        if (canceled) return;
+
+        const serverArchives: SessionArchive[] = (historyData || []).map((w: Record<string, unknown>) => ({
+          id: w.id as string,
+          programId: w.program_id as string,
+          programTitle: w.program_title as string,
+          sessionId: w.session_id as string,
+          sessionName: w.session_name as string,
+          completedAt: w.completed_at as string,
+          totalVolume: Number(w.total_volume ?? 0),
+          improvedSets: (w.improved_sets as number) ?? 0,
+          xpEarned: (w.xp_earned as number) ?? 0,
+          exercises: ((w.workout_set_logs as Record<string, unknown>[]) || []).reduce<ExerciseLog[]>((acc, s) => {
+            const exId = s.exercise_id as string;
+            let existing = acc.find((e) => e.exerciseId === exId);
+            if (!existing) {
+              existing = { exerciseId: exId, exerciseName: s.exercise_name as string, sets: [] };
+              acc.push(existing);
+            }
+            existing.sets.push({
+              load: Number(s.load ?? 0),
+              reps: Number(s.reps ?? 0),
+              rpe: Number(s.rpe ?? 8),
+            });
+            return acc;
+          }, []),
+        }));
+
+        setArchives(serverArchives);
+        setFreestyleTemplates(templatesData || []);
+        setLoaded(true);
+      } catch (err) {
+        console.error("[OPTIZ] Failed to load training data", err);
+        setLoaded(true);
       }
     }
 
-    const rawTemplates = localStorage.getItem(freestyleKey(userId));
-    if (rawTemplates) {
-      try {
-        setFreestyleTemplates(JSON.parse(rawTemplates) as FreestyleTemplate[]);
-      } catch (error) {
-        console.error("Failed to parse freestyle templates", error);
-      }
-    }
-
-    const rawCompletions = localStorage.getItem(completionKey(userId));
-    if (rawCompletions) {
-      try {
-        setCompletions(JSON.parse(rawCompletions) as SessionCompletions);
-      } catch (error) {
-        console.error("Failed to parse training completions", error);
-      }
-    }
+    load();
+    return () => { canceled = true; };
   }, [userId]);
 
-  const saveArchives = (next: SessionArchive[]) => {
-    setArchives(next);
-    if (typeof window !== "undefined") {
-      localStorage.setItem(historyKey(userId), JSON.stringify(next));
-    }
+  const getLastArchive = (programId: string, sid: string) => {
+    return archives.find((archive) => archive.programId === programId && archive.sessionId === sid) || null;
   };
 
-  const saveTemplates = (next: FreestyleTemplate[]) => {
-    setFreestyleTemplates(next);
-    if (typeof window !== "undefined") {
-      localStorage.setItem(freestyleKey(userId), JSON.stringify(next));
-    }
-  };
-
-  const saveCompletions = (next: SessionCompletions) => {
-    setCompletions(next);
-    if (typeof window !== "undefined") {
-      localStorage.setItem(completionKey(userId), JSON.stringify(next));
-    }
-  };
-
-  const getLastArchive = (programId: string, sessionId: string) => {
-    return archives.find((archive) => archive.programId === programId && archive.sessionId === sessionId) || null;
-  };
-
-  const isCompletedToday = (programId: string, sessionId: string) => {
-    return completions[sessionKey(programId, sessionId)] === todayKey();
+  const isCompletedToday = (programId: string, sid: string) => {
+    return completions.has(sessionKey(programId, sid));
   };
 
   const launchProgram = (programId: string) => {
@@ -751,14 +755,14 @@ export function TrainingHubScreen({ userId, onAwardXp }: TrainingHubScreenProps)
       session: {
         id: `freestyle-session-${template.id}`,
         name: template.name,
-        focus: "Seance personnalisee",
+        focus: t("trainingFreestyleSession"),
         durationMin: Math.max(20, exercises.length * 8),
         exercises,
       },
     });
   };
 
-  const saveFreestyleTemplate = () => {
+  const handleSaveFreestyle = async () => {
     const rows = builderRows
       .map((row) => ({
         exerciseId: row.exerciseId,
@@ -769,45 +773,71 @@ export function TrainingHubScreen({ userId, onAwardXp }: TrainingHubScreenProps)
 
     if (!rows.length) return;
 
-    const template: FreestyleTemplate = {
-      id: `tpl-${Date.now()}`,
-      name: builderName.trim() || "Freestyle",
-      createdAt: new Date().toISOString(),
-      rows,
-    };
+    try {
+      const result = await serverSaveFreestyleTemplate(userId, builderName.trim() || "Freestyle", rows);
+      setFreestyleTemplates((prev) => [
+        { id: result.id, name: builderName.trim() || "Freestyle", createdAt: new Date().toISOString(), rows },
+        ...prev,
+      ]);
+      setFlash(t("trainingFreestyleSaved"));
+      setTimeout(() => setFlash(""), 1800);
 
-    saveTemplates([template, ...freestyleTemplates]);
-    setFlash("Seance freestyle sauvegardee");
-    setTimeout(() => setFlash(""), 1800);
-
-    setBuilderName("Freestyle");
-    setBuilderRows([{ exerciseId: EXERCISE_LIBRARY[0].id, sets: 3, reps: 10 }]);
-    setMainView({ mode: "library" });
+      setBuilderName("Freestyle");
+      setBuilderRows([{ exerciseId: EXERCISE_LIBRARY[0].id, sets: 3, reps: 10 }]);
+      setMainView({ mode: "library" });
+    } catch (err) {
+      console.error("[OPTIZ] Failed to save freestyle template", err);
+      setFlash(t("trainingErrorSaving"));
+      setTimeout(() => setFlash(""), 1800);
+    }
   };
 
-  const deleteFreestyleTemplate = (templateId: string) => {
-    const next = freestyleTemplates.filter((item) => item.id !== templateId);
-    saveTemplates(next);
+  const handleDeleteFreestyle = async (templateId: string) => {
+    setFreestyleTemplates((prev) => prev.filter((item) => item.id !== templateId));
+    try {
+      await deleteFreestyleTemplateAction(userId, templateId);
+    } catch (err) {
+      console.error("[OPTIZ] Failed to delete freestyle template", err);
+    }
   };
 
   const handleSessionSaved = async (archive: SessionArchive) => {
-    const nextArchives = [archive, ...archives].slice(0, 160);
-    saveArchives(nextArchives);
+    // Optimistic local update
+    setArchives((prev) => [archive, ...prev].slice(0, 160));
 
     if (!archive.programId.startsWith("freestyle-")) {
-      const nextCompletions = {
-        ...completions,
-        [sessionKey(archive.programId, archive.sessionId)]: todayKey(),
-      };
-      saveCompletions(nextCompletions);
+      setCompletions((prev) => new Set([...prev, sessionKey(archive.programId, archive.sessionId)]));
     }
 
+    // Persist to server
+    try {
+      const payload: WorkoutLogPayload = {
+        programId: archive.programId,
+        programTitle: archive.programTitle,
+        sessionId: archive.sessionId,
+        sessionName: archive.sessionName,
+        totalVolume: archive.totalVolume,
+        improvedSets: archive.improvedSets,
+        xpEarned: archive.xpEarned,
+        exercises: archive.exercises.map((ex) => ({
+          exerciseId: ex.exerciseId,
+          exerciseName: ex.exerciseName,
+          sets: ex.sets.map((s) => ({ load: s.load, reps: s.reps, rpe: s.rpe })),
+        })),
+      };
+
+      await saveWorkoutLog(userId, payload);
+    } catch (err) {
+      console.error("[OPTIZ] Failed to save workout log", err);
+    }
+
+    // Award XP via parent callback
     await onAwardXp(archive.xpEarned);
 
     setFlash(
       archive.improvedSets > 0
-        ? `Seance validee: +100 XP, ${archive.improvedSets} records battus.`
-        : "Seance validee: +100 XP.",
+        ? t("trainingSessionValidatedRecords", { xp: String(archive.xpEarned), records: String(archive.improvedSets) })
+        : t("trainingSessionValidated", { xp: String(archive.xpEarned) }),
     );
     setTimeout(() => setFlash(""), 2600);
 
@@ -842,17 +872,17 @@ export function TrainingHubScreen({ userId, onAwardXp }: TrainingHubScreenProps)
           onClick={() => setMainView({ mode: "library" })}
           className="inline-flex items-center gap-1.5 text-sm text-gray-8 hover:text-gray-12 mb-4"
         >
-          <ArrowLeft size={16} /> Retour
+          <ArrowLeft size={16} /> {t("back")}
         </button>
 
         <div className="rounded-3xl border border-gray-5/42 bg-gray-2/82 p-4 mb-4">
           <h3 className="text-lg font-semibold text-gray-12">Freestyle</h3>
-          <p className="text-sm text-gray-8 mt-1">Cree une seance perso et sauvegarde-la dans Training.</p>
+          <p className="text-sm text-gray-8 mt-1">{t("trainingFreestyleDesc")}</p>
           <input
             value={builderName}
             onChange={(event) => setBuilderName(event.target.value)}
             className="mt-3 w-full h-10 rounded-xl bg-gray-3/45 border border-gray-5/35 px-3 text-sm text-gray-12"
-            placeholder="Nom de la seance"
+            placeholder={t("trainingSessionName")}
           />
         </div>
 
@@ -916,11 +946,11 @@ export function TrainingHubScreen({ userId, onAwardXp }: TrainingHubScreenProps)
           onClick={() => setBuilderRows((prev) => [...prev, { exerciseId: EXERCISE_LIBRARY[0].id, sets: 3, reps: 10 }])}
           className="w-full h-10 rounded-xl border border-gray-5/35 bg-gray-3/25 text-sm text-gray-11 font-semibold inline-flex items-center justify-center gap-1.5 mb-3"
         >
-          <Plus size={14} /> Ajouter un exercice
+          <Plus size={14} /> {t("trainingAddExercise")}
         </button>
 
-        <button onClick={saveFreestyleTemplate} className="w-full h-12 rounded-2xl optiz-gradient-bg text-white font-semibold">
-          Sauvegarder la seance freestyle
+        <button onClick={handleSaveFreestyle} className="w-full h-12 rounded-2xl optiz-gradient-bg text-white font-semibold">
+          {t("trainingSaveFreestyle")}
         </button>
       </div>
     );
@@ -929,9 +959,9 @@ export function TrainingHubScreen({ userId, onAwardXp }: TrainingHubScreenProps)
   return (
     <div className="pb-8">
       <div className="mb-5">
-        <h2 className="text-[26px] leading-tight font-semibold text-gray-12 mb-1.5">Training</h2>
+        <h2 className="text-[26px] leading-tight font-semibold text-gray-12 mb-1.5">{t("trainingTitle")}</h2>
         <p className="text-sm text-gray-8 leading-relaxed">
-          Choisis ton type de workout, ouvre directement la seance et valide +100 XP.
+          {t("trainingSubtitle")}
         </p>
       </div>
 
@@ -982,7 +1012,7 @@ export function TrainingHubScreen({ userId, onAwardXp }: TrainingHubScreenProps)
 
               <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
                 <span className="rounded-full px-2.5 py-1 bg-gray-4/40 border border-gray-5/30 text-gray-9">
-                  {session.exercises.length} exercices
+                  {session.exercises.length} {t("exercises")}
                 </span>
                 <span className="rounded-full px-2.5 py-1 bg-gray-4/40 border border-gray-5/30 text-gray-9">
                   {setsCount} sets
@@ -994,15 +1024,15 @@ export function TrainingHubScreen({ userId, onAwardXp }: TrainingHubScreenProps)
 
               <p className="mt-3 text-[11px] text-gray-7">
                 {completed
-                  ? "Fait aujourdhui. Reouverture demain."
+                  ? t("trainingDoneReopens")
                   : previous
-                    ? `Derniere perf: ${formatDate(previous.completedAt)} · volume ${previous.totalVolume.toFixed(0)}`
-                    : "Aucune perf archivee"}
+                    ? `${t("trainingLastPerf")} ${formatDate(previous.completedAt)} · volume ${previous.totalVolume.toFixed(0)}`
+                    : t("trainingNoArchive")}
               </p>
 
               {!completed ? (
                 <p className="mt-2 text-[13px] font-semibold text-gray-11 inline-flex items-center gap-1">
-                  Lancer <Play size={13} />
+                  {t("trainingLaunch")} <Play size={13} />
                 </p>
               ) : null}
             </motion.button>
@@ -1012,17 +1042,17 @@ export function TrainingHubScreen({ userId, onAwardXp }: TrainingHubScreenProps)
 
       <div className="rounded-2xl border border-gray-5/34 bg-gray-2/75 p-4 mb-4">
         <div className="flex items-center justify-between gap-3 mb-3">
-          <h3 className="text-sm font-semibold text-gray-12">Freestyle sauvegarde</h3>
+          <h3 className="text-sm font-semibold text-gray-12">{t("trainingFreestyleSaved")}</h3>
           <button
             onClick={() => setMainView({ mode: "freestyle-builder" })}
             className="h-8 px-3 rounded-lg border border-[#E80000]/35 bg-[#E80000]/10 text-[#FF6666] text-xs font-semibold inline-flex items-center gap-1.5"
           >
-            <Plus size={12} /> Nouveau
+            <Plus size={12} /> {t("trainingNew")}
           </button>
         </div>
 
         {freestyleTemplates.length === 0 ? (
-          <p className="text-[12px] text-gray-8">Aucune seance freestyle sauvegardee.</p>
+          <p className="text-[12px] text-gray-8">{t("trainingNoFreestyle")}</p>
         ) : (
           <div className="space-y-2">
             {freestyleTemplates.map((template) => (
@@ -1031,7 +1061,7 @@ export function TrainingHubScreen({ userId, onAwardXp }: TrainingHubScreenProps)
                   <div>
                     <p className="text-[13px] font-semibold text-gray-12">{template.name}</p>
                     <p className="text-[11px] text-gray-8 mt-0.5">
-                      {template.rows.length} exercices · cree le {formatDate(template.createdAt)}
+                      {template.rows.length} {t("exercises")} · {t("trainingCreatedOn")} {formatDate(template.createdAt)}
                     </p>
                   </div>
                   <div className="flex items-center gap-1.5">
@@ -1039,10 +1069,10 @@ export function TrainingHubScreen({ userId, onAwardXp }: TrainingHubScreenProps)
                       onClick={() => launchFreestyleTemplate(template.id)}
                       className="h-8 px-2.5 rounded-md border border-gray-5/35 bg-gray-2 text-gray-11 text-[11px] font-semibold"
                     >
-                      Lancer
+                      {t("trainingLaunch")}
                     </button>
                     <button
-                      onClick={() => deleteFreestyleTemplate(template.id)}
+                      onClick={() => handleDeleteFreestyle(template.id)}
                       className="w-8 h-8 rounded-md border border-gray-5/35 bg-gray-2 text-gray-8 flex items-center justify-center"
                       aria-label="Delete"
                     >
@@ -1057,9 +1087,9 @@ export function TrainingHubScreen({ userId, onAwardXp }: TrainingHubScreenProps)
       </div>
 
       <div className="rounded-2xl border border-gray-5/34 bg-gray-3/18 p-4">
-        <h3 className="text-sm font-semibold text-gray-12 mb-2">Historique activite</h3>
+        <h3 className="text-sm font-semibold text-gray-12 mb-2">{t("trainingHistory")}</h3>
         {archives.length === 0 ? (
-          <p className="text-[12px] text-gray-8">Aucune seance archivee.</p>
+          <p className="text-[12px] text-gray-8">{t("trainingNoArchive")}</p>
         ) : (
           <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1">
             {archives.slice(0, 20).map((archive) => (

@@ -3,6 +3,7 @@
 import { createServerSupabase } from "@/lib/supabase";
 import { fetchWhopUserProfile } from "@/lib/authentication";
 import { OPTIZ_MAX_CHALLENGE } from "@/app/components/rankSystem";
+import type { Json } from "@/lib/database.types";
 
 function normalizeTaskName(name: string): string {
     return name
@@ -14,11 +15,59 @@ function normalizeTaskName(name: string): string {
 }
 
 // ══════════════════════════════════════
+// V2 Helpers
+// ══════════════════════════════════════
+
+function getTodayISO() {
+    return new Date().toISOString().split("T")[0];
+}
+
+/** Shared streak logic — checks/inserts streak_log, returns updated streak + bonus */
+async function handleStreakLogic(
+    db: ReturnType<typeof createServerSupabase>,
+    userId: string,
+    currentStreakDays: number,
+): Promise<{ streakDays: number; streakBonusXp: number; streakEarned: boolean }> {
+    const now = new Date();
+    const today = getTodayISO();
+
+    const { data: existingStreak } = await db
+        .from("streak_log")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("streak_date", today)
+        .maybeSingle();
+
+    if (existingStreak) {
+        return { streakDays: currentStreakDays, streakBonusXp: 0, streakEarned: false };
+    }
+
+    await db.from("streak_log").insert({ user_id: userId, streak_date: today });
+
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split("T")[0];
+
+    const { data: yesterdayStreak } = await db
+        .from("streak_log")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("streak_date", yesterdayStr)
+        .maybeSingle();
+
+    if (yesterdayStreak || currentStreakDays === 0) {
+        return { streakDays: currentStreakDays + 1, streakBonusXp: 50, streakEarned: true };
+    }
+
+    return { streakDays: 1, streakBonusXp: 0, streakEarned: false };
+}
+
+// ══════════════════════════════════════
 // Server Actions — called from client with userId passed from SSR
 // userId MUST come from verifyUser() in the server component, NOT from client
 // ══════════════════════════════════════
 
-/** Load full user profile + todos + challenges + streak */
+/** Load full user profile + todos + challenges + streak + V2 daily data */
 export async function loadUserData(userId: string) {
     const db = createServerSupabase();
 
@@ -32,7 +81,6 @@ export async function loadUserData(userId: string) {
             .single();
 
         if (error && error.code === "PGRST116") {
-            // No row found — auto-create with Whop profile data
             const whopProfile = await fetchWhopUserProfile(userId);
             const { data: newProfile } = await db
                 .from("user_profiles")
@@ -46,7 +94,6 @@ export async function loadUserData(userId: string) {
             profile = newProfile;
         } else {
             profile = data;
-            // Sync Whop profile if display_name is default or avatar is missing
             if (profile && (!profile.display_name || profile.display_name === "User" || !profile.avatar_url)) {
                 const whopProfile = await fetchWhopUserProfile(userId);
                 const updates: Record<string, string> = {};
@@ -67,10 +114,14 @@ export async function loadUserData(userId: string) {
         console.error("[OPTIZ] Profile load error:", err);
     }
 
-    // Parallel fetch with individual error handling
-    const today = new Date().toISOString().split("T")[0];
+    const today = getTodayISO();
 
-    const [todosRes, challengesRes, tasksRes, joinedRes, streakRes, completionsRes, participantsRes] = await Promise.all([
+    const [
+        todosRes, challengesRes, tasksRes, joinedRes, streakRes,
+        completionsRes, participantsRes,
+        // V2 queries
+        stepsTodayRes, nutritionTodayRes, breathworkTodayRes, workoutCompletionsTodayRes,
+    ] = await Promise.all([
         db.from("todos").select("id, text, completed").eq("user_id", userId).order("created_at", { ascending: false }),
         db.from("challenges").select("*").eq("is_active", true).order("created_at", { ascending: false }),
         db.from("challenge_tasks").select("*").order("sort_order", { ascending: true }),
@@ -78,6 +129,14 @@ export async function loadUserData(userId: string) {
         db.from("streak_log").select("streak_date").eq("user_id", userId).order("streak_date", { ascending: false }).limit(30),
         db.from("task_completions").select("task_id").eq("user_id", userId).eq("completed_date", today),
         db.from("user_challenges").select("challenge_id"),
+        // V2: steps today
+        db.from("steps_daily_logs").select("baseline, goal, done, milestones_awarded, goal_hit").eq("user_id", userId).eq("log_date", today).maybeSingle(),
+        // V2: nutrition today + meals
+        db.from("nutrition_daily_logs").select("*, nutrition_meals(*)").eq("user_id", userId).eq("log_date", today).maybeSingle(),
+        // V2: breathwork sessions count today
+        db.from("breathwork_sessions").select("id", { count: "exact", head: true }).eq("user_id", userId).gte("completed_at", `${today}T00:00:00`).lte("completed_at", `${today}T23:59:59`),
+        // V2: workout completions today
+        db.from("workout_logs").select("program_id, session_id").eq("user_id", userId).gte("completed_at", `${today}T00:00:00`).lte("completed_at", `${today}T23:59:59`),
     ]);
 
     // Compute participant counts
@@ -123,12 +182,10 @@ export async function loadUserData(userId: string) {
         }
     }
 
-    // Map exercise data from OPTIZ_MAX_CHALLENGE onto tasks from DB
     const exerciseMap = new Map(
         OPTIZ_MAX_CHALLENGE.tasks.map(t => [normalizeTaskName(t.name), { exercises: t.exercises, color: t.color, xpReward: t.xpReward, rounds: t.rounds }])
     );
 
-    // Assemble challenges with tasks
     const challenges = fetchedChallenges.map((c: Record<string, unknown>) => {
         const tasks = fetchedTasks.filter((t: Record<string, unknown>) => t.challenge_id === c.id);
         return {
@@ -136,7 +193,7 @@ export async function loadUserData(userId: string) {
             title: c.title as string,
             description: (c.description as string) || "",
             longDescription: (c.long_desc as string) || "",
-            emoji: (c.emoji as string) || "🔥",
+            emoji: (c.emoji as string) || "",
             difficulty: (c.difficulty as string) || "Medium",
             durationDays: (c.duration_days as number) || 30,
             participantCount: participantCounts[c.id as string] || 0,
@@ -188,6 +245,55 @@ export async function loadUserData(userId: string) {
 
     const completedTodos = (todosRes.data || []).filter((t: { completed: boolean | null }) => t.completed).length;
 
+    // V2: assemble steps today
+    const stepsRow = stepsTodayRes.data;
+    const stepsToday = stepsRow
+        ? {
+            baseline: stepsRow.baseline ?? 6000,
+            goal: stepsRow.goal ?? 8000,
+            done: stepsRow.done ?? 0,
+            milestonesAwarded: (stepsRow.milestones_awarded as number[]) ?? [],
+            goalHit: stepsRow.goal_hit ?? false,
+        }
+        : null;
+
+    // V2: assemble nutrition today
+    const nutritionRow = nutritionTodayRes.data as Record<string, unknown> | null;
+    const nutritionToday = nutritionRow
+        ? {
+            id: nutritionRow.id as string,
+            calorieGoal: (nutritionRow.calorie_goal as number) ?? 2500,
+            proteinGoal: (nutritionRow.protein_goal as number) ?? 160,
+            carbsGoal: (nutritionRow.carbs_goal as number) ?? 260,
+            fatsGoal: (nutritionRow.fats_goal as number) ?? 80,
+            waterGoalL: (nutritionRow.water_goal_l as number) ?? 2.8,
+            waterInL: (nutritionRow.water_in_l as number) ?? 0,
+            proteinGoalHit: (nutritionRow.protein_goal_hit as boolean) ?? false,
+            caloriesOnTarget: (nutritionRow.calories_on_target as boolean) ?? false,
+            hydrationGoalHit: (nutritionRow.hydration_goal_hit as boolean) ?? false,
+            mealRewardsCount: (nutritionRow.meal_rewards_count as number) ?? 0,
+            meals: ((nutritionRow.nutrition_meals as Record<string, unknown>[]) ?? []).map((m) => ({
+                id: m.id as string,
+                mealType: m.meal_type as string,
+                name: m.name as string,
+                calories: (m.calories as number) ?? 0,
+                protein: (m.protein as number) ?? 0,
+                carbs: (m.carbs as number) ?? 0,
+                fats: (m.fats as number) ?? 0,
+                createdAt: (m.created_at as string) ?? "",
+            })),
+        }
+        : null;
+
+    // V2: breathwork count
+    const breathworkSessionsToday = breathworkTodayRes.count ?? 0;
+
+    // V2: workout completions today
+    const workoutCompletionsToday = (workoutCompletionsTodayRes.data || []).map((w: { program_id: string; session_id: string }) => ({
+        programId: w.program_id,
+        sessionId: w.session_id,
+    }));
+
     return {
         profile: profile ? {
             totalXp: profile.total_xp ?? 0,
@@ -204,8 +310,485 @@ export async function loadUserData(userId: string) {
         challenges,
         weeklyProgress,
         totalTasksCompleted: completedTodos,
+        // V2 fields
+        stepsToday,
+        nutritionToday,
+        breathworkSessionsToday,
+        workoutCompletionsToday,
     };
 }
+
+// ══════════════════════════════════════
+// V2: Idempotent XP Event System
+// ══════════════════════════════════════
+
+/** Award XP idempotently using xp_events table. Returns { awarded, totalXp, streakDays, streakBonusXp, streakEarned } */
+export async function awardXpEvent(
+    userId: string,
+    source: string,
+    referenceId: string,
+    referenceDate: string,
+    xpAmount: number,
+    metadata?: Record<string, unknown>,
+) {
+    const db = createServerSupabase();
+
+    // Try idempotent insert
+    const { data: inserted, error } = await db
+        .from("xp_events")
+        .insert({
+            user_id: userId,
+            source,
+            reference_id: referenceId,
+            reference_date: referenceDate,
+            xp_amount: xpAmount,
+            metadata: (metadata ?? {}) as unknown as Json,
+        })
+        .select("id")
+        .maybeSingle();
+
+    // If duplicate (conflict), return current totals without awarding
+    if (error && error.code === "23505") {
+        const { data: profile } = await db
+            .from("user_profiles")
+            .select("total_xp, streak_days")
+            .eq("whop_user_id", userId)
+            .single();
+
+        return {
+            awarded: false,
+            totalXp: profile?.total_xp ?? 0,
+            streakDays: profile?.streak_days ?? 0,
+            streakBonusXp: 0,
+            streakEarned: false,
+        };
+    }
+
+    if (error) {
+        console.error("[OPTIZ] awardXpEvent insert error:", error);
+        throw error;
+    }
+
+    if (!inserted) {
+        // No row returned = conflict with ON CONFLICT DO NOTHING
+        const { data: profile } = await db
+            .from("user_profiles")
+            .select("total_xp, streak_days")
+            .eq("whop_user_id", userId)
+            .single();
+
+        return {
+            awarded: false,
+            totalXp: profile?.total_xp ?? 0,
+            streakDays: profile?.streak_days ?? 0,
+            streakBonusXp: 0,
+            streakEarned: false,
+        };
+    }
+
+    // Insert succeeded — increment XP and handle streak
+    const { data: profile } = await db
+        .from("user_profiles")
+        .select("total_xp, streak_days")
+        .eq("whop_user_id", userId)
+        .single();
+
+    if (!profile) {
+        return { awarded: true, totalXp: xpAmount, streakDays: 0, streakBonusXp: 0, streakEarned: false };
+    }
+
+    const streak = await handleStreakLogic(db, userId, profile.streak_days ?? 0);
+    const newTotalXp = (profile.total_xp ?? 0) + xpAmount + streak.streakBonusXp;
+
+    await db
+        .from("user_profiles")
+        .update({
+            total_xp: newTotalXp,
+            streak_days: streak.streakDays,
+            last_task_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+        })
+        .eq("whop_user_id", userId);
+
+    return {
+        awarded: true,
+        totalXp: newTotalXp,
+        streakDays: streak.streakDays,
+        streakBonusXp: streak.streakBonusXp,
+        streakEarned: streak.streakEarned,
+    };
+}
+
+// ══════════════════════════════════════
+// V2: Workout Actions
+// ══════════════════════════════════════
+
+export interface WorkoutLogPayload {
+    programId: string;
+    programTitle: string;
+    sessionId: string;
+    sessionName: string;
+    totalVolume: number;
+    improvedSets: number;
+    xpEarned: number;
+    exercises: Array<{
+        exerciseId: string;
+        exerciseName: string;
+        sets: Array<{ load: number; reps: number; rpe: number; setType?: string; isPr?: boolean }>;
+    }>;
+}
+
+/** Save a completed workout log + set logs + award XP */
+export async function saveWorkoutLog(userId: string, payload: WorkoutLogPayload) {
+    const db = createServerSupabase();
+    const today = getTodayISO();
+
+    // Insert workout log
+    const { data: workoutLog, error: workoutErr } = await db
+        .from("workout_logs")
+        .insert({
+            user_id: userId,
+            program_id: payload.programId,
+            program_title: payload.programTitle,
+            session_id: payload.sessionId,
+            session_name: payload.sessionName,
+            total_volume: payload.totalVolume,
+            improved_sets: payload.improvedSets,
+            xp_earned: payload.xpEarned,
+        })
+        .select("id")
+        .single();
+
+    if (workoutErr) {
+        // Duplicate daily constraint = already completed today
+        if (workoutErr.code === "23505") {
+            return { success: false, duplicate: true };
+        }
+        throw workoutErr;
+    }
+
+    // Batch insert set logs
+    const setRows = payload.exercises.flatMap((ex) =>
+        ex.sets.map((s, idx) => ({
+            workout_log_id: workoutLog.id,
+            exercise_id: ex.exerciseId,
+            exercise_name: ex.exerciseName,
+            set_number: idx + 1,
+            load: s.load,
+            reps: s.reps,
+            rpe: s.rpe,
+            set_type: s.setType ?? "N",
+            is_pr: s.isPr ?? false,
+        })),
+    );
+
+    if (setRows.length > 0) {
+        await db.from("workout_set_logs").insert(setRows);
+    }
+
+    // Award XP idempotently
+    const refId = `workout-${payload.programId}-${payload.sessionId}-${today}`;
+    const xpResult = await awardXpEvent(userId, "workout", refId, today, payload.xpEarned);
+
+    return { success: true, duplicate: false, ...xpResult };
+}
+
+/** Get workout history */
+export async function getWorkoutHistory(userId: string, limit = 50) {
+    const db = createServerSupabase();
+    const { data } = await db
+        .from("workout_logs")
+        .select("*, workout_set_logs(*)")
+        .eq("user_id", userId)
+        .order("completed_at", { ascending: false })
+        .limit(limit);
+
+    return data || [];
+}
+
+/** Get today's workout completions */
+export async function getWorkoutCompletionsToday(userId: string) {
+    const db = createServerSupabase();
+    const today = getTodayISO();
+    const { data } = await db
+        .from("workout_logs")
+        .select("program_id, session_id")
+        .eq("user_id", userId)
+        .gte("completed_at", `${today}T00:00:00`)
+        .lte("completed_at", `${today}T23:59:59`);
+
+    return (data || []).map((w) => ({ programId: w.program_id, sessionId: w.session_id }));
+}
+
+// ══════════════════════════════════════
+// V2: Freestyle Template Actions
+// ══════════════════════════════════════
+
+/** Save a freestyle template */
+export async function saveFreestyleTemplate(
+    userId: string,
+    name: string,
+    rows: Array<{ exerciseId: string; sets: number; reps: number }>,
+) {
+    const db = createServerSupabase();
+
+    const { data: template, error } = await db
+        .from("freestyle_templates")
+        .insert({ user_id: userId, name })
+        .select("id")
+        .single();
+
+    if (error) throw error;
+
+    if (rows.length > 0) {
+        await db.from("freestyle_template_exercises").insert(
+            rows.map((r, idx) => ({
+                template_id: template.id,
+                exercise_id: r.exerciseId,
+                sets: r.sets,
+                reps: r.reps,
+                sort_order: idx,
+            })),
+        );
+    }
+
+    return { id: template.id };
+}
+
+/** Get all freestyle templates for a user */
+export async function getFreestyleTemplates(userId: string) {
+    const db = createServerSupabase();
+    const { data } = await db
+        .from("freestyle_templates")
+        .select("*, freestyle_template_exercises(*)")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+
+    return (data || []).map((t: Record<string, unknown>) => ({
+        id: t.id as string,
+        name: t.name as string,
+        createdAt: t.created_at as string,
+        rows: ((t.freestyle_template_exercises as Record<string, unknown>[]) || [])
+            .sort((a, b) => ((a.sort_order as number) ?? 0) - ((b.sort_order as number) ?? 0))
+            .map((e) => ({
+                exerciseId: e.exercise_id as string,
+                sets: (e.sets as number) ?? 3,
+                reps: (e.reps as number) ?? 10,
+            })),
+    }));
+}
+
+/** Delete a freestyle template */
+export async function deleteFreestyleTemplateAction(userId: string, templateId: string) {
+    const db = createServerSupabase();
+    await db.from("freestyle_templates").delete().eq("id", templateId).eq("user_id", userId);
+}
+
+// ══════════════════════════════════════
+// V2: Steps Actions
+// ══════════════════════════════════════
+
+/** Upsert daily steps data */
+export async function upsertDailySteps(
+    userId: string,
+    date: string,
+    payload: { baseline: number; goal: number; done: number; milestonesAwarded: number[]; goalHit: boolean },
+) {
+    const db = createServerSupabase();
+    const { error } = await db
+        .from("steps_daily_logs")
+        .upsert(
+            {
+                user_id: userId,
+                log_date: date,
+                baseline: payload.baseline,
+                goal: payload.goal,
+                done: payload.done,
+                milestones_awarded: payload.milestonesAwarded,
+                goal_hit: payload.goalHit,
+                updated_at: new Date().toISOString(),
+            },
+            { onConflict: "user_id,log_date" },
+        );
+
+    if (error) console.error("[OPTIZ] upsertDailySteps error:", error);
+}
+
+/** Get daily steps */
+export async function getDailySteps(userId: string, date: string) {
+    const db = createServerSupabase();
+    const { data } = await db
+        .from("steps_daily_logs")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("log_date", date)
+        .maybeSingle();
+
+    return data;
+}
+
+// ══════════════════════════════════════
+// V2: Nutrition Actions
+// ══════════════════════════════════════
+
+/** Upsert daily nutrition goals/flags */
+export async function upsertDailyNutrition(
+    userId: string,
+    date: string,
+    goals: {
+        calorieGoal?: number;
+        proteinGoal?: number;
+        carbsGoal?: number;
+        fatsGoal?: number;
+        waterGoalL?: number;
+        waterInL?: number;
+        proteinGoalHit?: boolean;
+        caloriesOnTarget?: boolean;
+        hydrationGoalHit?: boolean;
+        mealRewardsCount?: number;
+    },
+) {
+    const db = createServerSupabase();
+    const { data, error } = await db
+        .from("nutrition_daily_logs")
+        .upsert(
+            {
+                user_id: userId,
+                log_date: date,
+                calorie_goal: goals.calorieGoal,
+                protein_goal: goals.proteinGoal,
+                carbs_goal: goals.carbsGoal,
+                fats_goal: goals.fatsGoal,
+                water_goal_l: goals.waterGoalL,
+                water_in_l: goals.waterInL,
+                protein_goal_hit: goals.proteinGoalHit,
+                calories_on_target: goals.caloriesOnTarget,
+                hydration_goal_hit: goals.hydrationGoalHit,
+                meal_rewards_count: goals.mealRewardsCount,
+                updated_at: new Date().toISOString(),
+            },
+            { onConflict: "user_id,log_date" },
+        )
+        .select("id")
+        .single();
+
+    if (error) console.error("[OPTIZ] upsertDailyNutrition error:", error);
+    return data?.id ?? null;
+}
+
+/** Add a nutrition meal (ensures daily log exists) */
+export async function addNutritionMeal(
+    userId: string,
+    date: string,
+    meal: { mealType: string; name: string; calories: number; protein: number; carbs: number; fats: number },
+) {
+    const db = createServerSupabase();
+
+    // Ensure daily log exists
+    let dailyLogId: string | null = null;
+    const { data: existing } = await db
+        .from("nutrition_daily_logs")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("log_date", date)
+        .maybeSingle();
+
+    if (existing) {
+        dailyLogId = existing.id;
+    } else {
+        const { data: created } = await db
+            .from("nutrition_daily_logs")
+            .insert({ user_id: userId, log_date: date })
+            .select("id")
+            .single();
+        dailyLogId = created?.id ?? null;
+    }
+
+    if (!dailyLogId) return null;
+
+    const { data: newMeal, error } = await db
+        .from("nutrition_meals")
+        .insert({
+            daily_log_id: dailyLogId,
+            user_id: userId,
+            meal_type: meal.mealType,
+            name: meal.name,
+            calories: meal.calories,
+            protein: meal.protein,
+            carbs: meal.carbs,
+            fats: meal.fats,
+        })
+        .select("id, meal_type, name, calories, protein, carbs, fats, created_at")
+        .single();
+
+    if (error) {
+        console.error("[OPTIZ] addNutritionMeal error:", error);
+        return null;
+    }
+
+    return {
+        id: newMeal.id,
+        mealType: newMeal.meal_type,
+        name: newMeal.name,
+        calories: newMeal.calories ?? 0,
+        protein: newMeal.protein ?? 0,
+        carbs: newMeal.carbs ?? 0,
+        fats: newMeal.fats ?? 0,
+        createdAt: newMeal.created_at ?? "",
+    };
+}
+
+/** Delete a nutrition meal */
+export async function deleteNutritionMeal(userId: string, mealId: string) {
+    const db = createServerSupabase();
+    await db.from("nutrition_meals").delete().eq("id", mealId).eq("user_id", userId);
+}
+
+/** Get daily nutrition + meals */
+export async function getDailyNutrition(userId: string, date: string) {
+    const db = createServerSupabase();
+    const { data } = await db
+        .from("nutrition_daily_logs")
+        .select("*, nutrition_meals(*)")
+        .eq("user_id", userId)
+        .eq("log_date", date)
+        .maybeSingle();
+
+    return data;
+}
+
+// ══════════════════════════════════════
+// V2: Breathwork Actions
+// ══════════════════════════════════════
+
+/** Complete a breathwork session */
+export async function completeBreathworkSession(
+    userId: string,
+    payload: { presetId?: string; inhale: number; holdSec: number; exhale: number; cycles: number },
+) {
+    const db = createServerSupabase();
+    const today = getTodayISO();
+
+    await db.from("breathwork_sessions").insert({
+        user_id: userId,
+        preset_id: payload.presetId ?? null,
+        inhale: payload.inhale,
+        hold_sec: payload.holdSec,
+        exhale: payload.exhale,
+        cycles: payload.cycles,
+        xp_earned: 25,
+    });
+
+    // Award XP — use timestamp to allow multiple sessions per day
+    const refId = `breathwork-${today}-${Date.now()}`;
+    const xpResult = await awardXpEvent(userId, "breathwork", refId, today, 25);
+
+    return xpResult;
+}
+
+// ══════════════════════════════════════
+// Existing Actions (V1 — kept for backward compatibility)
+// ══════════════════════════════════════
 
 /** Add a new todo */
 export async function addTodo(userId: string, text: string) {
@@ -240,11 +823,10 @@ export async function deleteTodo(userId: string, todoId: string) {
         .eq("user_id", userId);
 }
 
-/** Award XP + handle streak logic, return updated values */
+/** Award XP + handle streak logic (legacy V1 — still used for todo/challenge) */
 export async function awardXp(userId: string, xp: number, source: "todo" | "challenge", taskId?: string) {
     const db = createServerSupabase();
 
-    // Get current profile
     const { data: profile } = await db
         .from("user_profiles")
         .select("total_xp, streak_days, last_task_at")
@@ -257,57 +839,20 @@ export async function awardXp(userId: string, xp: number, source: "todo" | "chal
     }
 
     const newTotalXp = (profile.total_xp ?? 0) + xp;
-    const now = new Date();
-    const today = now.toISOString().split("T")[0];
+    const streak = await handleStreakLogic(db, userId, profile.streak_days ?? 0);
 
-    // Streak check
-    const { data: existingStreak } = await db
-        .from("streak_log")
-        .select("id")
-        .eq("user_id", userId)
-        .eq("streak_date", today)
-        .single();
-
-    let newStreakDays = profile.streak_days ?? 0;
-    let streakBonusXp = 0;
-    let streakEarned = false;
-
-    if (!existingStreak) {
-        await db.from("streak_log").insert({ user_id: userId, streak_date: today });
-
-        const yesterday = new Date(now);
-        yesterday.setDate(yesterday.getDate() - 1);
-        const yesterdayStr = yesterday.toISOString().split("T")[0];
-
-        const { data: yesterdayStreak } = await db
-            .from("streak_log")
-            .select("id")
-            .eq("user_id", userId)
-            .eq("streak_date", yesterdayStr)
-            .single();
-
-        if (yesterdayStreak || (profile.streak_days ?? 0) === 0) {
-            newStreakDays = (profile.streak_days ?? 0) + 1;
-            streakBonusXp = 50;
-            streakEarned = true;
-        } else {
-            newStreakDays = 1;
-        }
-    }
-
-    // Update profile
     await db
         .from("user_profiles")
         .update({
-            total_xp: newTotalXp + streakBonusXp,
-            streak_days: newStreakDays,
-            last_task_at: now.toISOString(),
-            updated_at: now.toISOString(),
+            total_xp: newTotalXp + streak.streakBonusXp,
+            streak_days: streak.streakDays,
+            last_task_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
         })
         .eq("whop_user_id", userId);
 
-    // Challenge task completion
     if (source === "challenge" && taskId) {
+        const today = getTodayISO();
         await db.from("task_completions").insert({
             user_id: userId,
             task_id: taskId,
@@ -316,13 +861,11 @@ export async function awardXp(userId: string, xp: number, source: "todo" | "chal
         });
     }
 
-    // Leaderboard uses direct queries so no refresh needed
-
     return {
-        totalXp: newTotalXp + streakBonusXp,
-        streakDays: newStreakDays,
-        streakBonusXp,
-        streakEarned,
+        totalXp: newTotalXp + streak.streakBonusXp,
+        streakDays: streak.streakDays,
+        streakBonusXp: streak.streakBonusXp,
+        streakEarned: streak.streakEarned,
     };
 }
 
@@ -355,7 +898,6 @@ export async function getLeaderboard(userId: string) {
             position: i + 1,
         }));
 
-        // Find user's position — use maybeSingle to avoid crash on no rows
         const userEntry = leaderboard.find(e => e.whop_user_id === userId);
         let userPosition = userEntry?.position ?? null;
 
@@ -391,10 +933,19 @@ export async function updateProfile(userId: string, fields: { display_name?: str
         .eq("whop_user_id", userId);
 }
 
-/** Delete all user data (profile + activity) */
+/** Delete all user data (profile + activity + V2 tables) */
 export async function deleteUserData(userId: string) {
     const db = createServerSupabase();
 
+    // V2 tables (cascade handles nested, but explicit is safer)
+    await db.from("xp_events").delete().eq("user_id", userId);
+    await db.from("workout_logs").delete().eq("user_id", userId);
+    await db.from("nutrition_daily_logs").delete().eq("user_id", userId);
+    await db.from("steps_daily_logs").delete().eq("user_id", userId);
+    await db.from("breathwork_sessions").delete().eq("user_id", userId);
+    await db.from("freestyle_templates").delete().eq("user_id", userId);
+
+    // V1 tables
     await db.from("task_completions").delete().eq("user_id", userId);
     await db.from("streak_log").delete().eq("user_id", userId);
     await db.from("todos").delete().eq("user_id", userId);

@@ -258,6 +258,408 @@ export type Database = {
           },
         ]
       }
+      xp_events: {
+        Row: {
+          id: string
+          user_id: string
+          source: string
+          reference_id: string
+          reference_date: string
+          xp_amount: number
+          metadata: Json | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          source: string
+          reference_id: string
+          reference_date?: string
+          xp_amount?: number
+          metadata?: Json | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          source?: string
+          reference_id?: string
+          reference_date?: string
+          xp_amount?: number
+          metadata?: Json | null
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "xp_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["whop_user_id"]
+          },
+        ]
+      }
+      workout_logs: {
+        Row: {
+          id: string
+          user_id: string
+          program_id: string
+          program_title: string
+          session_id: string
+          session_name: string
+          completed_at: string | null
+          total_volume: number | null
+          improved_sets: number | null
+          xp_earned: number | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          program_id: string
+          program_title: string
+          session_id: string
+          session_name: string
+          completed_at?: string | null
+          total_volume?: number | null
+          improved_sets?: number | null
+          xp_earned?: number | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          program_id?: string
+          program_title?: string
+          session_id?: string
+          session_name?: string
+          completed_at?: string | null
+          total_volume?: number | null
+          improved_sets?: number | null
+          xp_earned?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workout_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["whop_user_id"]
+          },
+        ]
+      }
+      workout_set_logs: {
+        Row: {
+          id: string
+          workout_log_id: string
+          exercise_id: string
+          exercise_name: string
+          set_number: number
+          load: number | null
+          reps: number | null
+          rpe: number | null
+          set_type: string | null
+          is_pr: boolean | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          workout_log_id: string
+          exercise_id: string
+          exercise_name: string
+          set_number: number
+          load?: number | null
+          reps?: number | null
+          rpe?: number | null
+          set_type?: string | null
+          is_pr?: boolean | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          workout_log_id?: string
+          exercise_id?: string
+          exercise_name?: string
+          set_number?: number
+          load?: number | null
+          reps?: number | null
+          rpe?: number | null
+          set_type?: string | null
+          is_pr?: boolean | null
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workout_set_logs_workout_log_id_fkey"
+            columns: ["workout_log_id"]
+            isOneToOne: false
+            referencedRelation: "workout_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      steps_daily_logs: {
+        Row: {
+          id: string
+          user_id: string
+          log_date: string
+          baseline: number | null
+          goal: number | null
+          done: number | null
+          milestones_awarded: Json | null
+          goal_hit: boolean | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          log_date?: string
+          baseline?: number | null
+          goal?: number | null
+          done?: number | null
+          milestones_awarded?: Json | null
+          goal_hit?: boolean | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          log_date?: string
+          baseline?: number | null
+          goal?: number | null
+          done?: number | null
+          milestones_awarded?: Json | null
+          goal_hit?: boolean | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "steps_daily_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["whop_user_id"]
+          },
+        ]
+      }
+      nutrition_daily_logs: {
+        Row: {
+          id: string
+          user_id: string
+          log_date: string
+          calorie_goal: number | null
+          protein_goal: number | null
+          carbs_goal: number | null
+          fats_goal: number | null
+          water_goal_l: number | null
+          water_in_l: number | null
+          protein_goal_hit: boolean | null
+          calories_on_target: boolean | null
+          hydration_goal_hit: boolean | null
+          meal_rewards_count: number | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          log_date?: string
+          calorie_goal?: number | null
+          protein_goal?: number | null
+          carbs_goal?: number | null
+          fats_goal?: number | null
+          water_goal_l?: number | null
+          water_in_l?: number | null
+          protein_goal_hit?: boolean | null
+          calories_on_target?: boolean | null
+          hydration_goal_hit?: boolean | null
+          meal_rewards_count?: number | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          log_date?: string
+          calorie_goal?: number | null
+          protein_goal?: number | null
+          carbs_goal?: number | null
+          fats_goal?: number | null
+          water_goal_l?: number | null
+          water_in_l?: number | null
+          protein_goal_hit?: boolean | null
+          calories_on_target?: boolean | null
+          hydration_goal_hit?: boolean | null
+          meal_rewards_count?: number | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nutrition_daily_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["whop_user_id"]
+          },
+        ]
+      }
+      nutrition_meals: {
+        Row: {
+          id: string
+          daily_log_id: string
+          user_id: string
+          meal_type: string
+          name: string
+          calories: number | null
+          protein: number | null
+          carbs: number | null
+          fats: number | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          daily_log_id: string
+          user_id: string
+          meal_type: string
+          name: string
+          calories?: number | null
+          protein?: number | null
+          carbs?: number | null
+          fats?: number | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          daily_log_id?: string
+          user_id?: string
+          meal_type?: string
+          name?: string
+          calories?: number | null
+          protein?: number | null
+          carbs?: number | null
+          fats?: number | null
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nutrition_meals_daily_log_id_fkey"
+            columns: ["daily_log_id"]
+            isOneToOne: false
+            referencedRelation: "nutrition_daily_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      breathwork_sessions: {
+        Row: {
+          id: string
+          user_id: string
+          preset_id: string | null
+          inhale: number
+          hold_sec: number
+          exhale: number
+          cycles: number
+          xp_earned: number | null
+          completed_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          preset_id?: string | null
+          inhale: number
+          hold_sec: number
+          exhale: number
+          cycles: number
+          xp_earned?: number | null
+          completed_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          preset_id?: string | null
+          inhale?: number
+          hold_sec?: number
+          exhale?: number
+          cycles?: number
+          xp_earned?: number | null
+          completed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "breathwork_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["whop_user_id"]
+          },
+        ]
+      }
+      freestyle_templates: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name?: string
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "freestyle_templates_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["whop_user_id"]
+          },
+        ]
+      }
+      freestyle_template_exercises: {
+        Row: {
+          id: string
+          template_id: string
+          exercise_id: string
+          sets: number | null
+          reps: number | null
+          sort_order: number | null
+        }
+        Insert: {
+          id?: string
+          template_id: string
+          exercise_id: string
+          sets?: number | null
+          reps?: number | null
+          sort_order?: number | null
+        }
+        Update: {
+          id?: string
+          template_id?: string
+          exercise_id?: string
+          sets?: number | null
+          reps?: number | null
+          sort_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "freestyle_template_exercises_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "freestyle_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_profiles: {
         Row: {
           avatar_url: string | null

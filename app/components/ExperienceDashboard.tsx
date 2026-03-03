@@ -21,6 +21,7 @@ import { I18nProvider, useI18n } from "./i18n";
 import { getLevelProgress, getRankForLevel } from "./rankSystem";
 import {
   awardXp as serverAwardXp,
+  awardXpEvent as serverAwardXpEvent,
   updateProfile as serverUpdateProfile,
   deleteUserData as serverDeleteUserData,
 } from "@/lib/actions";
@@ -64,6 +65,39 @@ export interface InitialData {
   }[];
   weeklyProgress: boolean[];
   totalTasksCompleted: number;
+  // V2 fields
+  stepsToday: {
+    baseline: number;
+    goal: number;
+    done: number;
+    milestonesAwarded: number[];
+    goalHit: boolean;
+  } | null;
+  nutritionToday: {
+    id: string;
+    calorieGoal: number;
+    proteinGoal: number;
+    carbsGoal: number;
+    fatsGoal: number;
+    waterGoalL: number;
+    waterInL: number;
+    proteinGoalHit: boolean;
+    caloriesOnTarget: boolean;
+    hydrationGoalHit: boolean;
+    mealRewardsCount: number;
+    meals: {
+      id: string;
+      mealType: string;
+      name: string;
+      calories: number;
+      protein: number;
+      carbs: number;
+      fats: number;
+      createdAt: string;
+    }[];
+  } | null;
+  breathworkSessionsToday: number;
+  workoutCompletionsToday: { programId: string; sessionId: string }[];
 }
 
 function DashboardInner({ userId, initialData }: { userId: string; initialData: InitialData }) {
@@ -173,12 +207,13 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
     [totalXp, userId, startTransition],
   );
 
-  const handleAwardHabitXp = useCallback(
-    async (xp: number) => {
-      if (xp <= 0) return;
+  /** V2 XP handler — uses idempotent awardXpEvent */
+  const handleAwardXpEvent = useCallback(
+    async (source: string, referenceId: string, xpAmount: number) => {
+      if (xpAmount <= 0) return;
 
       const previousLevel = getLevelProgress(totalXp).level;
-      const optimisticTotalXp = totalXp + xp;
+      const optimisticTotalXp = totalXp + xpAmount;
       const optimisticLevel = getLevelProgress(optimisticTotalXp).level;
 
       setTotalXp(optimisticTotalXp);
@@ -189,13 +224,19 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
 
       startTransition(async () => {
         try {
-          const result = await serverAwardXp(userId, xp, "todo");
-          setTotalXp(result.totalXp);
-          setStreakDays(result.streakDays);
-          if (result.streakEarned) setStreakAnim(true);
+          const today = new Date().toISOString().split("T")[0];
+          const result = await serverAwardXpEvent(userId, source, referenceId, today, xpAmount);
+          if (!result.awarded) {
+            // Duplicate — revert optimistic update
+            setTotalXp(result.totalXp);
+          } else {
+            setTotalXp(result.totalXp);
+            setStreakDays(result.streakDays);
+            if (result.streakEarned) setStreakAnim(true);
+          }
         } catch (err) {
-          console.error("Failed to award habit XP:", err);
-          setTotalXp((prev) => Math.max(0, prev - xp));
+          console.error("Failed to award XP event:", err);
+          setTotalXp((prev) => Math.max(0, prev - xpAmount));
         }
       });
     },
@@ -322,13 +363,28 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
             onXpRingClick={() => setIsXpModalOpen(true)}
           />
         ) : activeTab === "training" ? (
-          <TrainingHubScreen userId={userId} onAwardXp={handleAwardTrainingXp} />
+          <TrainingHubScreen
+            userId={userId}
+            onAwardXp={handleAwardTrainingXp}
+            initialCompletionsToday={initialData.workoutCompletionsToday}
+          />
         ) : activeTab === "steps" ? (
-          <StepsScreen userId={userId} onAwardXp={handleAwardHabitXp} />
+          <StepsScreen
+            userId={userId}
+            onAwardXpEvent={handleAwardXpEvent}
+            initialData={initialData.stepsToday}
+          />
         ) : activeTab === "diet" ? (
-          <DietScreen userId={userId} onAwardXp={handleAwardHabitXp} />
+          <DietScreen
+            userId={userId}
+            onAwardXpEvent={handleAwardXpEvent}
+            initialData={initialData.nutritionToday}
+          />
         ) : (
-          <BreathworkScreen userId={userId} onAwardXp={handleAwardHabitXp} />
+          <BreathworkScreen
+            userId={userId}
+            initialSessionsToday={initialData.breathworkSessionsToday}
+          />
         )}
       </main>
 
