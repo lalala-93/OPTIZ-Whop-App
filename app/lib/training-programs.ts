@@ -37,6 +37,7 @@ const BASE_LIBRARY: ExerciseLibraryItem[] = [
   { id: "db-floor-press", name: "Developpe couche au sol", muscles: "Pectoraux, triceps", videoUrl: "https://www.youtube.com/watch?v=uUGDRwge4F8" },
   { id: "machine-chest-press", name: "Chest press machine", muscles: "Pectoraux, triceps", videoUrl: "https://www.youtube.com/watch?v=sqNwDkUU_Ps" },
   { id: "pec-deck", name: "Pec deck", muscles: "Pectoraux", videoUrl: "https://www.youtube.com/watch?v=QENKPHhQVi4" },
+
   { id: "overhead-press", name: "Developpe militaire", muscles: "Epaules, triceps", videoUrl: "https://www.youtube.com/watch?v=5pjcqP_nqRA" },
   { id: "lateral-raise", name: "Elevations laterales", muscles: "Epaules", videoUrl: "https://www.youtube.com/watch?v=3VcKaXpzqRo" },
   { id: "rear-delt-fly", name: "Oiseau halteres", muscles: "Arriere d'epaules", videoUrl: "https://www.youtube.com/watch?v=EA7u4Q_8HQ0" },
@@ -77,240 +78,120 @@ const BASE_LIBRARY: ExerciseLibraryItem[] = [
   { id: "knee-raise", name: "Releve de genoux", muscles: "Abdominaux, gainage", videoUrl: "https://www.youtube.com/watch?v=JB2oyawG9KI" },
 ];
 
-const s = (
-  id: string,
-  name: string,
+const buildSession = (
+  programId: string,
   focus: string,
   durationMin: number,
-  exercises: ProgramExerciseTemplate[],
-): ProgramSessionTemplate => ({
-  id,
-  name,
-  focus,
-  durationMin,
-  exercises,
-});
+  exerciseList: Array<{ id: string; sets: number; reps: number }>,
+): ProgramSessionTemplate => {
+  const exercises: ProgramExerciseTemplate[] = exerciseList.map((item) => {
+    const base = BASE_LIBRARY.find((exercise) => exercise.id === item.id);
+    if (!base) {
+      throw new Error(`Missing exercise library item: ${item.id}`);
+    }
 
-const e = (id: string, sets: number, reps: number): ProgramExerciseTemplate => {
-  const base = BASE_LIBRARY.find((item) => item.id === id);
-  if (!base) {
-    throw new Error(`Missing exercise library item: ${id}`);
-  }
+    return {
+      id: `${item.id}-${item.sets}x${item.reps}`,
+      name: base.name,
+      sets: item.sets,
+      reps: item.reps,
+      muscles: base.muscles,
+      videoUrl: base.videoUrl,
+    };
+  });
 
   return {
-    id: `${id}-${sets}x${reps}`,
-    name: base.name,
-    sets,
-    reps,
-    muscles: base.muscles,
-    videoUrl: base.videoUrl,
+    id: `${programId}-session`,
+    name: "Seance du jour",
+    focus,
+    durationMin,
+    exercises,
   };
 };
 
 export const MASS_PROGRAMS: ProgramTemplate[] = [
   {
-    id: "mass-gym-beginner",
+    id: "gym-beginner",
     title: "Debutant salle",
-    subtitle: "5 seances sans dips ni tractions",
+    subtitle: "Base masse sans dips/tractions",
     level: "beginner",
     location: "gym",
     sessions: [
-      s("gym-beg-s1", "Push base", "Pectoraux, epaules, triceps", 55, [
-        e("db-bench-press", 4, 10),
-        e("db-incline-press", 3, 10),
-        e("pec-deck", 3, 12),
-        e("triceps-pushdown", 3, 12),
-        e("lateral-raise", 3, 15),
-      ]),
-      s("gym-beg-s2", "Jambes base", "Quadriceps, fessiers, ischios", 55, [
-        e("leg-press", 4, 10),
-        e("romanian-deadlift", 3, 10),
-        e("leg-extension", 3, 12),
-        e("leg-curl", 3, 12),
-        e("calf-raise", 3, 15),
-      ]),
-      s("gym-beg-s3", "Pull base", "Dos, biceps, arriere d'epaules", 55, [
-        e("lat-pulldown", 4, 10),
-        e("db-row", 3, 10),
-        e("face-pull", 3, 15),
-        e("cable-curl", 3, 12),
-        e("rear-delt-fly", 3, 12),
-      ]),
-      s("gym-beg-s4", "Full body", "Corps complet", 55, [
-        e("goblet-squat", 4, 10),
-        e("machine-chest-press", 3, 10),
-        e("lat-pulldown", 3, 10),
-        e("hip-thrust", 3, 10),
-        e("crunch", 3, 15),
-      ]),
-      s("gym-beg-s5", "Preparation dips traction", "Grip, epaules, bras", 50, [
-        e("negative-pull-up", 3, 5),
-        e("scapular-pull-up", 3, 10),
-        e("push-up", 3, 12),
-        e("overhead-press", 3, 10),
-        e("hammer-curl", 3, 12),
+      buildSession("gym-beginner", "Corps complet", 60, [
+        { id: "db-bench-press", sets: 4, reps: 10 },
+        { id: "lat-pulldown", sets: 4, reps: 10 },
+        { id: "leg-press", sets: 4, reps: 10 },
+        { id: "romanian-deadlift", sets: 3, reps: 10 },
+        { id: "overhead-press", sets: 3, reps: 10 },
+        { id: "triceps-pushdown", sets: 3, reps: 12 },
       ]),
     ],
   },
   {
-    id: "mass-gym-intermediate",
+    id: "gym-intermediate",
     title: "Intermediaire salle",
-    subtitle: "5 seances avec dips et tractions",
+    subtitle: "Masse avec dips/tractions",
     level: "intermediate",
     location: "gym",
     sessions: [
-      s("gym-int-s1", "Push force", "Force de poussee", 60, [
-        e("dips", 4, 6),
-        e("db-bench-press", 4, 8),
-        e("overhead-press", 3, 8),
-        e("skull-crusher", 3, 10),
-        e("lateral-raise", 3, 12),
-      ]),
-      s("gym-int-s2", "Pull force", "Force de tirage", 60, [
-        e("pull-up", 4, 6),
-        e("barbell-row", 4, 8),
-        e("chin-up", 3, 6),
-        e("hammer-curl", 3, 10),
-        e("face-pull", 3, 15),
-      ]),
-      s("gym-int-s3", "Jambes force", "Jambes et chaine posterieure", 55, [
-        e("leg-press", 4, 8),
-        e("bulgarian-split-squat", 3, 8),
-        e("romanian-deadlift", 4, 8),
-        e("leg-curl", 3, 10),
-        e("calf-raise", 3, 15),
-      ]),
-      s("gym-int-s4", "Upper volume", "Volume haut du corps", 55, [
-        e("db-incline-press", 3, 10),
-        e("lat-pulldown", 3, 10),
-        e("db-row", 3, 10),
-        e("cable-curl", 3, 12),
-        e("triceps-pushdown", 3, 12),
-      ]),
-      s("gym-int-s5", "Focus dips tractions", "Performance dips et tractions", 50, [
-        e("dips", 5, 5),
-        e("pull-up", 5, 5),
-        e("push-up", 3, 15),
-        e("scapular-pull-up", 3, 10),
-        e("knee-raise", 3, 12),
+      buildSession("gym-intermediate", "Corps complet", 65, [
+        { id: "dips", sets: 4, reps: 6 },
+        { id: "pull-up", sets: 4, reps: 6 },
+        { id: "barbell-row", sets: 4, reps: 8 },
+        { id: "leg-press", sets: 4, reps: 8 },
+        { id: "romanian-deadlift", sets: 4, reps: 8 },
+        { id: "overhead-press", sets: 3, reps: 8 },
       ]),
     ],
   },
   {
-    id: "mass-home-beginner",
+    id: "home-beginner",
     title: "Debutant maison",
-    subtitle: "5 seances halteres + progression traction/dips",
+    subtitle: "Halteres + progression traction/dips",
     level: "beginner",
     location: "home",
     sessions: [
-      s("home-beg-s1", "Upper debutant", "Pectoraux, dos, bras", 50, [
-        e("db-floor-press", 4, 10),
-        e("db-row", 4, 10),
-        e("overhead-press", 3, 10),
-        e("hammer-curl", 3, 12),
-        e("overhead-triceps", 3, 12),
-      ]),
-      s("home-beg-s2", "Lower + core", "Jambes, fessiers, gainage", 50, [
-        e("goblet-squat", 4, 12),
-        e("reverse-lunge", 3, 10),
-        e("romanian-deadlift", 3, 10),
-        e("glute-bridge", 3, 15),
-        e("crunch", 3, 15),
-      ]),
-      s("home-beg-s3", "Preparation traction", "Dos, grip, epaules", 45, [
-        e("negative-pull-up", 4, 5),
-        e("scapular-pull-up", 3, 10),
-        e("incline-push-up", 4, 12),
-        e("rear-delt-fly", 3, 12),
-        e("hammer-curl", 3, 12),
-      ]),
-      s("home-beg-s4", "Full body", "Corps complet", 50, [
-        e("goblet-squat", 3, 12),
-        e("db-floor-press", 3, 10),
-        e("db-row", 3, 10),
-        e("overhead-triceps", 3, 12),
-        e("crunch", 3, 20),
-      ]),
-      s("home-beg-s5", "Epaules bras", "Epaules et bras", 45, [
-        e("overhead-press", 4, 8),
-        e("lateral-raise", 4, 12),
-        e("incline-curl", 3, 12),
-        e("skull-crusher", 3, 12),
-        e("push-up", 3, 12),
+      buildSession("home-beginner", "Corps complet", 55, [
+        { id: "db-floor-press", sets: 4, reps: 10 },
+        { id: "db-row", sets: 4, reps: 10 },
+        { id: "goblet-squat", sets: 4, reps: 12 },
+        { id: "romanian-deadlift", sets: 3, reps: 10 },
+        { id: "negative-pull-up", sets: 3, reps: 5 },
+        { id: "scapular-pull-up", sets: 3, reps: 10 },
       ]),
     ],
   },
   {
-    id: "mass-home-intermediate",
+    id: "home-intermediate",
     title: "Intermediaire maison",
-    subtitle: "4 seances halteres, dips, tractions",
+    subtitle: "Dips, tractions, halteres",
     level: "intermediate",
     location: "home",
     sessions: [
-      s("home-int-s1", "Push strength", "Pectoraux, epaules, triceps", 55, [
-        e("dips", 4, 6),
-        e("db-floor-press", 4, 8),
-        e("overhead-press", 3, 8),
-        e("lateral-raise", 3, 12),
-        e("skull-crusher", 3, 10),
-      ]),
-      s("home-int-s2", "Pull strength", "Dos, biceps", 55, [
-        e("pull-up", 4, 6),
-        e("db-row", 4, 8),
-        e("chin-up", 3, 6),
-        e("hammer-curl", 3, 10),
-        e("rear-delt-fly", 3, 12),
-      ]),
-      s("home-int-s3", "Legs and core", "Jambes, fessiers, core", 50, [
-        e("goblet-squat", 4, 10),
-        e("bulgarian-split-squat", 4, 8),
-        e("romanian-deadlift", 4, 8),
-        e("hip-thrust", 3, 10),
-        e("crunch", 4, 15),
-      ]),
-      s("home-int-s4", "Upper density", "Densite haut du corps", 55, [
-        e("dips", 3, 8),
-        e("pull-up", 3, 8),
-        e("db-floor-press", 3, 10),
-        e("db-row", 3, 10),
-        e("overhead-triceps", 3, 12),
+      buildSession("home-intermediate", "Corps complet", 60, [
+        { id: "dips", sets: 4, reps: 6 },
+        { id: "pull-up", sets: 4, reps: 6 },
+        { id: "db-floor-press", sets: 4, reps: 8 },
+        { id: "db-row", sets: 4, reps: 8 },
+        { id: "goblet-squat", sets: 4, reps: 10 },
+        { id: "hip-thrust", sets: 3, reps: 10 },
       ]),
     ],
   },
   {
-    id: "mass-home-bodyweight",
-    title: "0 materiel maison",
-    subtitle: "Full body debutant poids du corps",
+    id: "home-bodyweight",
+    title: "Maison sans materiel",
+    subtitle: "Full body poids du corps",
     level: "beginner",
     location: "bodyweight",
     sessions: [
-      s("bw-s1", "Full body A", "Push, jambes, core", 35, [
-        e("incline-push-up", 4, 10),
-        e("bodyweight-squat", 4, 15),
-        e("reverse-lunge", 3, 10),
-        e("glute-bridge", 3, 15),
-        e("crunch", 3, 20),
-      ]),
-      s("bw-s2", "Full body B", "Push, jambes, gainage", 35, [
-        e("push-up", 4, 8),
-        e("bodyweight-squat", 4, 15),
-        e("scapular-push-up", 3, 12),
-        e("reverse-lunge", 3, 12),
-        e("knee-raise", 3, 12),
-      ]),
-      s("bw-s3", "Legs core", "Jambes et gainage", 35, [
-        e("bodyweight-squat", 5, 15),
-        e("reverse-lunge", 4, 10),
-        e("glute-bridge", 4, 15),
-        e("crunch", 4, 20),
-        e("knee-raise", 3, 12),
-      ]),
-      s("bw-s4", "Full body C", "Progression generale", 35, [
-        e("push-up", 4, 10),
-        e("bodyweight-squat", 4, 20),
-        e("scapular-push-up", 3, 12),
-        e("reverse-lunge", 3, 12),
-        e("crunch", 3, 20),
+      buildSession("home-bodyweight", "Corps complet", 45, [
+        { id: "incline-push-up", sets: 4, reps: 12 },
+        { id: "bodyweight-squat", sets: 4, reps: 15 },
+        { id: "reverse-lunge", sets: 4, reps: 10 },
+        { id: "glute-bridge", sets: 3, reps: 15 },
+        { id: "scapular-push-up", sets: 3, reps: 12 },
+        { id: "crunch", sets: 3, reps: 20 },
       ]),
     ],
   },

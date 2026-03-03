@@ -25,7 +25,6 @@ interface HomeScreenProps {
   streakDays: number;
   weeklyProgress: boolean[];
   onXpRingClick?: () => void;
-  onOpenLeaderboard: () => void;
 }
 
 interface LeaderboardRow {
@@ -43,6 +42,19 @@ const BOT_ROWS: LeaderboardRow[] = [
   { whop_user_id: "bot-isaac", display_name: "Isaac", avatar_url: "/Isaac.jpg", total_xp: 900, position: 0 },
 ];
 
+function tinyWeekBars(weeklyProgress: boolean[]) {
+  return (
+    <div className="flex items-end gap-1.5 h-8">
+      {weeklyProgress.map((done, idx) => (
+        <span
+          key={`bar-${idx}`}
+          className={`w-1.5 rounded-full ${done ? "h-7 bg-[#E80000]" : "h-4 bg-gray-5/60"}`}
+        />
+      ))}
+    </div>
+  );
+}
+
 export function HomeScreen({
   userId,
   userName,
@@ -58,7 +70,6 @@ export function HomeScreen({
   streakDays,
   weeklyProgress,
   onXpRingClick,
-  onOpenLeaderboard,
 }: HomeScreenProps) {
   const { t } = useI18n();
   const [quoteIndex, setQuoteIndex] = useState(() => Math.floor(Date.now() / 86400000) % MOTIVATIONAL_QUOTES.length);
@@ -100,7 +111,7 @@ export function HomeScreen({
           row.position = idx + 1;
         });
 
-        setEntries(merged.slice(0, 5));
+        setEntries(merged.slice(0, 8));
       } catch (error) {
         console.error("Failed to load leaderboard preview", error);
       } finally {
@@ -114,6 +125,7 @@ export function HomeScreen({
   }, [totalXp, userId, userName, userPhoto, startTransition]);
 
   const quote = useMemo(() => MOTIVATIONAL_QUOTES[quoteIndex], [quoteIndex]);
+  const podium = entries.slice(0, 3);
 
   return (
     <div className="flex flex-col gap-5 pb-8">
@@ -132,6 +144,7 @@ export function HomeScreen({
           size={182}
           onClick={onXpRingClick}
         />
+
         <div className="text-center mt-2.5">
           <h2 className="text-[30px] font-semibold text-gray-12 tracking-tight">
             {t("level")} <span style={{ color: rankColors[1] }}>{level}</span>
@@ -142,66 +155,97 @@ export function HomeScreen({
         </div>
       </motion.div>
 
+      <div className="grid grid-cols-2 gap-2.5">
+        <div className="rounded-2xl border border-gray-5/30 bg-gray-3/20 p-3">
+          <p className="text-[10px] uppercase tracking-[0.1em] text-gray-7">XP Total</p>
+          <p className="text-[22px] font-semibold text-gray-12 mt-1 tabular-nums">{totalXp}</p>
+        </div>
+        <div className="rounded-2xl border border-gray-5/30 bg-gray-3/20 p-3">
+          <p className="text-[10px] uppercase tracking-[0.1em] text-gray-7">Weekly</p>
+          <div className="mt-2">{tinyWeekBars(weeklyProgress)}</div>
+        </div>
+      </div>
+
       <StreakDisplay streakDays={streakDays} weeklyProgress={weeklyProgress} />
 
-      <motion.div
+      <motion.section
         className="rounded-2xl border border-gray-5/40 bg-gray-3/22 p-4"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.08 }}
       >
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-[16px] font-semibold text-gray-12 inline-flex items-center gap-1.5">
-            <Trophy size={16} /> {t("leaderboardSnapshot")}
-          </h3>
-          <button
-            onClick={onOpenLeaderboard}
-            className="text-[12px] font-semibold text-[#FF6666] hover:text-[#FF7E7E]"
-          >
-            {t("openCta")}
-          </button>
-        </div>
+        <h3 className="text-[16px] font-semibold text-gray-12 inline-flex items-center gap-1.5 mb-3">
+          <Trophy size={16} /> Leaderboard
+        </h3>
 
         {loadingLeaderboard ? (
           <div className="h-16 rounded-xl bg-gray-4/30 border border-gray-5/25 animate-pulse" />
         ) : (
-          <div className="space-y-1.5">
-            {entries.map((entry) => {
-              const xp = entry.total_xp ?? 0;
-              const entryLevel = getLevelProgress(xp).level;
-              return (
-                <div
-                  key={entry.whop_user_id}
-                  className={`rounded-xl border px-3 py-2 flex items-center gap-2.5 ${
-                    entry.isMe ? "border-[#E80000]/35 bg-[#E80000]/10" : "border-gray-5/25 bg-gray-2/55"
-                  }`}
-                >
-                  <span className="w-6 text-[12px] text-gray-8 font-semibold tabular-nums">{entry.position}</span>
-
-                  <div className="w-8 h-8 rounded-full overflow-hidden border border-gray-5/35 bg-gray-4/35 flex items-center justify-center">
-                    {entry.avatar_url ? (
-                      <img src={entry.avatar_url} alt="avatar" className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-[11px] text-gray-8">?</span>
-                    )}
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-[13px] font-semibold truncate ${entry.isMe ? "text-[#FF6D6D]" : "text-gray-12"}`}>
+          <>
+            {podium.length === 3 ? (
+              <div className="grid grid-cols-3 gap-2 mb-3">
+                {podium.map((entry) => (
+                  <div
+                    key={`podium-${entry.whop_user_id}`}
+                    className={`rounded-xl border px-2 py-2.5 text-center ${
+                      entry.position === 1
+                        ? "border-[#E80000]/35 bg-[#E80000]/10"
+                        : "border-gray-5/25 bg-gray-2/55"
+                    }`}
+                  >
+                    <div className="w-8 h-8 rounded-full overflow-hidden border border-gray-5/35 bg-gray-4/35 mx-auto mb-1.5 flex items-center justify-center">
+                      {entry.avatar_url ? (
+                        <img src={entry.avatar_url} alt="avatar" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-[11px] text-gray-8">?</span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-gray-10 font-semibold">#{entry.position}</p>
+                    <p className={`text-[12px] font-semibold truncate ${entry.position === 1 ? "text-[#FF6D6D]" : "text-gray-12"}`}>
                       {entry.display_name || "User"}
                     </p>
-                    <p className="text-[10px] text-gray-8">Lvl {entryLevel}</p>
+                    {entry.position === 1 ? <Crown size={13} className="text-[#FF6767] mx-auto mt-1" /> : null}
                   </div>
+                ))}
+              </div>
+            ) : null}
 
-                  {entry.position === 1 ? <Crown size={14} className="text-[#FF6767]" /> : null}
+            <div className="space-y-1.5">
+              {entries.map((entry) => {
+                const xp = entry.total_xp ?? 0;
+                const entryLevel = getLevelProgress(xp).level;
+                return (
+                  <div
+                    key={entry.whop_user_id}
+                    className={`rounded-xl border px-3 py-2 flex items-center gap-2.5 ${
+                      entry.isMe ? "border-[#E80000]/35 bg-[#E80000]/10" : "border-gray-5/25 bg-gray-2/55"
+                    }`}
+                  >
+                    <span className="w-6 text-[12px] text-gray-8 font-semibold tabular-nums">{entry.position}</span>
 
-                  <p className="text-[12px] font-semibold text-gray-10 tabular-nums">{xp}</p>
-                </div>
-              );
-            })}
-          </div>
+                    <div className="w-8 h-8 rounded-full overflow-hidden border border-gray-5/35 bg-gray-4/35 flex items-center justify-center">
+                      {entry.avatar_url ? (
+                        <img src={entry.avatar_url} alt="avatar" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-[11px] text-gray-8">?</span>
+                      )}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-[13px] font-semibold truncate ${entry.isMe ? "text-[#FF6D6D]" : "text-gray-12"}`}>
+                        {entry.display_name || "User"}
+                      </p>
+                      <p className="text-[10px] text-gray-8">Lvl {entryLevel}</p>
+                    </div>
+
+                    <p className="text-[12px] font-semibold text-gray-10 tabular-nums">{xp}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </>
         )}
-      </motion.div>
+      </motion.section>
 
       <motion.div
         className="rounded-2xl border border-gray-5/35 bg-gray-3/20 p-4"
@@ -209,7 +253,7 @@ export function HomeScreen({
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.14 }}
       >
-        <p className="text-[13px] text-gray-11 italic leading-relaxed">"{quote.text}"</p>
+        <p className="text-[13px] text-gray-11 italic leading-relaxed">\"{quote.text}\"</p>
         <div className="mt-2 flex items-center justify-between">
           <p className="text-[10px] text-gray-7">{quote.author}</p>
           <button

@@ -9,7 +9,6 @@ import { TrainingHubScreen } from "./TrainingHubScreen";
 import { StepsScreen } from "./StepsScreen";
 import { DietScreen } from "./DietScreen";
 import { BreathworkScreen } from "./BreathworkScreen";
-import { LeaderboardScreen } from "./LeaderboardScreen";
 import { SettingsSheet } from "./SettingsSheet";
 import { TaskCompleteAnimation } from "./TaskCompleteAnimation";
 import { LevelUpAnimation } from "./LevelUpAnimation";
@@ -26,7 +25,7 @@ import {
   deleteUserData as serverDeleteUserData,
 } from "@/lib/actions";
 
-type TabType = "home" | "training" | "steps" | "diet" | "breathwork" | "leaderboard";
+type TabType = "home" | "training" | "steps" | "diet" | "breathwork";
 
 export interface InitialData {
   profile: {
@@ -270,7 +269,6 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
               <Tabs.Trigger value="steps">{t("stepsTab")}</Tabs.Trigger>
               <Tabs.Trigger value="diet">{t("dietTab")}</Tabs.Trigger>
               <Tabs.Trigger value="breathwork">{t("breathworkTab")}</Tabs.Trigger>
-              <Tabs.Trigger value="leaderboard">{t("leaderboard")}</Tabs.Trigger>
             </Tabs.List>
           </Tabs.Root>
         </div>
@@ -293,7 +291,6 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
             streakDays={streakDays}
             weeklyProgress={weeklyProgress}
             onXpRingClick={() => setIsXpModalOpen(true)}
-            onOpenLeaderboard={() => setActiveTab("leaderboard")}
           />
         ) : activeTab === "training" ? (
           <TrainingHubScreen userId={userId} onAwardXp={handleAwardTrainingXp} />
@@ -301,16 +298,8 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
           <StepsScreen userId={userId} />
         ) : activeTab === "diet" ? (
           <DietScreen userId={userId} />
-        ) : activeTab === "breathwork" ? (
-          <BreathworkScreen userId={userId} />
         ) : (
-          <LeaderboardScreen
-            userId={userId}
-            userXp={totalXp}
-            userLevel={levelData.level}
-            userName={userName}
-            userPhoto={userPhoto}
-          />
+          <BreathworkScreen userId={userId} />
         )}
       </main>
 
