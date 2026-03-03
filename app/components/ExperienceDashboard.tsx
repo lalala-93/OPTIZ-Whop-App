@@ -4,9 +4,9 @@ import { useState, useCallback, useTransition, useRef, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Tabs } from "@whop/react/components";
 import { HomeScreen } from "./HomeScreen";
-import { ChallengesScreen, type WorkoutCardItem, type WorkoutVariant } from "./ChallengesScreen";
-import { ChallengeProgram } from "./ChallengeProgram";
-import { LeaderboardScreen } from "./LeaderboardScreen";
+import type { WorkoutCardItem, WorkoutVariant } from "./ChallengesScreen";
+import { TrainingHubScreen } from "./TrainingHubScreen";
+import { PillarsScreen } from "./PillarsScreen";
 import { SettingsSheet } from "./SettingsSheet";
 import { TaskCompleteAnimation } from "./TaskCompleteAnimation";
 import { LevelUpAnimation } from "./LevelUpAnimation";
@@ -319,6 +319,32 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
     }
   }, [deletingData, userId]);
 
+  const handleAwardTrainingXp = useCallback(async (xp: number) => {
+    if (xp <= 0) return;
+
+    const previousLevel = getLevelProgress(totalXp).level;
+    const optimisticTotalXp = totalXp + xp;
+    const nextLevel = getLevelProgress(optimisticTotalXp).level;
+
+    setTotalXp(optimisticTotalXp);
+    setTaskCompleteAnim({ visible: true, xp });
+    if (nextLevel > previousLevel) {
+      setTimeout(() => setLevelUpAnim({ visible: true, newLevel: nextLevel }), 1100);
+    }
+
+    startTransition(async () => {
+      try {
+        const result = await serverAwardXp(userId, xp, "todo");
+        setTotalXp(result.totalXp);
+        setStreakDays(result.streakDays);
+        if (result.streakEarned) setStreakAnim(true);
+      } catch (err) {
+        console.error("Failed to award training XP:", err);
+        setTotalXp((prev) => Math.max(0, prev - xp));
+      }
+    });
+  }, [totalXp, userId]);
+
   const workoutCards = useMemo<WorkoutCardItem[]>(() => {
     return challenges.flatMap((challenge) =>
       challenge.tasks.map((task, index) => {
@@ -444,26 +470,15 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
           <Tabs.Root value={activeTab} onValueChange={(v) => setActiveTab(v as TabType)}>
             <Tabs.List className="[&_[data-state=active]]:!border-b-[#E80000] [&_[data-state=active]]:!border-b-2 [&_[data-state=active]]:!text-gray-12">
               <Tabs.Trigger value="home">{t("home")}</Tabs.Trigger>
-              <Tabs.Trigger value="challenges">{t("challenges")}</Tabs.Trigger>
-              <Tabs.Trigger value="leaderboard">{t("leaderboard")}</Tabs.Trigger>
+              <Tabs.Trigger value="challenges">Training</Tabs.Trigger>
+              <Tabs.Trigger value="leaderboard">Pillars</Tabs.Trigger>
             </Tabs.List>
           </Tabs.Root>
         )}
       </header>
 
       <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 scroll-smooth">
-        {selectedWorkout ? (
-          <ChallengeProgram
-            key={selectedWorkout.workoutTask.id}
-            challengeTitle={selectedWorkout.challenge.title}
-            workoutTask={selectedWorkout.workoutTask}
-            workoutDisplayName={selectedWorkout.displayName}
-            workoutFocus={selectedWorkout.displayFocus}
-            onCompleteTask={handleCompleteTask}
-            onBack={() => setActiveWorkout(null)}
-            completingTaskId={completingTaskId}
-          />
-        ) : activeTab === "home" ? (
+        {activeTab === "home" ? (
           <HomeScreen
             level={levelData.level}
             totalXp={totalXp}
@@ -483,22 +498,9 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
             todoXpAnim={todoXpAnim}
           />
         ) : activeTab === "challenges" ? (
-          <ChallengesScreen
-            workouts={workoutCards}
-            onOpenWorkout={(taskId) => {
-              const challenge = challenges.find((c) => c.tasks.some((task) => task.id === taskId));
-              if (!challenge) return;
-              setActiveWorkout({ challengeId: challenge.id, taskId });
-            }}
-          />
+          <TrainingHubScreen userId={userId} onAwardXp={handleAwardTrainingXp} />
         ) : (
-          <LeaderboardScreen
-            userId={userId}
-            userXp={totalXp}
-            userLevel={levelData.level}
-            userName={userName}
-            userPhoto={userPhoto}
-          />
+          <PillarsScreen userId={userId} />
         )}
       </main>
 
