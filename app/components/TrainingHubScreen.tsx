@@ -244,6 +244,49 @@ function SessionTracker({
     });
   };
 
+  const applyPreviousToAllSets = (exercise: ProgramExerciseTemplate) => {
+    const previousRows = previousArchive?.exercises.find((item) => item.exerciseId === exercise.id)?.sets || [];
+    if (!previousRows.length) return;
+
+    setSetsState((prev) => {
+      const rows = prev[exercise.id] || [];
+      return {
+        ...prev,
+        [exercise.id]: rows.map((row, idx) => {
+          if (row.done) return row;
+          const previous = previousRows[idx];
+          if (!previous) return row;
+          return {
+            ...row,
+            load: String(previous.load),
+            reps: String(previous.reps),
+            rpe: String(previous.rpe),
+          };
+        }),
+      };
+    });
+  };
+
+  const applyDeltaToExercise = (
+    exercise: ProgramExerciseTemplate,
+    target: "reps" | "load",
+    delta: number,
+  ) => {
+    setSetsState((prev) => {
+      const rows = prev[exercise.id] || [];
+      return {
+        ...prev,
+        [exercise.id]: rows.map((row) => {
+          if (row.done) return row;
+          const base = Number(target === "reps" ? row.reps : row.load) || 0;
+          const next = Math.max(0, base + delta);
+          if (target === "reps") return { ...row, reps: String(Math.round(next)) };
+          return { ...row, load: String(Math.round(next * 10) / 10) };
+        }),
+      };
+    });
+  };
+
   const toggleDone = (exercise: ProgramExerciseTemplate, setIndex: number) => {
     const row = setsState[exercise.id]?.[setIndex];
     if (!row) return;
@@ -441,6 +484,30 @@ function SessionTracker({
                     <Plus size={13} />
                   </button>
                 </div>
+              </div>
+
+              <div className="flex flex-wrap gap-1.5 mb-2.5">
+                <button
+                  type="button"
+                  onClick={() => applyPreviousToAllSets(exercise)}
+                  className="h-7 px-2.5 rounded-lg border border-gray-5/30 bg-gray-2 text-[10px] text-gray-9 font-semibold"
+                >
+                  Copier prev
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyDeltaToExercise(exercise, "reps", 1)}
+                  className="h-7 px-2.5 rounded-lg border border-gray-5/30 bg-gray-2 text-[10px] text-gray-9 font-semibold"
+                >
+                  +1 rep
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyDeltaToExercise(exercise, "load", 2.5)}
+                  className="h-7 px-2.5 rounded-lg border border-gray-5/30 bg-gray-2 text-[10px] text-gray-9 font-semibold"
+                >
+                  +2.5 kg
+                </button>
               </div>
 
               <div className="grid grid-cols-[2rem_2rem_minmax(0,1fr)_3.8rem_3.8rem_3.8rem_2.6rem] md:grid-cols-[2.4rem_2.2rem_minmax(0,1fr)_4.6rem_4.6rem_4.6rem_2.8rem] gap-1.5 px-1 pb-1 text-[10px] uppercase tracking-[0.1em] text-gray-7">

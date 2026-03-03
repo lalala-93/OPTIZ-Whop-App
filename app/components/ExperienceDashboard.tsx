@@ -173,6 +173,35 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
     [totalXp, userId, startTransition],
   );
 
+  const handleAwardHabitXp = useCallback(
+    async (xp: number) => {
+      if (xp <= 0) return;
+
+      const previousLevel = getLevelProgress(totalXp).level;
+      const optimisticTotalXp = totalXp + xp;
+      const optimisticLevel = getLevelProgress(optimisticTotalXp).level;
+
+      setTotalXp(optimisticTotalXp);
+
+      if (optimisticLevel > previousLevel) {
+        setTimeout(() => setLevelUpAnim({ visible: true, newLevel: optimisticLevel }), 700);
+      }
+
+      startTransition(async () => {
+        try {
+          const result = await serverAwardXp(userId, xp, "todo");
+          setTotalXp(result.totalXp);
+          setStreakDays(result.streakDays);
+          if (result.streakEarned) setStreakAnim(true);
+        } catch (err) {
+          console.error("Failed to award habit XP:", err);
+          setTotalXp((prev) => Math.max(0, prev - xp));
+        }
+      });
+    },
+    [totalXp, userId, startTransition],
+  );
+
   return (
     <div className="min-h-screen bg-gray-1 text-gray-12 flex flex-col w-full relative">
       <header className="px-4 sm:px-6 pt-4 pb-3 sticky top-0 bg-gray-1/90 backdrop-blur-2xl z-30 border-b border-[var(--optiz-border)]">
@@ -295,11 +324,11 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
         ) : activeTab === "training" ? (
           <TrainingHubScreen userId={userId} onAwardXp={handleAwardTrainingXp} />
         ) : activeTab === "steps" ? (
-          <StepsScreen userId={userId} />
+          <StepsScreen userId={userId} onAwardXp={handleAwardHabitXp} />
         ) : activeTab === "diet" ? (
-          <DietScreen userId={userId} />
+          <DietScreen userId={userId} onAwardXp={handleAwardHabitXp} />
         ) : (
-          <BreathworkScreen userId={userId} />
+          <BreathworkScreen userId={userId} onAwardXp={handleAwardHabitXp} />
         )}
       </main>
 
