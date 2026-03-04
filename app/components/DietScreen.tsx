@@ -2,14 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, ChevronDown, Droplets, Flame, Plus, Trash2, Zap } from "lucide-react";
+import { Check, ChevronDown, ChevronUp, Droplets, Flame, Minus, Plus, Trash2, Zap } from "lucide-react";
 import { XPToast, type XPToastData } from "./XPToast";
 import { useI18n } from "./i18n";
 import {
   upsertDailyNutrition,
   getMealTemplates,
   createMealTemplate,
-  updateMealTemplate,
   deleteMealTemplate,
   checkMealToday,
   uncheckMealToday,
@@ -93,30 +92,31 @@ interface FoodItem {
 type FoodCategory = "all" | "protein" | "carb" | "fat";
 
 const FOOD_DB: FoodItem[] = [
-  { id: "ground-beef", emoji: "🥩", name: { en: "Ground beef 15%", fr: "Viande hachée 15%" }, category: "protein", defaultQty: 150, unit: "g", step: 50, cal: 327, p: 29, c: 0, f: 23 },
-  { id: "chicken", emoji: "🍗", name: { en: "Chicken breast", fr: "Poulet" }, category: "protein", defaultQty: 150, unit: "g", step: 50, cal: 247, p: 47, c: 0, f: 5 },
-  { id: "fatty-fish", emoji: "🐟", name: { en: "Fatty fish", fr: "Poisson gras" }, category: "protein", defaultQty: 150, unit: "g", step: 50, cal: 312, p: 30, c: 0, f: 20 },
-  { id: "eggs", emoji: "🥚", name: { en: "Eggs", fr: "Œufs" }, category: "protein", defaultQty: 3, unit: "pcs", step: 1, cal: 234, p: 19, c: 2, f: 17 },
-  { id: "kefir", emoji: "🥛", name: { en: "Kefir", fr: "Kéfir" }, category: "protein", defaultQty: 200, unit: "ml", step: 50, cal: 126, p: 7, c: 9, f: 7 },
-  { id: "skyr", emoji: "🥣", name: { en: "Skyr", fr: "Skyr" }, category: "protein", defaultQty: 150, unit: "g", step: 50, cal: 95, p: 17, c: 6, f: 0 },
-  { id: "rice", emoji: "🍚", name: { en: "Rice (raw)", fr: "Riz cru" }, category: "carb", defaultQty: 80, unit: "g", step: 10, cal: 292, p: 6, c: 64, f: 0 },
-  { id: "potato", emoji: "🥔", name: { en: "Potatoes", fr: "Pommes de terre" }, category: "carb", defaultQty: 200, unit: "g", step: 50, cal: 154, p: 4, c: 34, f: 0 },
-  { id: "sweet-potato", emoji: "🍠", name: { en: "Sweet potato", fr: "Patates douces" }, category: "carb", defaultQty: 200, unit: "g", step: 50, cal: 172, p: 3, c: 40, f: 0 },
-  { id: "sourdough", emoji: "🍞", name: { en: "Sourdough bread", fr: "Pain au levain" }, category: "carb", defaultQty: 60, unit: "g", step: 10, cal: 155, p: 5, c: 30, f: 1 },
-  { id: "honey", emoji: "🍯", name: { en: "Honey", fr: "Miel" }, category: "carb", defaultQty: 15, unit: "g", step: 5, cal: 46, p: 0, c: 12, f: 0 },
-  { id: "banana", emoji: "🍌", name: { en: "Banana", fr: "Banane" }, category: "carb", defaultQty: 120, unit: "g", step: 30, cal: 107, p: 1, c: 28, f: 0 },
-  { id: "apple", emoji: "🍎", name: { en: "Apple", fr: "Pomme" }, category: "carb", defaultQty: 150, unit: "g", step: 50, cal: 78, p: 1, c: 21, f: 0 },
-  { id: "blueberries", emoji: "🫐", name: { en: "Blueberries", fr: "Myrtilles" }, category: "carb", defaultQty: 100, unit: "g", step: 25, cal: 57, p: 1, c: 14, f: 0 },
-  { id: "kiwi", emoji: "🥝", name: { en: "Kiwi", fr: "Kiwi" }, category: "carb", defaultQty: 80, unit: "g", step: 20, cal: 49, p: 1, c: 12, f: 0 },
-  { id: "orange", emoji: "🍊", name: { en: "Orange", fr: "Orange" }, category: "carb", defaultQty: 150, unit: "g", step: 50, cal: 71, p: 1, c: 18, f: 0 },
-  { id: "raw-cheese", emoji: "🧀", name: { en: "Raw milk cheese", fr: "Fromage lait cru" }, category: "fat", defaultQty: 30, unit: "g", step: 10, cal: 121, p: 8, c: 0, f: 10 },
-  { id: "raw-cream", emoji: "🫙", name: { en: "Raw cream", fr: "Crème crue" }, category: "fat", defaultQty: 20, unit: "ml", step: 10, cal: 69, p: 0, c: 1, f: 7 },
-  { id: "avocado", emoji: "🥑", name: { en: "Avocado", fr: "Avocat" }, category: "fat", defaultQty: 80, unit: "g", step: 20, cal: 128, p: 2, c: 7, f: 12 },
+  { id: "ground-beef", emoji: "\u{1F969}", name: { en: "Ground beef 15%", fr: "Viande hach\u00e9e 15%" }, category: "protein", defaultQty: 150, unit: "g", step: 50, cal: 327, p: 29, c: 0, f: 23 },
+  { id: "chicken", emoji: "\u{1F357}", name: { en: "Chicken breast", fr: "Poulet" }, category: "protein", defaultQty: 150, unit: "g", step: 50, cal: 247, p: 47, c: 0, f: 5 },
+  { id: "fatty-fish", emoji: "\u{1F41F}", name: { en: "Fatty fish", fr: "Poisson gras" }, category: "protein", defaultQty: 150, unit: "g", step: 50, cal: 312, p: 30, c: 0, f: 20 },
+  { id: "eggs", emoji: "\u{1F95A}", name: { en: "Eggs", fr: "\u0152ufs" }, category: "protein", defaultQty: 3, unit: "pcs", step: 1, cal: 234, p: 19, c: 2, f: 17 },
+  { id: "kefir", emoji: "\u{1F95B}", name: { en: "Kefir", fr: "K\u00e9fir" }, category: "protein", defaultQty: 200, unit: "ml", step: 50, cal: 126, p: 7, c: 9, f: 7 },
+  { id: "skyr", emoji: "\u{1F963}", name: { en: "Skyr", fr: "Skyr" }, category: "protein", defaultQty: 150, unit: "g", step: 50, cal: 95, p: 17, c: 6, f: 0 },
+  { id: "rice", emoji: "\u{1F35A}", name: { en: "Rice (raw)", fr: "Riz cru" }, category: "carb", defaultQty: 80, unit: "g", step: 10, cal: 292, p: 6, c: 64, f: 0 },
+  { id: "potato", emoji: "\u{1F954}", name: { en: "Potatoes", fr: "Pommes de terre" }, category: "carb", defaultQty: 200, unit: "g", step: 50, cal: 154, p: 4, c: 34, f: 0 },
+  { id: "sweet-potato", emoji: "\u{1F360}", name: { en: "Sweet potato", fr: "Patates douces" }, category: "carb", defaultQty: 200, unit: "g", step: 50, cal: 172, p: 3, c: 40, f: 0 },
+  { id: "sourdough", emoji: "\u{1F35E}", name: { en: "Sourdough bread", fr: "Pain au levain" }, category: "carb", defaultQty: 60, unit: "g", step: 10, cal: 155, p: 5, c: 30, f: 1 },
+  { id: "honey", emoji: "\u{1F36F}", name: { en: "Honey", fr: "Miel" }, category: "carb", defaultQty: 15, unit: "g", step: 5, cal: 46, p: 0, c: 12, f: 0 },
+  { id: "banana", emoji: "\u{1F34C}", name: { en: "Banana", fr: "Banane" }, category: "carb", defaultQty: 120, unit: "g", step: 30, cal: 107, p: 1, c: 28, f: 0 },
+  { id: "apple", emoji: "\u{1F34E}", name: { en: "Apple", fr: "Pomme" }, category: "carb", defaultQty: 150, unit: "g", step: 50, cal: 78, p: 1, c: 21, f: 0 },
+  { id: "blueberries", emoji: "\u{1FAD0}", name: { en: "Blueberries", fr: "Myrtilles" }, category: "carb", defaultQty: 100, unit: "g", step: 25, cal: 57, p: 1, c: 14, f: 0 },
+  { id: "kiwi", emoji: "\u{1F95D}", name: { en: "Kiwi", fr: "Kiwi" }, category: "carb", defaultQty: 80, unit: "g", step: 20, cal: 49, p: 1, c: 12, f: 0 },
+  { id: "orange", emoji: "\u{1F34A}", name: { en: "Orange", fr: "Orange" }, category: "carb", defaultQty: 150, unit: "g", step: 50, cal: 71, p: 1, c: 18, f: 0 },
+  { id: "raw-cheese", emoji: "\u{1F9C0}", name: { en: "Raw milk cheese", fr: "Fromage lait cru" }, category: "fat", defaultQty: 30, unit: "g", step: 10, cal: 121, p: 8, c: 0, f: 10 },
+  { id: "raw-cream", emoji: "\u{1FAD9}", name: { en: "Raw cream", fr: "Cr\u00e8me crue" }, category: "fat", defaultQty: 20, unit: "ml", step: 10, cal: 69, p: 0, c: 1, f: 7 },
+  { id: "avocado", emoji: "\u{1F951}", name: { en: "Avocado", fr: "Avocat" }, category: "fat", defaultQty: 80, unit: "g", step: 20, cal: 128, p: 2, c: 7, f: 12 },
 ];
 
 const SLOTS = ["matin", "midi", "soir"] as const;
 type Slot = (typeof SLOTS)[number];
 const SLOT_KEYS: Record<Slot, string> = { matin: "dietMatin", midi: "dietMidi", soir: "dietSoir" };
+const SLOT_EMOJIS: Record<Slot, string> = { matin: "\u2600\uFE0F", midi: "\u{1F31E}", soir: "\u{1F319}" };
 
 /* ── Helpers ── */
 
@@ -214,30 +214,55 @@ function FoodRow({ food, qty, onQtyChange, onAdd, locale }: {
   const ml = macroLabels(locale);
   const name = locale === "fr" ? food.name.fr : food.name.en;
   return (
-    <div className="py-2 border-b border-gray-5/15 last:border-0">
+    <div className="py-2 border-b border-white/[0.04] last:border-0">
       <div className="flex items-center gap-2.5">
         <span className="text-lg shrink-0 w-7 text-center">{food.emoji}</span>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
             <p className="text-[13px] font-medium text-gray-12 truncate pr-2">{name}</p>
             <div className="flex items-center gap-2 shrink-0">
-              <span className="text-[12px] font-semibold text-gray-11 tabular-nums">{m.cal}</span>
-              <button type="button" onClick={onAdd} className="w-7 h-7 rounded-lg border border-[#E80000]/30 bg-[#E80000]/10 flex items-center justify-center active:scale-90 transition-transform">
+              <span className="text-[12px] font-semibold text-gray-11 tabular-nums">{m.cal} <span className="text-[10px] font-normal text-gray-8">kcal</span></span>
+              <button type="button" onClick={onAdd} className="w-7 h-7 rounded-lg bg-[#E80000]/12 flex items-center justify-center active:scale-90 transition-transform">
                 <Plus size={12} className="text-[#FF6D6D]" />
               </button>
             </div>
           </div>
           <div className="flex items-center gap-1.5 mt-0.5">
-            <button type="button" onClick={() => onQtyChange(Math.max(food.step, qty - food.step))} className="w-5 h-5 rounded bg-gray-4/40 text-[10px] font-bold text-gray-10 flex items-center justify-center">-</button>
+            <button type="button" onClick={() => onQtyChange(Math.max(food.step, qty - food.step))} className="w-5 h-5 rounded bg-white/[0.04] text-[10px] font-bold text-gray-10 flex items-center justify-center">-</button>
             <span className="text-[11px] text-gray-9 tabular-nums min-w-[36px] text-center">{qty} {food.unit}</span>
-            <button type="button" onClick={() => onQtyChange(qty + food.step)} className="w-5 h-5 rounded bg-gray-4/40 text-[10px] font-bold text-gray-10 flex items-center justify-center">+</button>
+            <button type="button" onClick={() => onQtyChange(qty + food.step)} className="w-5 h-5 rounded bg-white/[0.04] text-[10px] font-bold text-gray-10 flex items-center justify-center">+</button>
             <span className="text-[10px] text-gray-8 tabular-nums ml-1">
-              <span className="text-[#FF6B6B]">{ml.p}{m.p}</span>{" · "}
-              <span className="text-[#FFB347]">{ml.c}{m.c}</span>{" · "}
+              <span className="text-[#FF6B6B]">{ml.p}{m.p}</span>{" \u00b7 "}
+              <span className="text-[#FFB347]">{ml.c}{m.c}</span>{" \u00b7 "}
               <span className="text-[#4FC3F7]">{ml.f}{m.f}</span>
             </span>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── GoalStepper ── */
+function GoalStepper({ label, value, onChange, step, min, color, unit }: {
+  label: string; value: number; onChange: (v: number) => void; step: number; min: number; color: string; unit: string;
+}) {
+  return (
+    <div className="flex items-center justify-between py-2.5">
+      <div className="flex items-center gap-2">
+        <div className="w-1 h-4 rounded-full shrink-0" style={{ background: color }} />
+        <span className="text-[13px] text-gray-11">{label}</span>
+      </div>
+      <div className="flex items-center gap-1.5">
+        <button type="button" onClick={() => onChange(Math.max(min, value - step))}
+          className="w-7 h-7 rounded-lg bg-white/[0.04] flex items-center justify-center active:scale-90 transition-transform">
+          <Minus size={12} className="text-gray-9" />
+        </button>
+        <span className="text-[14px] font-semibold text-gray-12 tabular-nums min-w-[52px] text-center">{value}{unit}</span>
+        <button type="button" onClick={() => onChange(value + step)}
+          className="w-7 h-7 rounded-lg bg-white/[0.04] flex items-center justify-center active:scale-90 transition-transform">
+          <Plus size={12} className="text-gray-9" />
+        </button>
       </div>
     </div>
   );
@@ -393,7 +418,7 @@ export function DietScreen({ userId, onAwardXpEvent, initialData }: DietScreenPr
   const handleAddFood = async (food: FoodItem, slot: Slot) => {
     const qty = foodQtys[food.id] ?? food.defaultQty;
     const mc = scaledMacros(food, qty);
-    const name = `${food.emoji} ${locale === "fr" ? food.name.fr : food.name.en} · ${qty} ${food.unit}`;
+    const name = `${food.emoji} ${locale === "fr" ? food.name.fr : food.name.en} \u00b7 ${qty} ${food.unit}`;
     const tmpId = `tmp-${Date.now()}`;
     setTemplates((p) => [...p, { id: tmpId, name, slot, calories: mc.cal, protein: mc.p, carbs: mc.c, fats: mc.f, sortOrder: 0 }]);
     const created = await createMealTemplate(userId, { name, slot, calories: mc.cal, protein: mc.p, carbs: mc.c, fats: mc.f });
@@ -414,11 +439,6 @@ export function DietScreen({ userId, onAwardXpEvent, initialData }: DietScreenPr
     setTemplates((p) => p.filter((t) => t.id !== id));
     setCheckedIds((p) => { const s = new Set(p); s.delete(id); return s; });
     await deleteMealTemplate(userId, id).catch(console.error);
-  };
-
-  const handleMoveSlot = async (id: string, newSlot: string) => {
-    setTemplates((p) => p.map((t) => (t.id === id ? { ...t, slot: newSlot } : t)));
-    await updateMealTemplate(userId, id, { slot: newSlot }).catch(console.error);
   };
 
   const filteredFoods = activeCategory === "all" ? FOOD_DB : FOOD_DB.filter((f) => f.category === activeCategory);
@@ -469,7 +489,7 @@ export function DietScreen({ userId, onAwardXpEvent, initialData }: DietScreenPr
             type="button"
             onClick={() => setViewMode(mode)}
             className={`rounded-full px-4 py-1.5 text-[12px] font-medium transition-colors ${
-              viewMode === mode ? "bg-[#E80000]/15 text-[#FF6666] border border-[#E80000]/35" : "bg-gray-3/30 text-gray-10 border border-gray-5/25"
+              viewMode === mode ? "bg-[#E80000]/15 text-[#FF6666] border border-[#E80000]/35" : "bg-white/[0.03] text-gray-10 border border-white/[0.06]"
             }`}
           >
             {t(mode === "daily" ? "dietDaily" : "dietWeekly")}
@@ -478,19 +498,19 @@ export function DietScreen({ userId, onAwardXpEvent, initialData }: DietScreenPr
       </motion.div>
 
       {/* Calorie Dashboard */}
-      <motion.section {...stagger(2)} className="rounded-3xl border border-gray-5/35 bg-gray-2/82 p-5">
+      <motion.section {...stagger(2)} className="rounded-3xl border border-white/[0.06] bg-white/[0.02] p-5">
         <CalorieRing eaten={checkedTotals.calories} goal={goals.calorieGoal} />
         <div className="mt-4 flex items-center justify-around">
           <div className="text-center">
             <p className="text-[11px] text-gray-7 uppercase tracking-wider">{t("dietGoalLabel")}</p>
             <p className="text-[17px] font-semibold text-gray-12 tabular-nums">{goals.calorieGoal}</p>
           </div>
-          <div className="w-px h-8 bg-gray-5/20" />
+          <div className="w-px h-8 bg-white/[0.06]" />
           <div className="text-center">
             <p className="text-[11px] text-gray-7 uppercase tracking-wider">{t("dietCaloriesToday")}</p>
             <p className="text-[17px] font-semibold text-[#FF6A6A] tabular-nums">{checkedTotals.calories}</p>
           </div>
-          <div className="w-px h-8 bg-gray-5/20" />
+          <div className="w-px h-8 bg-white/[0.06]" />
           <div className="text-center">
             <p className="text-[11px] text-gray-7 uppercase tracking-wider">{t("dietRemainingLabel")}</p>
             <p className="text-[17px] font-semibold text-gray-12 tabular-nums">{caloriesRemaining}</p>
@@ -509,107 +529,114 @@ export function DietScreen({ userId, onAwardXpEvent, initialData }: DietScreenPr
           {SLOTS.map((slot, slotIdx) => {
             const slotTemplates = templates.filter((t) => t.slot === slot);
             const slotCal = slotTemplates.filter((t) => checkedIds.has(t.id)).reduce((s, t) => s + t.calories, 0);
+            const isAddingThis = addingSlot === slot;
             return (
-              <motion.section key={slot} {...stagger(3 + slotIdx)} className="rounded-3xl border border-gray-5/35 bg-gray-2/82 p-4">
+              <motion.section key={slot} {...stagger(3 + slotIdx)} className="rounded-3xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
                 {/* Slot header */}
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-[14px] font-semibold text-gray-12">{t(SLOT_KEYS[slot] as Parameters<typeof t>[0])}</h3>
+                <div className="flex items-center justify-between px-4 pt-4 pb-2">
                   <div className="flex items-center gap-2">
-                    {slotCal > 0 && <span className="text-[11px] text-gray-8 tabular-nums">{slotCal} kcal</span>}
-                    <button
-                      type="button"
-                      onClick={() => setAddingSlot(addingSlot === slot ? null : slot)}
-                      className="w-7 h-7 rounded-lg border border-[#E80000]/30 bg-[#E80000]/10 flex items-center justify-center active:scale-90 transition-transform"
-                    >
-                      <Plus size={13} className="text-[#FF6D6D]" />
-                    </button>
+                    <span className="text-base">{SLOT_EMOJIS[slot]}</span>
+                    <h3 className="text-[15px] font-semibold text-gray-12">{t(SLOT_KEYS[slot] as Parameters<typeof t>[0])}</h3>
+                    {slotCal > 0 && (
+                      <span className="text-[11px] font-medium text-gray-8 tabular-nums bg-white/[0.04] rounded-full px-2 py-0.5">{slotCal} kcal</span>
+                    )}
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => setAddingSlot(isAddingThis ? null : slot)}
+                    className={`w-8 h-8 rounded-xl flex items-center justify-center active:scale-90 transition-all ${
+                      isAddingThis ? "bg-[#E80000]/15" : "bg-white/[0.04]"
+                    }`}
+                  >
+                    <motion.div animate={{ rotate: isAddingThis ? 180 : 0 }} transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] as const }}>
+                      {isAddingThis ? <ChevronUp size={15} className="text-[#FF6D6D]" /> : <Plus size={15} className="text-gray-10" />}
+                    </motion.div>
+                  </button>
                 </div>
 
-                {/* Meals in slot */}
-                {loading ? (
-                  <p className="text-[12px] text-gray-8 py-2 text-center">...</p>
-                ) : slotTemplates.length === 0 && addingSlot !== slot ? (
-                  <p className="text-[12px] text-gray-8 py-2 text-center">{t("dietNoMeals")}</p>
-                ) : (
-                  <div className="space-y-0">
-                    {slotTemplates.map((tpl) => {
-                      const isChecked = checkedIds.has(tpl.id);
-                      return (
-                        <div
-                          key={tpl.id}
-                          className={`flex items-center gap-2.5 py-2.5 border-b border-gray-5/15 last:border-0 transition-colors ${isChecked ? "bg-[#E80000]/[0.03] -mx-2 px-2 rounded-xl" : ""}`}
-                        >
-                          {/* Checkbox */}
-                          <button
-                            type="button"
-                            onClick={() => handleCheck(tpl.id)}
-                            className={`w-6 h-6 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${
-                              isChecked ? "bg-[#E80000] border-[#E80000]" : "border-gray-6 bg-transparent"
+                {/* Meals checklist */}
+                <div className="px-4 pb-3">
+                  {loading ? (
+                    <p className="text-[12px] text-gray-8 py-3 text-center">...</p>
+                  ) : slotTemplates.length === 0 && !isAddingThis ? (
+                    <p className="text-[12px] text-gray-7 py-3 text-center italic">{t("dietNoMeals")}</p>
+                  ) : (
+                    <div className="space-y-0.5">
+                      {slotTemplates.map((tpl) => {
+                        const isChecked = checkedIds.has(tpl.id);
+                        return (
+                          <motion.div
+                            key={tpl.id}
+                            layout
+                            className={`flex items-center gap-3 py-2.5 px-3 rounded-2xl transition-colors ${
+                              isChecked ? "bg-[#E80000]/[0.05]" : "bg-white/[0.02] hover:bg-white/[0.04]"
                             }`}
                           >
-                            {isChecked && <Check size={14} className="text-white" strokeWidth={3} />}
-                          </button>
+                            {/* Checkbox */}
+                            <button
+                              type="button"
+                              onClick={() => handleCheck(tpl.id)}
+                              className={`w-[22px] h-[22px] rounded-lg border-2 flex items-center justify-center shrink-0 transition-all ${
+                                isChecked ? "bg-[#E80000] border-[#E80000] shadow-[0_0_8px_rgba(232,0,0,0.3)]" : "border-white/[0.12] bg-transparent"
+                              }`}
+                            >
+                              {isChecked && <Check size={13} className="text-white" strokeWidth={3} />}
+                            </button>
 
-                          {/* Content */}
-                          <div className="flex-1 min-w-0">
-                            <p className={`text-[13px] font-medium truncate ${isChecked ? "text-gray-10 line-through" : "text-gray-12"}`}>{tpl.name}</p>
-                            <p className="text-[10px] text-gray-8 tabular-nums mt-0.5">
-                              <span className="text-[#FF6B6B]">{ml.p}{tpl.protein}</span>{" · "}
-                              <span className="text-[#FFB347]">{ml.c}{tpl.carbs}</span>{" · "}
-                              <span className="text-[#4FC3F7]">{ml.f}{tpl.fats}</span>
-                            </p>
-                          </div>
+                            {/* Content */}
+                            <div className="flex-1 min-w-0">
+                              <p className={`text-[13px] font-medium truncate transition-colors ${isChecked ? "text-gray-9 line-through" : "text-gray-12"}`}>{tpl.name}</p>
+                              <p className="text-[10px] text-gray-7 tabular-nums mt-0.5">
+                                <span className="text-[#FF6B6B]">{ml.p}{tpl.protein}</span>{" \u00b7 "}
+                                <span className="text-[#FFB347]">{ml.c}{tpl.carbs}</span>{" \u00b7 "}
+                                <span className="text-[#4FC3F7]">{ml.f}{tpl.fats}</span>
+                              </p>
+                            </div>
 
-                          {/* Kcal + actions */}
-                          <span className="text-[12px] font-semibold text-gray-11 tabular-nums shrink-0">{tpl.calories}</span>
+                            {/* Kcal */}
+                            <span className={`text-[12px] font-semibold tabular-nums shrink-0 transition-colors ${isChecked ? "text-[#FF6B6B]" : "text-gray-11"}`}>
+                              {tpl.calories} <span className="text-[10px] font-normal text-gray-8">kcal</span>
+                            </span>
 
-                          {/* Slot selector */}
-                          <select
-                            value={tpl.slot}
-                            onChange={(e) => handleMoveSlot(tpl.id, e.target.value)}
-                            className="text-[10px] bg-transparent text-gray-8 border border-gray-5/30 rounded px-1 py-0.5 outline-none"
-                          >
-                            {SLOTS.map((s) => (
-                              <option key={s} value={s}>{t(SLOT_KEYS[s] as Parameters<typeof t>[0])}</option>
-                            ))}
-                          </select>
-
-                          <button type="button" onClick={() => handleDelete(tpl.id)} className="w-6 h-6 rounded-md flex items-center justify-center text-gray-8 hover:text-[#FF6666] transition-colors shrink-0">
-                            <Trash2 size={12} />
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+                            {/* Delete */}
+                            <button type="button" onClick={() => handleDelete(tpl.id)}
+                              className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-7 hover:text-[#FF6666] hover:bg-[#FF0000]/[0.06] transition-colors shrink-0"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
 
                 {/* Add panel */}
                 <AnimatePresence>
-                  {addingSlot === slot && (
+                  {isAddingThis && (
                     <motion.div
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: "auto", opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
+                      transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] as const }}
                       className="overflow-hidden"
                     >
-                      <div className="pt-3 border-t border-gray-5/20 mt-2">
-                        <p className="text-[12px] font-semibold text-gray-11 mb-2">{t("dietCreateMeal")}</p>
+                      <div className="px-4 pb-4 pt-2 border-t border-white/[0.04]">
+                        <p className="text-[12px] font-semibold text-gray-10 mb-2 uppercase tracking-wider">{t("dietCreateMeal")}</p>
 
                         {/* Category pills */}
-                        <div className="flex gap-1.5 mb-2 flex-wrap">
+                        <div className="flex gap-1.5 mb-3 flex-wrap">
                           {categories.map((cat) => (
                             <button key={cat.id} type="button" onClick={() => setActiveCategory(cat.id)}
-                              className={`rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors ${
-                                activeCategory === cat.id ? "bg-[#E80000]/15 text-[#FF6666] border border-[#E80000]/35" : "bg-gray-3/30 text-gray-10 border border-gray-5/25"
+                              className={`rounded-full px-3 py-1 text-[11px] font-medium transition-colors ${
+                                activeCategory === cat.id ? "bg-[#E80000]/12 text-[#FF6666]" : "bg-white/[0.04] text-gray-10"
                               }`}
                             >{cat.label}</button>
                           ))}
                         </div>
 
                         {/* Food list */}
-                        <div className="max-h-[260px] overflow-y-auto -mx-1 px-1">
+                        <div className="max-h-[260px] overflow-y-auto -mx-1 px-1 scrollbar-none">
                           {filteredFoods.map((food) => (
                             <FoodRow
                               key={food.id}
@@ -624,7 +651,7 @@ export function DietScreen({ userId, onAwardXpEvent, initialData }: DietScreenPr
 
                         {/* Custom toggle */}
                         <button type="button" onClick={() => setShowCustom(!showCustom)}
-                          className="w-full mt-2 h-8 rounded-lg border border-dashed border-gray-5/40 text-[11px] font-medium text-gray-10 flex items-center justify-center gap-1 active:scale-[0.98] transition-transform"
+                          className="w-full mt-3 h-9 rounded-xl border border-dashed border-white/[0.08] text-[11px] font-medium text-gray-10 flex items-center justify-center gap-1 active:scale-[0.98] transition-transform hover:bg-white/[0.02]"
                         >
                           <Plus size={11} /> {t("dietCustom")}
                         </button>
@@ -632,24 +659,24 @@ export function DietScreen({ userId, onAwardXpEvent, initialData }: DietScreenPr
                         <AnimatePresence>
                           {showCustom && (
                             <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                              <div className="pt-2 space-y-2">
-                                <input value={customName} onChange={(e) => setCustomName(e.target.value)} placeholder={t("dietMealNamePlaceholder")} className="h-9 w-full rounded-lg bg-gray-2/80 border border-gray-5/30 px-3 text-sm text-gray-12" />
-                                <input type="number" min={0} value={customCal} onChange={(e) => setCustomCal(Math.max(0, Number(e.target.value || "0")))} placeholder="kcal" className="h-9 w-full rounded-lg bg-gray-2/80 border border-gray-5/30 px-3 text-[14px] font-semibold text-gray-12 text-center tabular-nums" />
+                              <div className="pt-3 space-y-2">
+                                <input value={customName} onChange={(e) => setCustomName(e.target.value)} placeholder={t("dietMealNamePlaceholder")} className="h-10 w-full rounded-xl bg-white/[0.03] border border-white/[0.06] px-3 text-sm text-gray-12 placeholder:text-gray-7 outline-none focus:border-[#E80000]/30 transition-colors" />
+                                <input type="number" min={0} value={customCal} onChange={(e) => setCustomCal(Math.max(0, Number(e.target.value || "0")))} placeholder="kcal" className="h-10 w-full rounded-xl bg-white/[0.03] border border-white/[0.06] px-3 text-[14px] font-semibold text-gray-12 text-center tabular-nums outline-none focus:border-[#E80000]/30 transition-colors" />
                                 <div className="grid grid-cols-3 gap-2">
                                   <div>
-                                    <span className="text-[10px] font-medium text-[#FF6B6B] mb-0.5 block">{ml.p} (g)</span>
-                                    <input type="number" min={0} value={customP} onChange={(e) => setCustomP(Math.max(0, Number(e.target.value || "0")))} className="h-8 w-full rounded-lg bg-gray-2/80 border border-gray-5/30 px-2 text-sm text-gray-12 text-center tabular-nums" />
+                                    <span className="text-[10px] font-medium text-[#FF6B6B] mb-1 block">{ml.p} (g)</span>
+                                    <input type="number" min={0} value={customP} onChange={(e) => setCustomP(Math.max(0, Number(e.target.value || "0")))} className="h-9 w-full rounded-xl bg-white/[0.03] border border-white/[0.06] px-2 text-sm text-gray-12 text-center tabular-nums outline-none" />
                                   </div>
                                   <div>
-                                    <span className="text-[10px] font-medium text-[#FFB347] mb-0.5 block">{ml.c} (g)</span>
-                                    <input type="number" min={0} value={customC} onChange={(e) => setCustomC(Math.max(0, Number(e.target.value || "0")))} className="h-8 w-full rounded-lg bg-gray-2/80 border border-gray-5/30 px-2 text-sm text-gray-12 text-center tabular-nums" />
+                                    <span className="text-[10px] font-medium text-[#FFB347] mb-1 block">{ml.c} (g)</span>
+                                    <input type="number" min={0} value={customC} onChange={(e) => setCustomC(Math.max(0, Number(e.target.value || "0")))} className="h-9 w-full rounded-xl bg-white/[0.03] border border-white/[0.06] px-2 text-sm text-gray-12 text-center tabular-nums outline-none" />
                                   </div>
                                   <div>
-                                    <span className="text-[10px] font-medium text-[#4FC3F7] mb-0.5 block">{ml.f} (g)</span>
-                                    <input type="number" min={0} value={customF} onChange={(e) => setCustomF(Math.max(0, Number(e.target.value || "0")))} className="h-8 w-full rounded-lg bg-gray-2/80 border border-gray-5/30 px-2 text-sm text-gray-12 text-center tabular-nums" />
+                                    <span className="text-[10px] font-medium text-[#4FC3F7] mb-1 block">{ml.f} (g)</span>
+                                    <input type="number" min={0} value={customF} onChange={(e) => setCustomF(Math.max(0, Number(e.target.value || "0")))} className="h-9 w-full rounded-xl bg-white/[0.03] border border-white/[0.06] px-2 text-sm text-gray-12 text-center tabular-nums outline-none" />
                                   </div>
                                 </div>
-                                <button type="button" onClick={() => handleAddCustom(slot)} className="w-full h-9 rounded-lg optiz-gradient-bg text-white text-sm font-semibold inline-flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform">
+                                <button type="button" onClick={() => handleAddCustom(slot)} className="w-full h-10 rounded-xl optiz-gradient-bg text-white text-sm font-semibold inline-flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform shadow-[0_2px_12px_rgba(232,0,0,0.25)]">
                                   <Plus size={13} /> {t("dietValidateMeal")}
                                 </button>
                               </div>
@@ -665,48 +692,84 @@ export function DietScreen({ userId, onAwardXpEvent, initialData }: DietScreenPr
           })}
         </>
       ) : (
-        /* ══ WEEKLY VIEW ══ */
-        <motion.section {...stagger(3)} className="rounded-3xl border border-gray-5/35 bg-gray-2/82 p-5">
-          <h3 className="text-[14px] font-semibold text-gray-12 mb-4">{t("dietWeekly")}</h3>
-          <div className="flex items-end justify-between gap-1.5 h-[140px]">
-            {weeklyBars.map((bar, i) => {
-              const pct = maxWeeklyCal > 0 ? Math.max(4, (bar.cal / maxWeeklyCal) * 100) : 4;
-              const isToday = bar.date === todayISO;
-              const isFuture = bar.date > todayISO;
+        /* ══ WEEKLY VIEW — Bar Chart ══ */
+        <motion.section {...stagger(3)} className="rounded-3xl border border-white/[0.06] bg-white/[0.02] p-5">
+          <h3 className="text-[14px] font-semibold text-gray-12 mb-5">{t("dietWeekly")}</h3>
+
+          {/* Bar chart area */}
+          <div className="relative h-[180px] mb-2">
+            {/* Goal reference line */}
+            {(() => {
+              const goalPct = Math.min(100, (goals.calorieGoal / maxWeeklyCal) * 100);
               return (
-                <div key={bar.date} className="flex-1 flex flex-col items-center gap-1">
-                  <span className="text-[10px] text-gray-8 tabular-nums">{bar.cal > 0 ? bar.cal : ""}</span>
-                  <div className="w-full flex-1 flex items-end">
-                    <motion.div
-                      className={`w-full rounded-t-md ${isFuture ? "bg-gray-4/20" : isToday ? "bg-gradient-to-t from-[#E80000] to-[#FF4D4D]" : "bg-gray-6/40"}`}
-                      initial={{ height: 0 }}
-                      animate={{ height: `${isFuture ? 8 : pct}%` }}
-                      transition={{ duration: 0.4, delay: i * 0.05 }}
-                    />
-                  </div>
-                  <span className={`text-[10px] font-medium ${isToday ? "text-[#FF6666]" : "text-gray-9"}`}>{dayLabels[i]}</span>
+                <div className="absolute left-0 right-0 flex items-center" style={{ bottom: `${goalPct}%` }}>
+                  <div className="flex-1 border-t border-dashed border-[#E80000]/25" />
+                  <span className="text-[9px] text-[#FF6666]/60 tabular-nums ml-1 shrink-0">{goals.calorieGoal}</span>
                 </div>
               );
-            })}
+            })()}
+
+            {/* Bars */}
+            <div className="flex items-end justify-between gap-2 h-full">
+              {weeklyBars.map((bar, i) => {
+                const pct = maxWeeklyCal > 0 ? Math.max(2, (bar.cal / maxWeeklyCal) * 100) : 2;
+                const isToday = bar.date === todayISO;
+                const isFuture = bar.date > todayISO;
+                const hasCal = bar.cal > 0;
+                const aboveGoal = bar.cal > goals.calorieGoal;
+                return (
+                  <div key={bar.date} className="flex-1 flex flex-col items-center h-full justify-end">
+                    {hasCal && !isFuture && (
+                      <span className="text-[10px] font-medium tabular-nums mb-1 text-gray-9">{bar.cal}</span>
+                    )}
+                    <motion.div
+                      className={`w-full rounded-lg min-h-[4px] ${
+                        isFuture
+                          ? "bg-white/[0.03]"
+                          : isToday
+                          ? aboveGoal
+                            ? "bg-gradient-to-t from-[#FF4D4D] to-[#FF8C8C]"
+                            : "bg-gradient-to-t from-[#E80000] to-[#FF4D4D]"
+                          : hasCal
+                          ? "bg-gradient-to-t from-white/[0.08] to-white/[0.15]"
+                          : "bg-white/[0.03]"
+                      }`}
+                      initial={{ height: 0 }}
+                      animate={{ height: isFuture ? 4 : `${pct}%` }}
+                      transition={{ duration: 0.5, delay: i * 0.06, ease: [0.25, 0.1, 0.25, 1] as const }}
+                    />
+                    <span className={`text-[11px] font-medium mt-2 ${isToday ? "text-[#FF6666]" : "text-gray-8"}`}>
+                      {dayLabels[i]}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-          {/* Goal line label */}
-          <div className="flex items-center justify-center gap-2 mt-3">
-            <div className="h-px flex-1 bg-gray-5/20" />
-            <span className="text-[10px] text-gray-8">{t("dietGoalLabel")}: {goals.calorieGoal} kcal</span>
-            <div className="h-px flex-1 bg-gray-5/20" />
+
+          {/* Legend */}
+          <div className="flex items-center justify-center gap-4 mt-3 pt-3 border-t border-white/[0.04]">
+            <div className="flex items-center gap-1.5">
+              <div className="w-2.5 h-2.5 rounded-sm bg-gradient-to-t from-[#E80000] to-[#FF4D4D]" />
+              <span className="text-[10px] text-gray-8">{t("dietCaloriesToday")}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-6 border-t border-dashed border-[#E80000]/40" />
+              <span className="text-[10px] text-gray-8">{t("dietGoalLabel")} {goals.calorieGoal} kcal</span>
+            </div>
           </div>
         </motion.section>
       )}
 
       {/* ── Hydration ── */}
-      <motion.section {...stagger(6)} className="rounded-3xl border border-gray-5/35 bg-gray-2/82 p-4">
+      <motion.section {...stagger(6)} className="rounded-3xl border border-white/[0.06] bg-white/[0.02] p-4">
         <div className="flex items-center justify-between mb-3">
           <p className="text-[14px] font-semibold text-gray-12 inline-flex items-center gap-1.5">
             <Droplets size={15} className="text-[#4FC3F7]" /> {t("dietHydration")}
           </p>
           <p className="text-[12px] text-gray-8 tabular-nums">{goals.waterInL.toFixed(2)} / {goals.waterGoalL.toFixed(2)} L</p>
         </div>
-        <div className="h-10 rounded-xl bg-gray-3/25 overflow-hidden relative border border-gray-5/20">
+        <div className="h-10 rounded-xl bg-white/[0.03] overflow-hidden relative border border-white/[0.06]">
           <motion.div
             className="absolute inset-y-0 left-0 bg-gradient-to-r from-[#165DFF] via-[#3D8BFF] to-[#72B2FF]"
             animate={{ width: `${Math.round(hydrationPct * 100)}%` }}
@@ -720,8 +783,8 @@ export function DietScreen({ userId, onAwardXpEvent, initialData }: DietScreenPr
           {[{ label: "-0.25L", delta: -0.25 }, { label: "+0.25L", delta: 0.25 }, { label: "+0.5L", delta: 0.5 }, { label: "+1L", delta: 1 }].map((a) => (
             <button key={a.label} type="button"
               onClick={() => updateGoals({ waterInL: roundToQuarter(Math.max(0, Math.min(goals.waterGoalL * 1.4, goals.waterInL + a.delta))) })}
-              className={`h-9 rounded-xl border text-[12px] font-semibold active:scale-95 transition-transform ${
-                a.delta > 0 ? "border-[#165DFF]/30 bg-[#165DFF]/8 text-[#72B2FF]" : "border-gray-5/35 bg-gray-3/30 text-gray-11"
+              className={`h-9 rounded-xl text-[12px] font-semibold active:scale-95 transition-transform ${
+                a.delta > 0 ? "bg-[#165DFF]/10 text-[#72B2FF]" : "bg-white/[0.04] text-gray-11"
               }`}
             >{a.label}</button>
           ))}
@@ -729,9 +792,9 @@ export function DietScreen({ userId, onAwardXpEvent, initialData }: DietScreenPr
       </motion.section>
 
       {/* ── Goals Settings ── */}
-      <motion.section {...stagger(7)} className="rounded-3xl border border-gray-5/35 bg-gray-2/82 overflow-hidden">
-        <button type="button" onClick={() => setSettingsExpanded(!settingsExpanded)} className="w-full flex items-center justify-between px-4 py-3">
-          <span className="text-[14px] font-semibold text-gray-12 inline-flex items-center gap-1.5"><Zap size={14} /> {t("dietGoalLabel")}</span>
+      <motion.section {...stagger(7)} className="rounded-3xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
+        <button type="button" onClick={() => setSettingsExpanded(!settingsExpanded)} className="w-full flex items-center justify-between px-4 py-3.5">
+          <span className="text-[14px] font-semibold text-gray-12 inline-flex items-center gap-1.5"><Zap size={14} className="text-[#FFB347]" /> {t("dietGoalLabel")}</span>
           <motion.div animate={{ rotate: settingsExpanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
             <ChevronDown size={16} className="text-gray-8" />
           </motion.div>
@@ -739,27 +802,16 @@ export function DietScreen({ userId, onAwardXpEvent, initialData }: DietScreenPr
         <AnimatePresence>
           {settingsExpanded && (
             <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
-              <div className="px-4 pb-4 space-y-1">
-                <div className="flex items-center justify-between py-2.5 border-b border-gray-5/20">
-                  <span className="text-[13px] text-gray-10">{t("dietCalorieGoalInput")}</span>
-                  <input type="number" min={1200} value={goals.calorieGoal} onChange={(e) => updateGoals({ calorieGoal: Math.max(1200, Number(e.target.value || "1200")) })} className="w-20 text-right text-[14px] font-semibold text-gray-12 bg-transparent outline-none tabular-nums" />
-                </div>
-                <div className="flex items-center justify-between py-2.5 border-b border-gray-5/20">
-                  <span className="text-[13px] text-[#FF6B6B]">{t("dietProtein")} (g)</span>
-                  <input type="number" min={0} value={goals.proteinGoal} onChange={(e) => updateGoals({ proteinGoal: Math.max(0, Number(e.target.value || "0")) })} className="w-16 text-right text-[14px] font-semibold text-gray-12 bg-transparent outline-none tabular-nums" />
-                </div>
-                <div className="flex items-center justify-between py-2.5 border-b border-gray-5/20">
-                  <span className="text-[13px] text-[#FFB347]">{t("dietCarbs")} (g)</span>
-                  <input type="number" min={0} value={goals.carbsGoal} onChange={(e) => updateGoals({ carbsGoal: Math.max(0, Number(e.target.value || "0")) })} className="w-16 text-right text-[14px] font-semibold text-gray-12 bg-transparent outline-none tabular-nums" />
-                </div>
-                <div className="flex items-center justify-between py-2.5 border-b border-gray-5/20">
-                  <span className="text-[13px] text-[#4FC3F7]">{t("dietFats")} (g)</span>
-                  <input type="number" min={0} value={goals.fatsGoal} onChange={(e) => updateGoals({ fatsGoal: Math.max(0, Number(e.target.value || "0")) })} className="w-16 text-right text-[14px] font-semibold text-gray-12 bg-transparent outline-none tabular-nums" />
-                </div>
-                <div className="flex items-center justify-between py-2.5">
-                  <span className="text-[13px] text-[#4FC3F7]">{t("dietWaterGoalInput")}</span>
-                  <input type="number" min={1} step={0.1} value={goals.waterGoalL} onChange={(e) => updateGoals({ waterGoalL: Math.max(1, Number(e.target.value || "1")) })} className="w-16 text-right text-[14px] font-semibold text-gray-12 bg-transparent outline-none tabular-nums" />
-                </div>
+              <div className="px-4 pb-4">
+                <GoalStepper label={t("dietCalorieGoalInput")} value={goals.calorieGoal} onChange={(v) => updateGoals({ calorieGoal: v })} step={100} min={1200} color="#FF6B6B" unit="" />
+                <div className="border-t border-white/[0.04]" />
+                <GoalStepper label={t("dietProtein")} value={goals.proteinGoal} onChange={(v) => updateGoals({ proteinGoal: v })} step={10} min={0} color="#FF6B6B" unit="g" />
+                <div className="border-t border-white/[0.04]" />
+                <GoalStepper label={t("dietCarbs")} value={goals.carbsGoal} onChange={(v) => updateGoals({ carbsGoal: v })} step={10} min={0} color="#FFB347" unit="g" />
+                <div className="border-t border-white/[0.04]" />
+                <GoalStepper label={t("dietFats")} value={goals.fatsGoal} onChange={(v) => updateGoals({ fatsGoal: v })} step={5} min={0} color="#4FC3F7" unit="g" />
+                <div className="border-t border-white/[0.04]" />
+                <GoalStepper label={t("dietWaterGoalInput")} value={goals.waterGoalL} onChange={(v) => updateGoals({ waterGoalL: v })} step={0.5} min={1} color="#4FC3F7" unit="L" />
               </div>
             </motion.div>
           )}
