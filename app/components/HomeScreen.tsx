@@ -664,7 +664,7 @@ export function HomeScreen({
                     {entry.avatar_url ? (
                       <img src={entry.avatar_url} alt="" className="w-full h-full object-cover" />
                     ) : (
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" className="text-gray-7"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill={isTop3 ? PODIUM_THEMES[entry.position as 1 | 2 | 3]?.accent : "currentColor"} className={isTop3 ? undefined : "text-gray-7"}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
                     )}
                   </div>
 
