@@ -61,7 +61,7 @@ function formatClock(totalSeconds: number) {
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
-/* ── BreathingOrb — Pure CSS / Framer Motion (no SVG) ── */
+/* ── BreathingOrb — Pure CSS / Framer Motion ── */
 function BreathingOrb({
   seconds,
   orbScale,
@@ -73,8 +73,32 @@ function BreathingOrb({
   phase: PhaseKey;
   idle: boolean;
 }) {
-  const idleTransition = { duration: 4, repeat: Infinity, ease: "easeInOut" as const };
-  const phaseTransition = { duration: 0.5, ease: [0.4, 0, 0.2, 1] as const };
+  // Smooth ease for breathing phases
+  const breathTransition = { duration: 0.35, ease: [0.4, 0, 0.2, 1] as const };
+  // Slow gentle pulse for hold phase
+  const holdTransition = { duration: 3, repeat: Infinity, ease: "easeInOut" as const };
+
+  const getAnimation = (
+    idleScale: number,
+    idleOpacity: number,
+    holdScaleRange: [number, number, number],
+    holdOpacity: number,
+    activeScale: number,
+    inhaleOpacity: number,
+    exhaleOpacity: number,
+  ) => {
+    if (idle) return { scale: idleScale, opacity: idleOpacity };
+    if (phase === "hold") return { scale: holdScaleRange, opacity: holdOpacity };
+    return { scale: activeScale, opacity: phase === "inhale" ? inhaleOpacity : exhaleOpacity };
+  };
+
+  const getTransition = () => {
+    if (idle) return { duration: 0 };
+    if (phase === "hold") return holdTransition;
+    return breathTransition;
+  };
+
+  const transition = getTransition();
 
   return (
     <div className="relative mx-auto w-[220px] h-[220px] flex items-center justify-center">
@@ -82,24 +106,24 @@ function BreathingOrb({
       <motion.div
         className="absolute inset-0 rounded-full pointer-events-none"
         style={{ background: "rgba(232,0,0,0.12)", filter: "blur(80px)" }}
-        animate={
-          idle
-            ? { scale: [1, 1.04, 1], opacity: 0.5 }
-            : { scale: orbScale + 0.1, opacity: phase === "inhale" ? 0.7 : phase === "hold" ? 0.6 : 0.35 }
-        }
-        transition={idle ? idleTransition : phaseTransition}
+        animate={getAnimation(
+          1.05, 0.2,
+          [orbScale + 0.06, orbScale + 0.12, orbScale + 0.06], 0.55,
+          orbScale + 0.1, 0.65, 0.3,
+        )}
+        transition={transition}
       />
 
       {/* Mid glow */}
       <motion.div
         className="absolute rounded-full pointer-events-none"
         style={{ width: 180, height: 180, background: "rgba(255,80,80,0.25)", filter: "blur(50px)" }}
-        animate={
-          idle
-            ? { scale: [1, 1.04, 1], opacity: 0.4 }
-            : { scale: orbScale, opacity: phase === "inhale" ? 0.8 : phase === "hold" ? 0.7 : 0.35 }
-        }
-        transition={idle ? idleTransition : phaseTransition}
+        animate={getAnimation(
+          1, 0.15,
+          [orbScale - 0.02, orbScale + 0.02, orbScale - 0.02], 0.6,
+          orbScale, 0.7, 0.3,
+        )}
+        transition={transition}
       />
 
       {/* Core orb */}
@@ -111,19 +135,25 @@ function BreathingOrb({
           background: "radial-gradient(circle, #E80000 0%, rgba(232,0,0,0.6) 50%, rgba(232,0,0,0.1) 100%)",
           filter: "blur(30px)",
         }}
-        animate={
-          idle
-            ? { scale: [1, 1.04, 1], opacity: 0.6 }
-            : { scale: orbScale, opacity: phase === "inhale" ? 0.9 : phase === "hold" ? 0.85 : 0.5 }
-        }
-        transition={idle ? idleTransition : phaseTransition}
+        animate={getAnimation(
+          1, 0.35,
+          [orbScale - 0.01, orbScale + 0.01, orbScale - 0.01], 0.8,
+          orbScale, 0.85, 0.45,
+        )}
+        transition={transition}
       />
 
       {/* Center countdown */}
       <motion.div
         className="relative z-10"
-        animate={idle ? { scale: [1, 1.04, 1] } : { scale: Math.max(0.7, orbScale * 0.92) }}
-        transition={idle ? idleTransition : phaseTransition}
+        animate={
+          idle
+            ? { scale: 1 }
+            : phase === "hold"
+              ? { scale: [orbScale * 0.91, orbScale * 0.93, orbScale * 0.91] }
+              : { scale: Math.max(0.7, orbScale * 0.92) }
+        }
+        transition={idle ? { duration: 0 } : phase === "hold" ? holdTransition : breathTransition}
       >
         <span className="text-[42px] font-light text-white tabular-nums select-none">{seconds}</span>
       </motion.div>
@@ -323,7 +353,7 @@ export function BreathworkScreen({ userId, initialSessionsToday }: BreathworkScr
     <div className="pb-8 space-y-4 relative">
       <XPToast toast={toast} />
 
-      {/* Header: title left + remaining time badge right */}
+      {/* Header */}
       <div className="flex items-end justify-between gap-4">
         <div>
           <h2 className="text-[26px] leading-tight font-semibold text-gray-12 mb-1">{t("breathworkTitle")}</h2>
@@ -351,7 +381,6 @@ export function BreathworkScreen({ userId, initialSessionsToday }: BreathworkScr
             </motion.p>
           </AnimatePresence>
 
-          {/* Cycle info */}
           <p className="text-[12px] text-gray-8 mt-0.5">
             {t("breathworkCycle")} {cycleNumber}/{config.cycles}
             {!isFinished ? ` · ${t("breathworkNextPhase")} ${nextPhaseLabel}` : ""}
@@ -388,7 +417,7 @@ export function BreathworkScreen({ userId, initialSessionsToday }: BreathworkScr
           })}
         </div>
 
-        {/* Controls: single Start when idle, 3-button layout otherwise */}
+        {/* Controls */}
         {!hasStarted ? (
           <div className="flex justify-center">
             <button
@@ -430,7 +459,7 @@ export function BreathworkScreen({ userId, initialSessionsToday }: BreathworkScr
         )}
       </section>
 
-      {/* Preset pills — inline rounded-full buttons, no card wrapper */}
+      {/* Preset pills */}
       <div className="flex flex-wrap gap-2">
         {PRESETS.map((preset) => {
           const presetSeconds = (preset.inhale + preset.hold + preset.exhale) * preset.cycles;
@@ -452,7 +481,6 @@ export function BreathworkScreen({ userId, initialSessionsToday }: BreathworkScr
         })}
       </div>
 
-      {/* Sessions counter — single muted line */}
       <p className="text-[11px] text-gray-8 text-center">
         {t("breathworkSessionsToday")}: {sessionsToday}
       </p>

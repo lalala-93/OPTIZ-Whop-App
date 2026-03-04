@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, Footprints, Target } from "lucide-react";
+import { Footprints, Target, Zap } from "lucide-react";
 import { XPToast, type XPToastData } from "./XPToast";
 import { useI18n } from "./i18n";
 import { upsertDailySteps } from "@/lib/actions";
@@ -34,7 +34,7 @@ function getTodayISO() {
   return new Date().toISOString().split("T")[0];
 }
 
-/* ── StepProgressRing — SVG circle with gradient stroke ── */
+/* ── StepProgressRing ── */
 function StepProgressRing({
   progress,
   done,
@@ -61,18 +61,7 @@ function StepProgressRing({
             <stop offset="100%" stopColor="#FF2D2D" />
           </linearGradient>
         </defs>
-
-        {/* Track */}
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke="rgba(255,255,255,0.06)"
-          strokeWidth={strokeWidth}
-        />
-
-        {/* Progress arc */}
+        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={strokeWidth} />
         <motion.circle
           cx={size / 2}
           cy={size / 2}
@@ -86,16 +75,50 @@ function StepProgressRing({
           transition={{ type: "spring", stiffness: 60, damping: 15 }}
         />
       </svg>
-
-      {/* Center content */}
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <Footprints size={20} className="text-gray-8 mb-1" />
-        <p className="text-[36px] font-bold text-gray-12 tabular-nums leading-none">
-          {done.toLocaleString()}
-        </p>
-        <p className="text-[13px] text-gray-8 mt-1">
-          / {goal.toLocaleString()} {stepsUnit}
-        </p>
+        <p className="text-[36px] font-bold text-gray-12 tabular-nums leading-none">{done.toLocaleString()}</p>
+        <p className="text-[13px] text-gray-8 mt-1">/ {goal.toLocaleString()} {stepsUnit}</p>
+      </div>
+    </div>
+  );
+}
+
+/* ── Stepper Row ── */
+function StepperRow({
+  label,
+  value,
+  step,
+  min,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  step: number;
+  min: number;
+  onChange: (next: number) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-[13px] text-gray-10">{label}</span>
+      <div className="flex items-center gap-1.5">
+        <button
+          type="button"
+          onClick={() => onChange(Math.max(min, value - step))}
+          className="w-9 h-8 rounded-lg border border-gray-5/35 bg-gray-3/30 text-[12px] font-semibold text-gray-11 inline-flex items-center justify-center"
+        >
+          -{step >= 1000 ? `${step / 1000}k` : step}
+        </button>
+        <span className="text-[15px] font-bold text-gray-12 tabular-nums w-[60px] text-center">
+          {value.toLocaleString()}
+        </span>
+        <button
+          type="button"
+          onClick={() => onChange(value + step)}
+          className="w-9 h-8 rounded-lg border border-gray-5/35 bg-gray-3/30 text-[12px] font-semibold text-gray-11 inline-flex items-center justify-center"
+        >
+          +{step >= 1000 ? `${step / 1000}k` : step}
+        </button>
       </div>
     </div>
   );
@@ -114,9 +137,7 @@ export function StepsScreen({ userId, onAwardXpEvent, initialData }: StepsScreen
   const [deltaBubble, setDeltaBubble] = useState(0);
   const [milestonesAwarded, setMilestonesAwarded] = useState<number[]>(initialData?.milestonesAwarded ?? []);
   const [goalHit, setGoalHit] = useState(initialData?.goalHit ?? false);
-  const [goalExpanded, setGoalExpanded] = useState(false);
 
-  // Debounced server persist
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const persistToServer = (next: StepsState, milestones: number[], goal: boolean) => {
@@ -148,7 +169,6 @@ export function StepsScreen({ userId, onAwardXpEvent, initialData }: StepsScreen
     });
   };
 
-  // Check milestones and goal on progress change
   useEffect(() => {
     const today = getTodayISO();
     const thresholds = [
@@ -223,7 +243,6 @@ export function StepsScreen({ userId, onAwardXpEvent, initialData }: StepsScreen
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        {/* Ring with floating delta bubble */}
         <div className="relative">
           <AnimatePresence>
             {deltaBubble !== 0 && (
@@ -261,28 +280,25 @@ export function StepsScreen({ userId, onAwardXpEvent, initialData }: StepsScreen
 
       {/* Step Adjustment Card */}
       <section className="rounded-3xl border border-gray-5/35 bg-gray-2/82 p-4">
-        {/* Primary row: +100, +500, +1000 */}
         <div className="grid grid-cols-3 gap-2 mb-2">
           {[100, 500, 1000].map((delta) => (
             <button
               key={delta}
               type="button"
               onClick={() => shiftDone(delta)}
-              className="h-12 rounded-xl border border-[#E80000]/35 bg-[#E80000]/10 text-[15px] font-semibold text-[#FF6D6D]"
+              className="h-12 rounded-xl border border-[#E80000]/35 bg-[#E80000]/10 text-[15px] font-semibold text-[#FF6D6D] active:scale-95 transition-transform"
             >
               +{delta}
             </button>
           ))}
         </div>
-
-        {/* Secondary row: -100, -10, +10, +50 */}
         <div className="grid grid-cols-4 gap-2">
           {[-100, -10, 10, 50].map((delta) => (
             <button
               key={delta}
               type="button"
               onClick={() => shiftDone(delta)}
-              className="h-9 rounded-xl border border-gray-5/35 bg-gray-3/30 text-[13px] font-medium text-gray-11"
+              className="h-9 rounded-xl border border-gray-5/35 bg-gray-3/30 text-[13px] font-medium text-gray-11 active:scale-95 transition-transform"
             >
               {delta > 0 ? `+${delta}` : String(delta)}
             </button>
@@ -290,95 +306,40 @@ export function StepsScreen({ userId, onAwardXpEvent, initialData }: StepsScreen
         </div>
       </section>
 
-      {/* Goal Settings — collapsible */}
-      <section className="rounded-3xl border border-gray-5/35 bg-gray-2/82 overflow-hidden">
-        <button
-          type="button"
-          onClick={() => setGoalExpanded(!goalExpanded)}
-          className="w-full flex items-center justify-between px-4 py-3"
-        >
-          <span className="text-[14px] font-semibold text-gray-12 inline-flex items-center gap-1.5">
-            <Target size={15} /> {t("stepsDailyGoal")}
-          </span>
-          <motion.div
-            animate={{ rotate: goalExpanded ? 180 : 0 }}
-            transition={{ duration: 0.2 }}
-          >
-            <ChevronDown size={16} className="text-gray-8" />
-          </motion.div>
-        </button>
+      {/* Goal Settings — always visible, compact steppers */}
+      <section className="rounded-3xl border border-gray-5/35 bg-gray-2/82 p-4 space-y-3">
+        <h3 className="text-[14px] font-semibold text-gray-12 inline-flex items-center gap-1.5">
+          <Target size={15} /> {t("stepsDailyGoal")}
+        </h3>
 
-        <AnimatePresence>
-          {goalExpanded && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.25 }}
-              className="overflow-hidden"
-            >
-              <div className="px-4 pb-4 space-y-1">
-                {/* Base row */}
-                <div className="flex items-center justify-between py-2.5 border-b border-gray-5/20">
-                  <span className="text-[13px] text-gray-10">{t("stepsBase")}</span>
-                  <input
-                    type="number"
-                    value={state.baseline}
-                    min={0}
-                    onChange={(event) => {
-                      const next = clampInt(Number(event.target.value || "0"));
-                      updateState({ ...state, baseline: next, goal: Math.max(state.goal, next + 500) });
-                    }}
-                    className="w-24 text-right text-[14px] font-semibold text-gray-12 bg-transparent outline-none tabular-nums"
-                  />
-                </div>
+        <StepperRow
+          label={t("stepsGoal")}
+          value={state.goal}
+          step={500}
+          min={500}
+          onChange={(next) => updateState({ ...state, goal: Math.max(next, state.baseline + 500) })}
+        />
 
-                {/* Goal row */}
-                <div className="flex items-center justify-between py-2.5 border-b border-gray-5/20">
-                  <span className="text-[13px] text-gray-10">{t("stepsGoal")}</span>
-                  <input
-                    type="number"
-                    value={state.goal}
-                    min={0}
-                    onChange={(event) => {
-                      const next = clampInt(Number(event.target.value || "0"));
-                      updateState({ ...state, goal: Math.max(next, state.baseline + 500) });
-                    }}
-                    className="w-24 text-right text-[14px] font-semibold text-gray-12 bg-transparent outline-none tabular-nums"
-                  />
-                </div>
-
-                {/* Quick adjust buttons */}
-                <div className="flex gap-2 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => updateState({ ...state, goal: state.goal + 500 })}
-                    className="h-8 px-3 rounded-lg border border-gray-5/35 bg-gray-3/30 text-[12px] text-gray-11 font-semibold"
-                  >
-                    +500 {t("stepsGoal").toLowerCase()}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => updateState({ ...state, goal: state.goal + 1000 })}
-                    className="h-8 px-3 rounded-lg border border-gray-5/35 bg-gray-3/30 text-[12px] text-gray-11 font-semibold"
-                  >
-                    +1000 {t("stepsGoal").toLowerCase()}
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <StepperRow
+          label={t("stepsBase")}
+          value={state.baseline}
+          step={500}
+          min={0}
+          onChange={(next) => updateState({ ...state, baseline: next, goal: Math.max(state.goal, next + 500) })}
+        />
       </section>
 
       {/* Coach tip */}
-      <section className="rounded-3xl border border-gray-5/30 bg-gray-3/18 p-4">
-        <p className="text-[12px] text-gray-9 leading-relaxed inline-flex items-start gap-2.5">
-          <span className="w-7 h-7 rounded-full bg-[#E80000]/10 border border-[#E80000]/20 inline-flex items-center justify-center shrink-0">
-            <Target size={13} className="text-[#FF6666]" />
-          </span>
-          {t("stepsCoachTip")}
-        </p>
+      <section className="rounded-3xl border border-[#E80000]/15 bg-gradient-to-r from-[#E80000]/5 via-transparent to-transparent p-4">
+        <div className="flex items-start gap-3">
+          <div className="w-8 h-8 rounded-full bg-[#E80000]/12 border border-[#E80000]/20 flex items-center justify-center shrink-0">
+            <Zap size={14} className="text-[#FF6666]" />
+          </div>
+          <div>
+            <p className="text-[12px] font-semibold text-gray-11 mb-0.5">Coach</p>
+            <p className="text-[12px] text-gray-9 leading-relaxed">{t("stepsCoachTip")}</p>
+          </div>
+        </div>
       </section>
     </div>
   );
