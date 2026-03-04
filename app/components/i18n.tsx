@@ -654,7 +654,7 @@ interface I18nContextType {
 }
 
 const I18nContext = createContext<I18nContextType>({
-  locale: "en",
+  locale: "fr",
   setLocale: () => {},
   t: (key) => key,
 });
@@ -662,9 +662,9 @@ const I18nContext = createContext<I18nContextType>({
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(() => {
     if (typeof window !== "undefined") {
-      return (localStorage.getItem("optiz-locale") as Locale) || "en";
+      return (localStorage.getItem("optiz-locale") as Locale) || "fr";
     }
-    return "en";
+    return "fr";
   });
 
   const setLocale = useCallback((nextLocale: Locale) => {
