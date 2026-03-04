@@ -310,6 +310,26 @@ export function DietScreen({ userId, onAwardXpEvent, initialData }: DietScreenPr
   const [settingsExpanded, setSettingsExpanded] = useState(false);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingRef = useRef<{ goals: GoalsState; rewards: RewardsState } | null>(null);
+
+  const flushNow = useCallback(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = null;
+    const p = pendingRef.current;
+    if (!p) return;
+    pendingRef.current = null;
+    upsertDailyNutrition(userId, getTodayISO(), {
+      calorieGoal: p.goals.calorieGoal, proteinGoal: p.goals.proteinGoal, carbsGoal: p.goals.carbsGoal, fatsGoal: p.goals.fatsGoal,
+      waterGoalL: p.goals.waterGoalL, waterInL: p.goals.waterInL,
+      proteinGoalHit: p.rewards.proteinGoalHit, caloriesOnTarget: p.rewards.caloriesOnTarget,
+      hydrationGoalHit: p.rewards.hydrationGoalHit, mealRewardsCount: p.rewards.mealRewards,
+    }).catch((e) => console.error("[OPTIZ] Nutrition persist error:", e));
+  }, [userId]);
+
+  // Flush pending data on unmount (navigation / app close)
+  useEffect(() => {
+    return () => { flushNow(); };
+  }, [flushNow]);
 
   /* ── Data loading ── */
   useEffect(() => {
@@ -335,16 +355,10 @@ export function DietScreen({ userId, onAwardXpEvent, initialData }: DietScreenPr
 
   /* ── Persist goals ── */
   const persistGoals = useCallback((g: GoalsState, r: RewardsState) => {
+    pendingRef.current = { goals: g, rewards: r };
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      upsertDailyNutrition(userId, getTodayISO(), {
-        calorieGoal: g.calorieGoal, proteinGoal: g.proteinGoal, carbsGoal: g.carbsGoal, fatsGoal: g.fatsGoal,
-        waterGoalL: g.waterGoalL, waterInL: g.waterInL,
-        proteinGoalHit: r.proteinGoalHit, caloriesOnTarget: r.caloriesOnTarget,
-        hydrationGoalHit: r.hydrationGoalHit, mealRewardsCount: r.mealRewards,
-      }).catch((e) => console.error("[OPTIZ] Nutrition persist error:", e));
-    }, 800);
-  }, [userId]);
+    debounceRef.current = setTimeout(flushNow, 800);
+  }, [flushNow]);
 
   /* ── Computed ── */
   const checkedTotals = useMemo(() => {

@@ -386,34 +386,27 @@ export async function awardXpEvent(
         };
     }
 
-    // Insert succeeded — increment XP and handle streak
+    // Insert succeeded — handle streak then atomic XP increment
     const { data: profile } = await db
         .from("user_profiles")
-        .select("total_xp, streak_days")
+        .select("streak_days")
         .eq("whop_user_id", userId)
         .single();
 
-    if (!profile) {
-        return { awarded: true, totalXp: xpAmount, streakDays: 0, streakBonusXp: 0, streakEarned: false };
-    }
+    const streak = await handleStreakLogic(db, userId, profile?.streak_days ?? 0);
+    const totalDelta = xpAmount + streak.streakBonusXp;
 
-    const streak = await handleStreakLogic(db, userId, profile.streak_days ?? 0);
-    const newTotalXp = (profile.total_xp ?? 0) + xpAmount + streak.streakBonusXp;
-
-    await db
-        .from("user_profiles")
-        .update({
-            total_xp: newTotalXp,
-            streak_days: streak.streakDays,
-            last_task_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-        })
-        .eq("whop_user_id", userId);
+    // Atomic increment — no read-then-write race condition
+    const { data: updated } = await db.rpc("increment_user_xp", {
+        p_user_id: userId,
+        p_xp_delta: totalDelta,
+        p_streak_days: streak.streakDays,
+    }).single();
 
     return {
         awarded: true,
-        totalXp: newTotalXp,
-        streakDays: streak.streakDays,
+        totalXp: updated?.total_xp ?? totalDelta,
+        streakDays: updated?.streak_days ?? streak.streakDays,
         streakBonusXp: streak.streakBonusXp,
         streakEarned: streak.streakEarned,
     };
@@ -585,7 +578,7 @@ export async function deleteFreestyleTemplateAction(userId: string, templateId: 
 // V2: Steps Actions
 // ══════════════════════════════════════
 
-/** Upsert daily steps data */
+/** Upsert daily steps data — returns { ok } or throws */
 export async function upsertDailySteps(
     userId: string,
     date: string,
@@ -608,7 +601,11 @@ export async function upsertDailySteps(
             { onConflict: "user_id,log_date" },
         );
 
-    if (error) console.error("[OPTIZ] upsertDailySteps error:", error);
+    if (error) {
+        console.error("[OPTIZ] upsertDailySteps error:", error);
+        throw new Error(error.message);
+    }
+    return { ok: true };
 }
 
 /** Get daily steps */
@@ -669,7 +666,10 @@ export async function upsertDailyNutrition(
         .select("id")
         .single();
 
-    if (error) console.error("[OPTIZ] upsertDailyNutrition error:", error);
+    if (error) {
+        console.error("[OPTIZ] upsertDailyNutrition error:", error);
+        throw new Error(error.message);
+    }
     return data?.id ?? null;
 }
 
@@ -965,7 +965,7 @@ export async function awardXp(userId: string, xp: number, source: "todo" | "chal
 
     const { data: profile } = await db
         .from("user_profiles")
-        .select("total_xp, streak_days, last_task_at")
+        .select("streak_days")
         .eq("whop_user_id", userId)
         .single();
 
@@ -974,18 +974,15 @@ export async function awardXp(userId: string, xp: number, source: "todo" | "chal
         return { totalXp: xp, streakDays: 0, streakBonusXp: 0, streakEarned: false };
     }
 
-    const newTotalXp = (profile.total_xp ?? 0) + xp;
     const streak = await handleStreakLogic(db, userId, profile.streak_days ?? 0);
+    const totalDelta = xp + streak.streakBonusXp;
 
-    await db
-        .from("user_profiles")
-        .update({
-            total_xp: newTotalXp + streak.streakBonusXp,
-            streak_days: streak.streakDays,
-            last_task_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-        })
-        .eq("whop_user_id", userId);
+    // Atomic increment — no race condition
+    const { data: updated } = await db.rpc("increment_user_xp", {
+        p_user_id: userId,
+        p_xp_delta: totalDelta,
+        p_streak_days: streak.streakDays,
+    }).single();
 
     if (source === "challenge" && taskId) {
         const today = getTodayISO();
@@ -998,8 +995,8 @@ export async function awardXp(userId: string, xp: number, source: "todo" | "chal
     }
 
     return {
-        totalXp: newTotalXp + streak.streakBonusXp,
-        streakDays: streak.streakDays,
+        totalXp: updated?.total_xp ?? totalDelta,
+        streakDays: updated?.streak_days ?? streak.streakDays,
         streakBonusXp: streak.streakBonusXp,
         streakEarned: streak.streakEarned,
     };

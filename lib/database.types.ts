@@ -786,6 +786,10 @@ export type Database = {
     }
     Functions: {
       refresh_leaderboard: { Args: never; Returns: undefined }
+      increment_user_xp: {
+        Args: { p_user_id: string; p_xp_delta: number; p_streak_days?: number; p_last_task_at?: string }
+        Returns: { total_xp: number; streak_days: number }[]
+      }
     }
     Enums: {
       [_ in never]: never

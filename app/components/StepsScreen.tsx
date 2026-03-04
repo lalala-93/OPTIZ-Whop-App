@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Footprints, Target, Zap } from "lucide-react";
 import { XPToast, type XPToastData } from "./XPToast";
@@ -139,19 +139,33 @@ export function StepsScreen({ userId, onAwardXpEvent, initialData }: StepsScreen
   const [goalHit, setGoalHit] = useState(initialData?.goalHit ?? false);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingRef = useRef<{ state: StepsState; milestones: number[]; goalHit: boolean } | null>(null);
+
+  const flushNow = useCallback(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = null;
+    const p = pendingRef.current;
+    if (!p) return;
+    pendingRef.current = null;
+    upsertDailySteps(userId, getTodayISO(), {
+      baseline: p.state.baseline,
+      goal: p.state.goal,
+      done: p.state.done,
+      milestonesAwarded: p.milestones,
+      goalHit: p.goalHit,
+    }).catch((err) => console.error("[OPTIZ] Steps persist error:", err));
+  }, [userId]);
 
   const persistToServer = (next: StepsState, milestones: number[], goal: boolean) => {
+    pendingRef.current = { state: next, milestones, goalHit: goal };
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      upsertDailySteps(userId, getTodayISO(), {
-        baseline: next.baseline,
-        goal: next.goal,
-        done: next.done,
-        milestonesAwarded: milestones,
-        goalHit: goal,
-      }).catch((err) => console.error("[OPTIZ] Steps persist error:", err));
-    }, 800);
+    debounceRef.current = setTimeout(flushNow, 800);
   };
+
+  // Flush pending data on unmount (navigation / app close)
+  useEffect(() => {
+    return () => { flushNow(); };
+  }, [flushNow]);
 
   const progress = useMemo(() => {
     if (state.goal <= 0) return 0;
