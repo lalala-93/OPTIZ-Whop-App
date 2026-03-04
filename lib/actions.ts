@@ -129,8 +129,8 @@ export async function loadUserData(userId: string) {
         db.from("streak_log").select("streak_date").eq("user_id", userId).order("streak_date", { ascending: false }).limit(30),
         db.from("task_completions").select("task_id").eq("user_id", userId).eq("completed_date", today),
         db.from("user_challenges").select("challenge_id"),
-        // V2: steps today
-        db.from("steps_daily_logs").select("baseline, goal, done, milestones_awarded, goal_hit").eq("user_id", userId).eq("log_date", today).maybeSingle(),
+        // V2: steps today (+ latest row for carry-over if none today)
+        db.from("steps_daily_logs").select("baseline, goal, done, milestones_awarded, goal_hit, log_date").eq("user_id", userId).order("log_date", { ascending: false }).limit(2),
         // V2: nutrition today + meals
         db.from("nutrition_daily_logs").select("*, nutrition_meals(*)").eq("user_id", userId).eq("log_date", today).maybeSingle(),
         // V2: breathwork sessions count today
@@ -245,17 +245,28 @@ export async function loadUserData(userId: string) {
 
     const completedTodos = (todosRes.data || []).filter((t: { completed: boolean | null }) => t.completed).length;
 
-    // V2: assemble steps today
-    const stepsRow = stepsTodayRes.data;
-    const stepsToday = stepsRow
+    // V2: assemble steps today (carry over baseline/goal from last entry if no row for today)
+    const stepsRows = (stepsTodayRes.data ?? []) as { baseline: number | null; goal: number | null; done: number | null; milestones_awarded: unknown; goal_hit: boolean | null; log_date: string }[];
+    const todayStepsRow = stepsRows.find((r) => r.log_date === today);
+    const latestStepsRow = stepsRows[0]; // most recent row (could be yesterday)
+    const stepsToday = todayStepsRow
         ? {
-            baseline: stepsRow.baseline ?? 6000,
-            goal: stepsRow.goal ?? 8000,
-            done: stepsRow.done ?? 0,
-            milestonesAwarded: (stepsRow.milestones_awarded as number[]) ?? [],
-            goalHit: stepsRow.goal_hit ?? false,
+            baseline: todayStepsRow.baseline ?? 6000,
+            goal: todayStepsRow.goal ?? 8000,
+            done: todayStepsRow.done ?? 0,
+            milestonesAwarded: (todayStepsRow.milestones_awarded as number[]) ?? [],
+            goalHit: todayStepsRow.goal_hit ?? false,
         }
-        : null;
+        : latestStepsRow
+            ? {
+                // Carry over baseline & goal from previous day, reset done/milestones/goalHit
+                baseline: latestStepsRow.baseline ?? 6000,
+                goal: latestStepsRow.goal ?? 8000,
+                done: 0,
+                milestonesAwarded: [] as number[],
+                goalHit: false,
+            }
+            : null;
 
     // V2: assemble nutrition today
     const nutritionRow = nutritionTodayRes.data as Record<string, unknown> | null;

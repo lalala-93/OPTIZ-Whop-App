@@ -48,12 +48,26 @@ export function SettingsSheet({
     const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
-        const reader = new FileReader();
-        reader.onload = () => {
-            const dataUrl = reader.result as string;
-            onUpdatePhoto(dataUrl);
+        // Compress image to max 256px and JPEG quality 0.7 to keep data URL small
+        const img = document.createElement("img");
+        img.onload = () => {
+            const max = 256;
+            let w = img.width, h = img.height;
+            if (w > max || h > max) {
+                const ratio = Math.min(max / w, max / h);
+                w = Math.round(w * ratio);
+                h = Math.round(h * ratio);
+            }
+            const canvas = document.createElement("canvas");
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext("2d");
+            ctx?.drawImage(img, 0, 0, w, h);
+            const compressed = canvas.toDataURL("image/jpeg", 0.7);
+            onUpdatePhoto(compressed);
+            URL.revokeObjectURL(img.src);
         };
-        reader.readAsDataURL(file);
+        img.src = URL.createObjectURL(file);
     };
 
     const currentLang = LANGUAGE_OPTIONS.find(l => l.code === locale) || LANGUAGE_OPTIONS[0];
@@ -101,8 +115,9 @@ export function SettingsSheet({
                                             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
                                         </svg>
                                     )}
-                                    <div className="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    {/* Camera badge — always visible */}
+                                    <div className="absolute bottom-0 right-0 w-5 h-5 rounded-full bg-[#E80000] border-2 border-gray-2 flex items-center justify-center">
+                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                             <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" />
                                         </svg>
                                     </div>

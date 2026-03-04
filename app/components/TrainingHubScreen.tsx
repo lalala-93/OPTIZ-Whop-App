@@ -984,56 +984,66 @@ export function TrainingHubScreen({ userId, onAwardXpEvent, initialCompletionsTo
           const setsCount = session.exercises.reduce((sum, ex) => sum + ex.sets, 0);
 
           return (
-            <motion.button
+            <motion.div
               key={program.id}
-              type="button"
-              disabled={completed}
-              onClick={() => launchProgram(program.id)}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.04 }}
-              className={`w-full text-left rounded-3xl border p-4 transition-all ${
+              className={`w-full text-left rounded-3xl border transition-all ${
                 completed
-                  ? "bg-gray-4/18 border-gray-5/20 cursor-not-allowed"
-                  : "bg-gray-2/82 border-gray-5/35 hover:border-[#E80000]/35"
+                  ? "bg-gray-4/10 border-green-500/20 p-3 opacity-60"
+                  : "bg-gray-2/82 border-gray-5/35 hover:border-[#E80000]/35 p-4"
               }`}
             >
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <p className="text-[20px] font-semibold text-gray-12 leading-tight">{program.title}</p>
-                  <p className="text-[12px] text-gray-8 mt-1">{program.subtitle}</p>
+              {completed ? (
+                /* Collapsed completed state — locked out */
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-full bg-green-500/15 border border-green-500/25 flex items-center justify-center shrink-0">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                    </div>
+                    <div>
+                      <p className="text-[15px] font-semibold text-gray-10 leading-tight">{program.title}</p>
+                      <p className="text-[11px] text-gray-7">{t("trainingDoneReopens")}</p>
+                    </div>
+                  </div>
+                  <span className="text-[13px] font-semibold text-green-500/70">+100 XP</span>
                 </div>
-                <span className={`text-[18px] font-semibold ${completed ? "text-gray-8" : "text-[#FF5C5C]"}`}>
-                  +100 XP
-                </span>
-              </div>
+              ) : (
+                /* Active state — launchable */
+                <button type="button" onClick={() => launchProgram(program.id)} className="w-full text-left">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-[20px] font-semibold text-gray-12 leading-tight">{program.title}</p>
+                      <p className="text-[12px] text-gray-8 mt-1">{program.subtitle}</p>
+                    </div>
+                    <span className="text-[18px] font-semibold text-[#FF5C5C]">+100 XP</span>
+                  </div>
 
-              <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
-                <span className="rounded-full px-2.5 py-1 bg-gray-4/40 border border-gray-5/30 text-gray-9">
-                  {session.exercises.length} {t("exercises")}
-                </span>
-                <span className="rounded-full px-2.5 py-1 bg-gray-4/40 border border-gray-5/30 text-gray-9">
-                  {setsCount} {t("sets")}
-                </span>
-                <span className="rounded-full px-2.5 py-1 bg-gray-4/40 border border-gray-5/30 text-gray-9">
-                  {session.durationMin} {t("minutesShort")}
-                </span>
-              </div>
+                  <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
+                    <span className="rounded-full px-2.5 py-1 bg-gray-4/40 border border-gray-5/30 text-gray-9">
+                      {session.exercises.length} {t("exercises")}
+                    </span>
+                    <span className="rounded-full px-2.5 py-1 bg-gray-4/40 border border-gray-5/30 text-gray-9">
+                      {setsCount} {t("sets")}
+                    </span>
+                    <span className="rounded-full px-2.5 py-1 bg-gray-4/40 border border-gray-5/30 text-gray-9">
+                      {session.durationMin} {t("minutesShort")}
+                    </span>
+                  </div>
 
-              <p className="mt-3 text-[11px] text-gray-7">
-                {completed
-                  ? t("trainingDoneReopens")
-                  : previous
-                    ? `${t("trainingLastPerf")} ${formatDate(previous.completedAt, locale)} · ${t("trainingVolumeLabel")} ${previous.totalVolume.toFixed(0)}`
-                    : t("trainingNoArchive")}
-              </p>
+                  <p className="mt-3 text-[11px] text-gray-7">
+                    {previous
+                      ? `${t("trainingLastPerf")} ${formatDate(previous.completedAt, locale)} · ${t("trainingVolumeLabel")} ${previous.totalVolume.toFixed(0)}`
+                      : t("trainingNoArchive")}
+                  </p>
 
-              {!completed ? (
-                <p className="mt-2 text-[13px] font-semibold text-gray-11 inline-flex items-center gap-1">
-                  {t("trainingLaunch")} <Play size={13} />
-                </p>
-              ) : null}
-            </motion.button>
+                  <p className="mt-2 text-[13px] font-semibold text-gray-11 inline-flex items-center gap-1">
+                    {t("trainingLaunch")} <Play size={13} />
+                  </p>
+                </button>
+              )}
+            </motion.div>
           );
         })}
       </div>
