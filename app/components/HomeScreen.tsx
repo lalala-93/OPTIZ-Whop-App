@@ -529,7 +529,7 @@ export function HomeScreen({
           isMe: item.whop_user_id === userId,
         }));
 
-        if (!rows.some((row) => row.whop_user_id === userId) && totalXp > 0) {
+        if (!rows.some((row) => row.whop_user_id === userId)) {
           rows.push({
             whop_user_id: userId,
             display_name: userName,
@@ -545,7 +545,7 @@ export function HomeScreen({
           row.position = idx + 1;
         });
 
-        setEntries(rows.slice(0, 10));
+        setEntries(rows);
       } catch (error) {
         console.error("Failed to load leaderboard preview", error);
       } finally {
@@ -598,6 +598,29 @@ export function HomeScreen({
       {/* ── Section 2: Streak Calendar ── */}
       <StreakCalendar streakDays={streakDays} />
 
+      {/* ── Section 4: Quote ── */}
+      <motion.section
+        className="rounded-2xl border border-gray-5/35 bg-gray-3/20 p-4"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.12 }}
+      >
+        <div className="flex items-center justify-between mb-2.5">
+          <p className="text-[15px] text-gray-12 font-semibold inline-flex items-center gap-1.5">
+            <Quote size={14} className="text-gray-8" /> {t("homeQuote")}
+          </p>
+          <motion.button
+            onClick={() => setQuoteIndex((prev) => (prev + 1) % MOTIVATIONAL_QUOTES.length)}
+            className="w-8 h-8 rounded-full bg-gray-4/40 flex items-center justify-center text-gray-7 hover:text-gray-12 active:scale-90 transition-all"
+            whileTap={{ scale: 0.85, rotate: 180 }}
+          >
+            <RefreshCw size={13} />
+          </motion.button>
+        </div>
+        <p className="text-[13px] text-gray-11 italic leading-relaxed">&ldquo;{quote.text}&rdquo;</p>
+        <p className="text-[10px] text-gray-7 mt-1.5">{quote.author}</p>
+      </motion.section>
+
       {/* ── Section 3: Leaderboard ── */}
       <motion.section
         className="rounded-2xl border border-gray-5/35 bg-gray-3/20 p-4"
@@ -641,7 +664,7 @@ export function HomeScreen({
                     {entry.avatar_url ? (
                       <img src={entry.avatar_url} alt="" className="w-full h-full object-cover" />
                     ) : (
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-gray-7"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" className="text-gray-7"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
                     )}
                   </div>
 
@@ -680,28 +703,6 @@ export function HomeScreen({
         )}
       </motion.section>
 
-      {/* ── Section 4: Quote ── */}
-      <motion.section
-        className="rounded-2xl border border-gray-5/35 bg-gray-3/20 p-4"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.12 }}
-      >
-        <div className="flex items-center justify-between mb-2.5">
-          <p className="text-[15px] text-gray-12 font-semibold inline-flex items-center gap-1.5">
-            <Quote size={14} className="text-gray-8" /> {t("homeQuote")}
-          </p>
-          <motion.button
-            onClick={() => setQuoteIndex((prev) => (prev + 1) % MOTIVATIONAL_QUOTES.length)}
-            className="w-8 h-8 rounded-full bg-gray-4/40 flex items-center justify-center text-gray-7 hover:text-gray-12 active:scale-90 transition-all"
-            whileTap={{ scale: 0.85, rotate: 180 }}
-          >
-            <RefreshCw size={13} />
-          </motion.button>
-        </div>
-        <p className="text-[13px] text-gray-11 italic leading-relaxed">&ldquo;{quote.text}&rdquo;</p>
-        <p className="text-[10px] text-gray-7 mt-1.5">{quote.author}</p>
-      </motion.section>
     </div>
   );
 }

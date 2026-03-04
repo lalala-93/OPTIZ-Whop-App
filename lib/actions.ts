@@ -1029,9 +1029,7 @@ export async function getLeaderboard(userId: string) {
         const { data: users } = await db
             .from("user_profiles")
             .select("whop_user_id, display_name, avatar_url, total_xp, streak_days")
-            .gt("total_xp", 0)
-            .order("total_xp", { ascending: false })
-            .limit(100);
+            .order("total_xp", { ascending: false });
 
         const leaderboard = (users || []).map((u, i) => ({
             whop_user_id: u.whop_user_id,
