@@ -17,7 +17,7 @@ export default async function DashboardPage({
         <div className="text-center space-y-4">
           <h1 className="text-2xl font-bold">Admin Access Required</h1>
           <p className="text-gray-500">
-            Only company admins can access this dashboard.
+            This dashboard is only available to company admins.
           </p>
         </div>
       </div>
@@ -31,7 +31,7 @@ export default async function DashboardPage({
         <header className="space-y-2">
           <h1 className="text-3xl font-bold">OPTIZ Dashboard</h1>
           <p className="text-gray-500">
-            Manage your app settings and view analytics.
+            Manage your app setup and review high-level performance signals.
           </p>
         </header>
 
@@ -55,7 +55,7 @@ export default async function DashboardPage({
         <section className="rounded-xl border p-6 space-y-4">
           <h2 className="text-xl font-semibold">App Settings</h2>
           <p className="text-gray-500">
-            Configure workout plans, content, and member settings here.
+            Configure training content, member experience, and product settings from here.
           </p>
         </section>
 
@@ -68,4 +68,3 @@ export default async function DashboardPage({
     </div>
   );
 }
-

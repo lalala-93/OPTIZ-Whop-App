@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect } from "react";
+import { useI18n } from "./i18n";
 
 interface TaskCompleteAnimationProps {
     isVisible: boolean;
@@ -22,6 +23,8 @@ export function TaskCompleteAnimation({
     onComplete,
     xpEarned,
 }: TaskCompleteAnimationProps) {
+    const { t } = useI18n();
+
     useEffect(() => {
         if (isVisible) {
             const timer = setTimeout(onComplete, 2000);
@@ -125,7 +128,7 @@ export function TaskCompleteAnimation({
                             transition={{ delay: 0.35 }}
                         >
                             <h2 className="text-xl font-black text-gray-12 tracking-wide uppercase">
-                                Séance terminée !
+                                {t("sessionCompleteTitle")}
                             </h2>
                             <motion.p
                                 className="text-2xl font-black mt-1.5 tabular-nums"

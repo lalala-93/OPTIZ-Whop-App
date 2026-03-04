@@ -108,8 +108,8 @@ function parsePositiveInt(raw: string, fallback: number) {
   return Math.round(num);
 }
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("fr-FR", {
+function formatDate(iso: string, locale: "en" | "fr") {
+  return new Date(iso).toLocaleDateString(locale === "fr" ? "fr-FR" : "en-US", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -364,7 +364,7 @@ function SessionTracker({
         <button
           onClick={toggleSound}
           className="w-9 h-9 rounded-full border border-gray-5/35 bg-gray-3/35 text-gray-9 flex items-center justify-center"
-          aria-label="Sound"
+          aria-label={t("sound")}
         >
           {soundOn ? <Volume2 size={14} /> : <VolumeX size={14} />}
         </button>
@@ -381,13 +381,13 @@ function SessionTracker({
 
         <div className="mt-3 grid grid-cols-4 gap-2 text-[11px]">
           <div className="rounded-xl border border-gray-5/30 bg-gray-3/22 px-2 py-2 text-gray-9 text-center">
-            {session.exercises.length} exos
+            {session.exercises.length} {t("exercises")}
           </div>
           <div className="rounded-xl border border-gray-5/30 bg-gray-3/22 px-2 py-2 text-gray-9 text-center">
-            {totalSets} sets
+            {totalSets} {t("sets")}
           </div>
           <div className="rounded-xl border border-gray-5/30 bg-gray-3/22 px-2 py-2 text-gray-9 text-center">
-            {session.durationMin} min
+            {session.durationMin} {t("minutesShort")}
           </div>
           <div className="rounded-xl border border-gray-5/30 bg-gray-3/22 px-2 py-2 text-[#FF6666] text-center font-semibold">
             +100 XP
@@ -413,7 +413,7 @@ function SessionTracker({
               type="button"
               onClick={() => setRestLeft(null)}
               className="w-7 h-7 rounded-lg border border-[#E80000]/35 bg-[#E80000]/12 text-[#FF8080] flex items-center justify-center"
-              aria-label="Skip rest"
+              aria-label={t("trainingSkipRestAria")}
             >
               <X size={13} />
             </button>
@@ -464,7 +464,7 @@ function SessionTracker({
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-8 h-8 rounded-lg border border-gray-5/35 bg-gray-4/35 text-gray-8 flex items-center justify-center"
-                    aria-label="Video"
+                    aria-label={t("trainingVideoAria")}
                   >
                     <ExternalLink size={13} />
                   </a>
@@ -472,7 +472,7 @@ function SessionTracker({
                     type="button"
                     onClick={() => addSet(exercise)}
                     className="w-8 h-8 rounded-lg border border-gray-5/35 bg-gray-4/35 text-gray-8 flex items-center justify-center"
-                    aria-label="Add set"
+                    aria-label={t("trainingAddSetAria")}
                   >
                     <Plus size={13} />
                   </button>
@@ -492,24 +492,24 @@ function SessionTracker({
                   onClick={() => applyDeltaToExercise(exercise, "reps", 1)}
                   className="h-7 px-2.5 rounded-lg border border-gray-5/30 bg-gray-2 text-[10px] text-gray-9 font-semibold"
                 >
-                  +1 rep
+                  {t("trainingPlusOneRep")}
                 </button>
                 <button
                   type="button"
                   onClick={() => applyDeltaToExercise(exercise, "load", 2.5)}
                   className="h-7 px-2.5 rounded-lg border border-gray-5/30 bg-gray-2 text-[10px] text-gray-9 font-semibold"
                 >
-                  +2.5 kg
+                  {t("trainingPlusTwoPointFiveKg")}
                 </button>
               </div>
 
               <div className="grid grid-cols-[2rem_2rem_minmax(0,1fr)_3.8rem_3.8rem_3.8rem_2.6rem] md:grid-cols-[2.4rem_2.2rem_minmax(0,1fr)_4.6rem_4.6rem_4.6rem_2.8rem] gap-1.5 px-1 pb-1 text-[10px] uppercase tracking-[0.1em] text-gray-7">
-                    <span className="text-center">Set</span>
-                    <span className="text-center">Type</span>
-                    <span className="text-center">Prev</span>
-                    <span className="text-center">Kg</span>
-                    <span className="text-center">Reps</span>
-                    <span className="text-center">RPE</span>
+                    <span className="text-center">{t("trainingHeaderSet")}</span>
+                    <span className="text-center">{t("trainingHeaderType")}</span>
+                    <span className="text-center">{t("trainingHeaderPrev")}</span>
+                    <span className="text-center">{t("trainingHeaderKg")}</span>
+                    <span className="text-center">{t("trainingHeaderReps")}</span>
+                    <span className="text-center">{t("trainingHeaderRpe")}</span>
                     <span />
                   </div>
 
@@ -627,7 +627,7 @@ function SessionTracker({
 }
 
 export function TrainingHubScreen({ userId, onAwardXpEvent, initialCompletionsToday }: TrainingHubScreenProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [mainView, setMainView] = useState<MainView>({ mode: "library" });
   const [activeTracker, setActiveTracker] = useState<{
     programId: string;
@@ -644,7 +644,7 @@ export function TrainingHubScreen({ userId, onAwardXpEvent, initialCompletionsTo
   });
   const [flash, setFlash] = useState("");
 
-  const [builderName, setBuilderName] = useState("Freestyle");
+  const [builderName, setBuilderName] = useState(() => t("trainingFreestyleDefaultName"));
   const [builderRows, setBuilderRows] = useState<Array<{ exerciseId: string; sets: number; reps: number }>>([
     { exerciseId: EXERCISE_LIBRARY[0].id, sets: 3, reps: 10 },
   ]);
@@ -743,7 +743,7 @@ export function TrainingHubScreen({ userId, onAwardXpEvent, initialCompletionsTo
 
     setActiveTracker({
       programId: `freestyle-${template.id}`,
-      programTitle: "Freestyle",
+      programTitle: t("trainingBuilderTitle"),
       session: {
         id: `freestyle-session-${template.id}`,
         name: template.name,
@@ -766,15 +766,15 @@ export function TrainingHubScreen({ userId, onAwardXpEvent, initialCompletionsTo
     if (!rows.length) return;
 
     try {
-      const result = await serverSaveFreestyleTemplate(userId, builderName.trim() || "Freestyle", rows);
+      const result = await serverSaveFreestyleTemplate(userId, builderName.trim() || t("trainingFreestyleDefaultName"), rows);
       setFreestyleTemplates((prev) => [
-        { id: result.id, name: builderName.trim() || "Freestyle", createdAt: new Date().toISOString(), rows },
+        { id: result.id, name: builderName.trim() || t("trainingFreestyleDefaultName"), createdAt: new Date().toISOString(), rows },
         ...prev,
       ]);
       setFlash(t("trainingFreestyleSaved"));
       setTimeout(() => setFlash(""), 1800);
 
-      setBuilderName("Freestyle");
+      setBuilderName(t("trainingFreestyleDefaultName"));
       setBuilderRows([{ exerciseId: EXERCISE_LIBRARY[0].id, sets: 3, reps: 10 }]);
       setMainView({ mode: "library" });
     } catch (err) {
@@ -874,7 +874,7 @@ export function TrainingHubScreen({ userId, onAwardXpEvent, initialCompletionsTo
         </button>
 
         <div className="rounded-3xl border border-gray-5/42 bg-gray-2/82 p-4 mb-4">
-          <h3 className="text-lg font-semibold text-gray-12">Freestyle</h3>
+          <h3 className="text-lg font-semibold text-gray-12">{t("trainingBuilderTitle")}</h3>
           <p className="text-sm text-gray-8 mt-1">{t("trainingFreestyleDesc")}</p>
           <input
             value={builderName}
@@ -913,7 +913,7 @@ export function TrainingHubScreen({ userId, onAwardXpEvent, initialCompletionsTo
                     setBuilderRows((prev) => prev.map((item, idx) => (idx === index ? { ...item, sets: value } : item)));
                   }}
                   className="h-10 rounded-xl bg-gray-2 border border-gray-5/35 text-center text-sm text-gray-12"
-                  aria-label="Sets"
+                  aria-label={t("trainingAriaSets")}
                 />
 
                 <input
@@ -925,13 +925,13 @@ export function TrainingHubScreen({ userId, onAwardXpEvent, initialCompletionsTo
                     setBuilderRows((prev) => prev.map((item, idx) => (idx === index ? { ...item, reps: value } : item)));
                   }}
                   className="h-10 rounded-xl bg-gray-2 border border-gray-5/35 text-center text-sm text-gray-12"
-                  aria-label="Reps"
+                  aria-label={t("trainingAriaReps")}
                 />
 
                 <button
                   onClick={() => setBuilderRows((prev) => prev.filter((_, idx) => idx !== index))}
                   className="h-10 rounded-xl border border-gray-5/35 bg-gray-2 text-gray-8 flex items-center justify-center"
-                  aria-label="Delete"
+                  aria-label={t("trainingAriaDelete")}
                 >
                   <X size={14} />
                 </button>
@@ -1013,10 +1013,10 @@ export function TrainingHubScreen({ userId, onAwardXpEvent, initialCompletionsTo
                   {session.exercises.length} {t("exercises")}
                 </span>
                 <span className="rounded-full px-2.5 py-1 bg-gray-4/40 border border-gray-5/30 text-gray-9">
-                  {setsCount} sets
+                  {setsCount} {t("sets")}
                 </span>
                 <span className="rounded-full px-2.5 py-1 bg-gray-4/40 border border-gray-5/30 text-gray-9">
-                  {session.durationMin} min
+                  {session.durationMin} {t("minutesShort")}
                 </span>
               </div>
 
@@ -1024,7 +1024,7 @@ export function TrainingHubScreen({ userId, onAwardXpEvent, initialCompletionsTo
                 {completed
                   ? t("trainingDoneReopens")
                   : previous
-                    ? `${t("trainingLastPerf")} ${formatDate(previous.completedAt)} · volume ${previous.totalVolume.toFixed(0)}`
+                    ? `${t("trainingLastPerf")} ${formatDate(previous.completedAt, locale)} · ${t("trainingVolumeLabel")} ${previous.totalVolume.toFixed(0)}`
                     : t("trainingNoArchive")}
               </p>
 
@@ -1059,7 +1059,7 @@ export function TrainingHubScreen({ userId, onAwardXpEvent, initialCompletionsTo
                   <div>
                     <p className="text-[13px] font-semibold text-gray-12">{template.name}</p>
                     <p className="text-[11px] text-gray-8 mt-0.5">
-                      {template.rows.length} {t("exercises")} · {t("trainingCreatedOn")} {formatDate(template.createdAt)}
+                      {template.rows.length} {t("exercises")} · {t("trainingCreatedOn")} {formatDate(template.createdAt, locale)}
                     </p>
                   </div>
                   <div className="flex items-center gap-1.5">
@@ -1072,7 +1072,7 @@ export function TrainingHubScreen({ userId, onAwardXpEvent, initialCompletionsTo
                     <button
                       onClick={() => handleDeleteFreestyle(template.id)}
                       className="w-8 h-8 rounded-md border border-gray-5/35 bg-gray-2 text-gray-8 flex items-center justify-center"
-                      aria-label="Delete"
+                      aria-label={t("trainingAriaDelete")}
                     >
                       <X size={13} />
                     </button>
@@ -1097,10 +1097,10 @@ export function TrainingHubScreen({ userId, onAwardXpEvent, initialCompletionsTo
                   <span className="text-[11px] text-[#FF6666] font-semibold">+{archive.xpEarned} XP</span>
                 </div>
                 <p className="text-[11px] text-gray-8 mt-1">
-                  {formatDate(archive.completedAt)} · volume {archive.totalVolume.toFixed(0)}
+                  {formatDate(archive.completedAt, locale)} · {t("trainingVolumeLabel")} {archive.totalVolume.toFixed(0)}
                 </p>
                 <p className="text-[10px] text-gray-7 mt-1 inline-flex items-center gap-1">
-                  <Sparkles size={11} /> {archive.improvedSets} records
+                  <Sparkles size={11} /> {archive.improvedSets} {t("trainingRecordsLabel")}
                 </p>
               </div>
             ))}

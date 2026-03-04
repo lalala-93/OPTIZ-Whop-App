@@ -7,10 +7,9 @@ export default function Home() {
           1% better every day.
         </p>
         <div className="text-sm text-gray-400 space-y-1">
-          <p>This app runs inside the Whop iframe.</p>
+          <p>OPTIZ runs inside the Whop iframe.</p>
           <p>
-            Install it on your Whop to see the Experience, Dashboard, and
-            Discover views.
+            Install it in your Whop to unlock the Experience, Dashboard, and Discover views.
           </p>
         </div>
       </div>

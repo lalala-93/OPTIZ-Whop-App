@@ -11,10 +11,17 @@ interface StreakModalProps {
     weeklyProgress: boolean[];
 }
 
-const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-
 export function StreakModal({ isOpen, onClose, streakDays, weeklyProgress }: StreakModalProps) {
     const { t } = useI18n();
+    const dayLabels = [
+        t("dayShortMon"),
+        t("dayShortTue"),
+        t("dayShortWed"),
+        t("dayShortThu"),
+        t("dayShortFri"),
+        t("dayShortSat"),
+        t("dayShortSun"),
+    ];
     const day = new Date().getDay();
     const todayIndex = day === 0 ? 6 : day - 1;
 
@@ -89,7 +96,7 @@ export function StreakModal({ isOpen, onClose, streakDays, weeklyProgress }: Str
                             <div className="bg-gray-3 rounded-2xl p-4 border border-gray-5 mb-5">
                                 <p className="text-xs font-bold text-gray-10 uppercase tracking-wider mb-3">{t("thisWeek")}</p>
                                 <div className="flex items-center justify-between gap-1">
-                                    {DAY_LABELS.map((day, i) => {
+                                    {dayLabels.map((day, i) => {
                                         const isDone = weeklyProgress[i];
                                         const isToday = i === todayIndex;
                                         return (

@@ -95,7 +95,7 @@ export function SettingsSheet({
                                     className="relative w-16 h-16 rounded-full bg-gray-3 border border-gray-5 flex items-center justify-center overflow-hidden mb-3 group"
                                 >
                                     {userPhoto ? (
-                                        <img src={userPhoto} alt="Profile" className="w-full h-full object-cover rounded-full block" />
+                                        <img src={userPhoto} alt={t("profileAlt")} className="w-full h-full object-cover rounded-full block" />
                                     ) : (
                                         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-8">
                                             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
@@ -116,7 +116,7 @@ export function SettingsSheet({
                                             onKeyDown={(e) => e.key === "Enter" && handleSaveName()} autoFocus
                                             className="bg-gray-3 border border-gray-5 rounded-lg px-3 py-1.5 text-sm text-gray-12 text-center focus:outline-none focus:border-gray-6 w-32"
                                         />
-                                        <button onClick={handleSaveName} className="text-xs font-semibold text-[#E80000]">Save</button>
+                                        <button onClick={handleSaveName} className="text-xs font-semibold text-[#E80000]">{t("save")}</button>
                                     </div>
                                 ) : (
                                     <button

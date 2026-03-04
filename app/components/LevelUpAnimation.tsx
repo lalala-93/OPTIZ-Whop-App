@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useEffect } from "react";
 import { RankBadge } from "./RankBadge";
 import { getRankForLevel } from "./rankSystem";
+import { useI18n } from "./i18n";
 
 interface LevelUpAnimationProps {
     isVisible: boolean;
@@ -26,6 +27,7 @@ export function LevelUpAnimation({
     onComplete,
     newLevel,
 }: LevelUpAnimationProps) {
+    const { t } = useI18n();
     const rankData = getRankForLevel(newLevel);
 
     useEffect(() => {
@@ -132,7 +134,7 @@ export function LevelUpAnimation({
                                 animate={{ opacity: 1 }}
                                 transition={{ delay: 0.7 }}
                             >
-                                Level Up!
+                                {t("levelUpTitle")}
                             </motion.p>
 
                             <motion.h2

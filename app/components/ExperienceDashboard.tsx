@@ -290,7 +290,7 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
               {userPhoto ? (
                 <img
                   src={userPhoto}
-                  alt="Profile"
+                  alt={t("profileAlt")}
                   className="w-full h-full object-cover rounded-full block"
                 />
               ) : (

@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AnimatedFireIcon } from "./AnimatedIcons";
+import { useI18n } from "./i18n";
 
 interface StreakEarnedAnimationProps {
     isVisible: boolean;
@@ -10,6 +11,8 @@ interface StreakEarnedAnimationProps {
 }
 
 export function StreakEarnedAnimation({ isVisible, onComplete }: StreakEarnedAnimationProps) {
+    const { t } = useI18n();
+
     useEffect(() => {
         if (!isVisible) return;
         const timer = setTimeout(onComplete, 2000);
@@ -31,8 +34,8 @@ export function StreakEarnedAnimation({ isVisible, onComplete }: StreakEarnedAni
                             <AnimatedFireIcon size={28} />
                         </div>
                         <div>
-                            <p className="text-sm font-bold text-gray-12">Streak maintenu !</p>
-                            <p className="text-[10px] text-gray-7 font-medium">Continue comme ça</p>
+                            <p className="text-sm font-bold text-gray-12">{t("streakMaintainedTitle")}</p>
+                            <p className="text-[10px] text-gray-7 font-medium">{t("streakMaintainedSubtitle")}</p>
                         </div>
                     </div>
                 </motion.div>

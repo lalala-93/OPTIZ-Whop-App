@@ -42,15 +42,15 @@ export default async function ExperiencePage({
         <div className="mb-5 w-12 h-12 rounded-full border border-[#E80000]/40 bg-[#E80000]/12 text-[#FF5A5A] flex items-center justify-center text-2xl font-bold">
           !
         </div>
-        <h1 className="text-xl font-bold text-gray-12 mb-2">Erreur d&apos;authentification</h1>
+        <h1 className="text-xl font-bold text-gray-12 mb-2">Connexion impossible</h1>
         <p className="text-sm text-gray-9 mb-6 max-w-xs">
-          Impossible de vérifier votre identité. Cela peut arriver si la page a été ouverte en dehors de Whop.
+          Nous n&apos;avons pas pu vérifier ton identité. Cela arrive généralement si la page est ouverte hors de Whop.
         </p>
         <Link href="/" className="px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-[#E80000] hover:bg-[#CC0000] transition-colors">
           Réessayer
         </Link>
         <p className="text-[10px] text-gray-7 mt-4">
-          Si le problème persiste, fermez cet onglet et ouvrez l&apos;app depuis Whop.
+          Si le problème persiste, ferme cet onglet puis relance l&apos;app depuis Whop.
         </p>
       </div>
     );
@@ -74,8 +74,8 @@ export default async function ExperiencePage({
             <path d="M8 11V8a4 4 0 0 1 8 0v3" />
           </svg>
         </div>
-        <h1 className="text-2xl font-bold text-gray-12 mb-2">Accès Refusé</h1>
-        <p>Vous avez besoin d&apos;un accès actif pour voir ce contenu.</p>
+        <h1 className="text-2xl font-bold text-gray-12 mb-2">Accès refusé</h1>
+        <p>Un accès actif est nécessaire pour afficher ce contenu.</p>
       </div>
     );
   }
@@ -87,7 +87,7 @@ export default async function ExperiencePage({
   } catch (err) {
     console.error("[OPTIZ] SSR loadUserData failed:", err);
     initialData = {
-      profile: { totalXp: 0, streakDays: 0, displayName: "User", avatarUrl: null, locale: null },
+      profile: { totalXp: 0, streakDays: 0, displayName: "Athlete", avatarUrl: null, locale: null },
       todos: [],
       challenges: [],
       weeklyProgress: [false, false, false, false, false, false, false],

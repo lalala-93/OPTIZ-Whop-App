@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { RANK_TIERS, getXpForLevel, getRankForLevel, formatNumber } from "./rankSystem";
 import { RankBadge } from "./RankBadge";
 import { useRef, useEffect, useMemo } from "react";
+import { useI18n } from "./i18n";
 
 interface XPMilestonesModalProps {
     isOpen: boolean;
@@ -13,6 +14,7 @@ interface XPMilestonesModalProps {
 }
 
 export function XPMilestonesModal({ isOpen, onClose, currentLevel, totalXp }: XPMilestonesModalProps) {
+    const { t } = useI18n();
     const currentRef = useRef<HTMLDivElement>(null);
 
     // Always show 20 levels + any beyond if user is past 20
@@ -75,9 +77,9 @@ export function XPMilestonesModal({ isOpen, onClose, currentLevel, totalXp }: XP
                                         size={40}
                                     />
                                     <div>
-                                        <h2 className="text-base font-bold text-gray-12">Progression</h2>
+                                        <h2 className="text-base font-bold text-gray-12">{t("milestonesHeaderTitle")}</h2>
                                         <p className="text-[11px] text-gray-8 mt-0.5">
-                                            Level {currentLevel} · {currentRank.fullName} · {formatNumber(totalXp)} XP
+                                            {t("milestonesSummary", { level: currentLevel, rank: currentRank.fullName, xp: formatNumber(totalXp) })}
                                         </p>
                                     </div>
                                 </div>
@@ -175,11 +177,11 @@ export function XPMilestonesModal({ isOpen, onClose, currentLevel, totalXp }: XP
                                                 <div className="flex items-center gap-2">
                                                     <span className={`text-[13px] font-bold ${item.isCurrent ? "text-gray-12" : item.isReached ? "text-gray-11" : "text-gray-7"
                                                         }`}>
-                                                        Level {item.level}
+                                                        {t("milestonesLevelLabel", { level: item.level })}
                                                     </span>
                                                     {item.isCurrent && (
                                                         <span className="text-[7px] font-extrabold px-1.5 py-0.5 rounded-full bg-[#E80000]/15 text-[#FF4444] uppercase tracking-wider animate-pulse">
-                                                            Ici
+                                                            {t("milestonesCurrentTag")}
                                                         </span>
                                                     )}
                                                 </div>
@@ -201,7 +203,7 @@ export function XPMilestonesModal({ isOpen, onClose, currentLevel, totalXp }: XP
                             {/* Footer note */}
                             <div className="text-center mt-4 mb-2">
                                 <p className="text-[10px] text-gray-6">
-                                    L&apos;XP n&apos;est jamais capée — continue à grind au-delà du level 20 !
+                                    {t("milestonesBeyond20")}
                                 </p>
                             </div>
                         </div>

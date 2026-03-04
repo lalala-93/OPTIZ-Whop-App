@@ -202,7 +202,7 @@ export function HomeScreen({
                       )}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-[12px] text-gray-12 font-semibold truncate">{entry.display_name || "User"}</p>
+                      <p className="text-[12px] text-gray-12 font-semibold truncate">{entry.display_name || t("anonymousUser")}</p>
                       <p className="text-[10px] text-gray-8">Lvl {entryLevel}</p>
                     </div>
                     {entry.position === 1 ? <Crown size={13} className="text-[#FF6666] shrink-0" /> : null}
@@ -235,7 +235,7 @@ export function HomeScreen({
                     <div className="flex-1 min-w-0">
                       <p className={`text-[13px] font-semibold truncate inline-flex items-center gap-1.5 ${entry.isMe ? "text-[#FF6D6D]" : "text-gray-12"}`}>
                         <RankIcon level={entryLevel} />
-                        {entry.display_name || "User"}
+                        {entry.display_name || t("anonymousUser")}
                       </p>
                       <p className="text-[10px] text-gray-8">Lvl {entryLevel}</p>
                     </div>
