@@ -21,19 +21,32 @@ async function withRetry<T>(fn: () => Promise<T>, maxAttempts = 3, delayMs = 800
 
 export default async function ExperiencePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ experienceId: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const { experienceId } = await params;
+  const query = await searchParams;
 
   let userId = "";
   let authFailed = false;
+
+  // Primary auth: Whop iframe JWT token (desktop/web)
   try {
     const result = await withRetry(async () => verifyUser(await headers()));
     userId = result.userId;
   } catch (err) {
     console.error("[OPTIZ] verifyUser failed after retries:", err);
     authFailed = true;
+  }
+
+  // Fallback auth: mobile WebView passes userId as query param
+  // The RN wrapper already authenticated the user via Whop SDK
+  // We still verify access below via checkExperienceAccess
+  if (authFailed && typeof query.mobileUserId === "string" && query.mobileUserId.startsWith("user_")) {
+    userId = query.mobileUserId;
+    authFailed = false;
   }
 
   if (authFailed) {
