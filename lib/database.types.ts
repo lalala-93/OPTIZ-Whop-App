@@ -555,6 +555,74 @@ export type Database = {
           },
         ]
       }
+      nutrition_meal_templates: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          slot: string
+          calories: number | null
+          protein: number | null
+          carbs: number | null
+          fats: number | null
+          sort_order: number | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          slot?: string
+          calories?: number | null
+          protein?: number | null
+          carbs?: number | null
+          fats?: number | null
+          sort_order?: number | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          slot?: string
+          calories?: number | null
+          protein?: number | null
+          carbs?: number | null
+          fats?: number | null
+          sort_order?: number | null
+          created_at?: string | null
+        }
+        Relationships: []
+      }
+      nutrition_daily_checks: {
+        Row: {
+          id: string
+          user_id: string
+          template_id: string
+          date: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          template_id: string
+          date: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          template_id?: string
+          date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nutrition_daily_checks_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "nutrition_meal_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       breathwork_sessions: {
         Row: {
           id: string

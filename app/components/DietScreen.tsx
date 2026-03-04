@@ -1,14 +1,20 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, Droplets, Flame, Plus, Trash2, Zap } from "lucide-react";
+import { Check, ChevronDown, Droplets, Flame, Plus, Trash2, Zap } from "lucide-react";
 import { XPToast, type XPToastData } from "./XPToast";
 import { useI18n } from "./i18n";
 import {
   upsertDailyNutrition,
-  addNutritionMeal as serverAddNutritionMeal,
-  deleteNutritionMeal as serverDeleteMeal,
+  getMealTemplates,
+  createMealTemplate,
+  updateMealTemplate,
+  deleteMealTemplate,
+  checkMealToday,
+  uncheckMealToday,
+  getDailyChecks,
+  getWeeklyNutritionData,
 } from "@/lib/actions";
 
 /* ── Types ── */
@@ -41,28 +47,27 @@ interface DietScreenProps {
   } | null;
 }
 
-interface MealEntry {
+interface MealTemplate {
   id: string;
   name: string;
+  slot: string;
   calories: number;
   protein: number;
   carbs: number;
   fats: number;
-  mealType: string;
-  createdAt: string;
+  sortOrder: number;
 }
 
-interface DietState {
+interface GoalsState {
   calorieGoal: number;
   proteinGoal: number;
   carbsGoal: number;
   fatsGoal: number;
   waterGoalL: number;
   waterInL: number;
-  meals: MealEntry[];
 }
 
-interface DietRewardsState {
+interface RewardsState {
   mealRewards: number;
   proteinGoalHit: boolean;
   caloriesOnTarget: boolean;
@@ -88,14 +93,12 @@ interface FoodItem {
 type FoodCategory = "all" | "protein" | "carb" | "fat";
 
 const FOOD_DB: FoodItem[] = [
-  // Proteins
   { id: "ground-beef", emoji: "🥩", name: { en: "Ground beef 15%", fr: "Viande hachée 15%" }, category: "protein", defaultQty: 150, unit: "g", step: 50, cal: 327, p: 29, c: 0, f: 23 },
   { id: "chicken", emoji: "🍗", name: { en: "Chicken breast", fr: "Poulet" }, category: "protein", defaultQty: 150, unit: "g", step: 50, cal: 247, p: 47, c: 0, f: 5 },
   { id: "fatty-fish", emoji: "🐟", name: { en: "Fatty fish", fr: "Poisson gras" }, category: "protein", defaultQty: 150, unit: "g", step: 50, cal: 312, p: 30, c: 0, f: 20 },
   { id: "eggs", emoji: "🥚", name: { en: "Eggs", fr: "Œufs" }, category: "protein", defaultQty: 3, unit: "pcs", step: 1, cal: 234, p: 19, c: 2, f: 17 },
   { id: "kefir", emoji: "🥛", name: { en: "Kefir", fr: "Kéfir" }, category: "protein", defaultQty: 200, unit: "ml", step: 50, cal: 126, p: 7, c: 9, f: 7 },
   { id: "skyr", emoji: "🥣", name: { en: "Skyr", fr: "Skyr" }, category: "protein", defaultQty: 150, unit: "g", step: 50, cal: 95, p: 17, c: 6, f: 0 },
-  // Carbs
   { id: "rice", emoji: "🍚", name: { en: "Rice (raw)", fr: "Riz cru" }, category: "carb", defaultQty: 80, unit: "g", step: 10, cal: 292, p: 6, c: 64, f: 0 },
   { id: "potato", emoji: "🥔", name: { en: "Potatoes", fr: "Pommes de terre" }, category: "carb", defaultQty: 200, unit: "g", step: 50, cal: 154, p: 4, c: 34, f: 0 },
   { id: "sweet-potato", emoji: "🍠", name: { en: "Sweet potato", fr: "Patates douces" }, category: "carb", defaultQty: 200, unit: "g", step: 50, cal: 172, p: 3, c: 40, f: 0 },
@@ -106,11 +109,14 @@ const FOOD_DB: FoodItem[] = [
   { id: "blueberries", emoji: "🫐", name: { en: "Blueberries", fr: "Myrtilles" }, category: "carb", defaultQty: 100, unit: "g", step: 25, cal: 57, p: 1, c: 14, f: 0 },
   { id: "kiwi", emoji: "🥝", name: { en: "Kiwi", fr: "Kiwi" }, category: "carb", defaultQty: 80, unit: "g", step: 20, cal: 49, p: 1, c: 12, f: 0 },
   { id: "orange", emoji: "🍊", name: { en: "Orange", fr: "Orange" }, category: "carb", defaultQty: 150, unit: "g", step: 50, cal: 71, p: 1, c: 18, f: 0 },
-  // Fats
   { id: "raw-cheese", emoji: "🧀", name: { en: "Raw milk cheese", fr: "Fromage lait cru" }, category: "fat", defaultQty: 30, unit: "g", step: 10, cal: 121, p: 8, c: 0, f: 10 },
   { id: "raw-cream", emoji: "🫙", name: { en: "Raw cream", fr: "Crème crue" }, category: "fat", defaultQty: 20, unit: "ml", step: 10, cal: 69, p: 0, c: 1, f: 7 },
   { id: "avocado", emoji: "🥑", name: { en: "Avocado", fr: "Avocat" }, category: "fat", defaultQty: 80, unit: "g", step: 20, cal: 128, p: 2, c: 7, f: 12 },
 ];
+
+const SLOTS = ["matin", "midi", "soir"] as const;
+type Slot = (typeof SLOTS)[number];
+const SLOT_KEYS: Record<Slot, string> = { matin: "dietMatin", midi: "dietMidi", soir: "dietSoir" };
 
 /* ── Helpers ── */
 
@@ -118,49 +124,57 @@ function getTodayISO() {
   return new Date().toISOString().split("T")[0];
 }
 
-function roundToQuarter(value: number) {
-  return Math.round(value * 4) / 4;
+function roundToQuarter(v: number) {
+  return Math.round(v * 4) / 4;
 }
 
 function scaledMacros(food: FoodItem, qty: number) {
-  const ratio = qty / food.defaultQty;
-  return {
-    cal: Math.round(food.cal * ratio),
-    p: Math.round(food.p * ratio),
-    c: Math.round(food.c * ratio),
-    f: Math.round(food.f * ratio),
-  };
+  const r = qty / food.defaultQty;
+  return { cal: Math.round(food.cal * r), p: Math.round(food.p * r), c: Math.round(food.c * r), f: Math.round(food.f * r) };
 }
+
+function macroLabels(locale: string) {
+  return locale === "fr" ? { p: "P", c: "G", f: "L" } : { p: "P", c: "C", f: "F" };
+}
+
+function getWeekDates(): string[] {
+  const now = new Date();
+  const day = now.getDay();
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - ((day + 6) % 7));
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    return d.toISOString().split("T")[0];
+  });
+}
+
+const DAY_LABELS_EN = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const DAY_LABELS_FR = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 
 /* ── CalorieRing ── */
 function CalorieRing({ eaten, goal }: { eaten: number; goal: number }) {
   const size = 160;
-  const strokeWidth = 12;
-  const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
+  const sw = 12;
+  const r = (size - sw) / 2;
+  const circ = 2 * Math.PI * r;
   const progress = goal > 0 ? Math.min(1, eaten / goal) : 0;
-  const offset = circumference * (1 - progress);
 
   return (
     <div className="relative mx-auto w-[160px] h-[160px]">
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90">
         <defs>
-          <linearGradient id="calorieGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+          <linearGradient id="calGrad" x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stopColor="#E80000" />
             <stop offset="100%" stopColor="#FF4D4D" />
           </linearGradient>
         </defs>
-        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={strokeWidth} />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={sw} />
         <motion.circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke="url(#calorieGradient)"
-          strokeWidth={strokeWidth}
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          animate={{ strokeDashoffset: offset }}
+          cx={size / 2} cy={size / 2} r={r} fill="none"
+          stroke="url(#calGrad)" strokeWidth={sw} strokeLinecap="round"
+          strokeDasharray={circ}
+          animate={{ strokeDashoffset: circ * (1 - progress) }}
           transition={{ type: "spring", stiffness: 60, damping: 15 }}
         />
       </svg>
@@ -176,7 +190,6 @@ function CalorieRing({ eaten, goal }: { eaten: number; goal: number }) {
 /* ── MacroBar ── */
 function MacroBar({ label, current, goal, color }: { label: string; current: number; goal: number; color: string }) {
   const pct = goal > 0 ? Math.min(100, Math.round((current / goal) * 100)) : 0;
-
   return (
     <div className="flex items-center gap-2.5">
       <div className="w-1 h-5 rounded-full shrink-0" style={{ background: color }} />
@@ -186,12 +199,7 @@ function MacroBar({ label, current, goal, color }: { label: string; current: num
           <span className="text-[11px] text-gray-8 tabular-nums">{current}/{goal}g</span>
         </div>
         <div className="h-1.5 rounded-full bg-gray-4/40 overflow-hidden">
-          <motion.div
-            className="h-full rounded-full"
-            style={{ background: color }}
-            animate={{ width: `${pct}%` }}
-            transition={{ duration: 0.35 }}
-          />
+          <motion.div className="h-full rounded-full" style={{ background: color }} animate={{ width: `${pct}%` }} transition={{ duration: 0.35 }} />
         </div>
       </div>
     </div>
@@ -199,64 +207,34 @@ function MacroBar({ label, current, goal, color }: { label: string; current: num
 }
 
 /* ── FoodRow ── */
-function FoodRow({
-  food,
-  qty,
-  onQtyChange,
-  onAdd,
-  locale,
-}: {
-  food: FoodItem;
-  qty: number;
-  onQtyChange: (qty: number) => void;
-  onAdd: () => void;
-  locale: string;
+function FoodRow({ food, qty, onQtyChange, onAdd, locale }: {
+  food: FoodItem; qty: number; onQtyChange: (q: number) => void; onAdd: () => void; locale: string;
 }) {
-  const macros = scaledMacros(food, qty);
+  const m = scaledMacros(food, qty);
+  const ml = macroLabels(locale);
   const name = locale === "fr" ? food.name.fr : food.name.en;
-
   return (
-    <div className="py-2.5 border-b border-gray-5/15 last:border-0">
+    <div className="py-2 border-b border-gray-5/15 last:border-0">
       <div className="flex items-center gap-2.5">
         <span className="text-lg shrink-0 w-7 text-center">{food.emoji}</span>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
             <p className="text-[13px] font-medium text-gray-12 truncate pr-2">{name}</p>
             <div className="flex items-center gap-2 shrink-0">
-              <span className="text-[12px] font-semibold text-gray-11 tabular-nums">{macros.cal}</span>
-              <button
-                type="button"
-                onClick={onAdd}
-                className="w-7 h-7 rounded-lg border border-[#E80000]/30 bg-[#E80000]/10 flex items-center justify-center active:scale-90 transition-transform"
-              >
+              <span className="text-[12px] font-semibold text-gray-11 tabular-nums">{m.cal}</span>
+              <button type="button" onClick={onAdd} className="w-7 h-7 rounded-lg border border-[#E80000]/30 bg-[#E80000]/10 flex items-center justify-center active:scale-90 transition-transform">
                 <Plus size={12} className="text-[#FF6D6D]" />
               </button>
             </div>
           </div>
-          <div className="flex items-center gap-1.5 mt-1">
-            <button
-              type="button"
-              onClick={() => onQtyChange(Math.max(food.step, qty - food.step))}
-              className="w-5 h-5 rounded bg-gray-4/40 text-[10px] font-bold text-gray-10 flex items-center justify-center active:scale-90 transition-transform"
-            >
-              -
-            </button>
-            <span className="text-[11px] text-gray-9 tabular-nums min-w-[40px] text-center">
-              {qty} {food.unit}
-            </span>
-            <button
-              type="button"
-              onClick={() => onQtyChange(qty + food.step)}
-              className="w-5 h-5 rounded bg-gray-4/40 text-[10px] font-bold text-gray-10 flex items-center justify-center active:scale-90 transition-transform"
-            >
-              +
-            </button>
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <button type="button" onClick={() => onQtyChange(Math.max(food.step, qty - food.step))} className="w-5 h-5 rounded bg-gray-4/40 text-[10px] font-bold text-gray-10 flex items-center justify-center">-</button>
+            <span className="text-[11px] text-gray-9 tabular-nums min-w-[36px] text-center">{qty} {food.unit}</span>
+            <button type="button" onClick={() => onQtyChange(qty + food.step)} className="w-5 h-5 rounded bg-gray-4/40 text-[10px] font-bold text-gray-10 flex items-center justify-center">+</button>
             <span className="text-[10px] text-gray-8 tabular-nums ml-1">
-              <span className="text-[#FF6B6B]">P{macros.p}</span>
-              {" · "}
-              <span className="text-[#FFB347]">C{macros.c}</span>
-              {" · "}
-              <span className="text-[#4FC3F7]">F{macros.f}</span>
+              <span className="text-[#FF6B6B]">{ml.p}{m.p}</span>{" · "}
+              <span className="text-[#FFB347]">{ml.c}{m.c}</span>{" · "}
+              <span className="text-[#4FC3F7]">{ml.f}{m.f}</span>
             </span>
           </div>
         </div>
@@ -265,37 +243,37 @@ function FoodRow({
   );
 }
 
-/* ── Main component ── */
+/* ══════════════════════════════════════ */
+/* ── Main component                   ── */
+/* ══════════════════════════════════════ */
 export function DietScreen({ userId, onAwardXpEvent, initialData }: DietScreenProps) {
   const { t, locale } = useI18n();
+  const ml = macroLabels(locale);
 
-  const [state, setState] = useState<DietState>(() => ({
+  /* ── State ── */
+  const [goals, setGoals] = useState<GoalsState>(() => ({
     calorieGoal: initialData?.calorieGoal ?? 2500,
     proteinGoal: initialData?.proteinGoal ?? 160,
     carbsGoal: initialData?.carbsGoal ?? 260,
     fatsGoal: initialData?.fatsGoal ?? 80,
     waterGoalL: initialData?.waterGoalL ?? 2.8,
     waterInL: initialData?.waterInL ?? 0,
-    meals: (initialData?.meals ?? []).map((m) => ({
-      id: m.id,
-      name: m.name,
-      calories: m.calories,
-      protein: m.protein,
-      carbs: m.carbs,
-      fats: m.fats,
-      mealType: m.mealType,
-      createdAt: m.createdAt,
-    })),
   }));
-
-  const [rewards, setRewards] = useState<DietRewardsState>({
+  const [rewards, setRewards] = useState<RewardsState>({
     mealRewards: initialData?.mealRewardsCount ?? 0,
     proteinGoalHit: initialData?.proteinGoalHit ?? false,
     caloriesOnTarget: initialData?.caloriesOnTarget ?? false,
     hydrationGoalHit: initialData?.hydrationGoalHit ?? false,
   });
-
+  const [templates, setTemplates] = useState<MealTemplate[]>([]);
+  const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<XPToastData | null>(null);
+  const [viewMode, setViewMode] = useState<"daily" | "weekly">("daily");
+  const [weeklyData, setWeeklyData] = useState<{ checks: { templateId: string; date: string }[]; waterLogs: { date: string; waterInL: number }[] }>({ checks: [], waterLogs: [] });
+
+  // Add panel
+  const [addingSlot, setAddingSlot] = useState<Slot | null>(null);
   const [activeCategory, setActiveCategory] = useState<FoodCategory>("all");
   const [foodQtys, setFoodQtys] = useState<Record<string, number>>({});
   const [showCustom, setShowCustom] = useState(false);
@@ -308,189 +286,209 @@ export function DietScreen({ userId, onAwardXpEvent, initialData }: DietScreenPr
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const persistGoals = (nextState: DietState, nextRewards: DietRewardsState) => {
+  /* ── Data loading ── */
+  useEffect(() => {
+    (async () => {
+      try {
+        const [tpls, checks] = await Promise.all([getMealTemplates(userId), getDailyChecks(userId, getTodayISO())]);
+        setTemplates(tpls);
+        setCheckedIds(new Set(checks));
+      } catch (e) {
+        console.error("[OPTIZ] Failed to load meal data", e);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [userId]);
+
+  // Load weekly data when switching tab
+  useEffect(() => {
+    if (viewMode !== "weekly") return;
+    const dates = getWeekDates();
+    getWeeklyNutritionData(userId, dates[0], dates[6]).then(setWeeklyData).catch(console.error);
+  }, [viewMode, userId]);
+
+  /* ── Persist goals ── */
+  const persistGoals = useCallback((g: GoalsState, r: RewardsState) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       upsertDailyNutrition(userId, getTodayISO(), {
-        calorieGoal: nextState.calorieGoal,
-        proteinGoal: nextState.proteinGoal,
-        carbsGoal: nextState.carbsGoal,
-        fatsGoal: nextState.fatsGoal,
-        waterGoalL: nextState.waterGoalL,
-        waterInL: nextState.waterInL,
-        proteinGoalHit: nextRewards.proteinGoalHit,
-        caloriesOnTarget: nextRewards.caloriesOnTarget,
-        hydrationGoalHit: nextRewards.hydrationGoalHit,
-        mealRewardsCount: nextRewards.mealRewards,
-      }).catch((err) => console.error("[OPTIZ] Nutrition persist error:", err));
+        calorieGoal: g.calorieGoal, proteinGoal: g.proteinGoal, carbsGoal: g.carbsGoal, fatsGoal: g.fatsGoal,
+        waterGoalL: g.waterGoalL, waterInL: g.waterInL,
+        proteinGoalHit: r.proteinGoalHit, caloriesOnTarget: r.caloriesOnTarget,
+        hydrationGoalHit: r.hydrationGoalHit, mealRewardsCount: r.mealRewards,
+      }).catch((e) => console.error("[OPTIZ] Nutrition persist error:", e));
     }, 800);
-  };
+  }, [userId]);
 
-  const totals = useMemo(() => {
-    return state.meals.reduce(
-      (acc, meal) => {
-        acc.calories += meal.calories;
-        acc.protein += meal.protein;
-        acc.carbs += meal.carbs;
-        acc.fats += meal.fats;
-        return acc;
-      },
-      { calories: 0, protein: 0, carbs: 0, fats: 0 },
-    );
-  }, [state.meals]);
+  /* ── Computed ── */
+  const checkedTotals = useMemo(() => {
+    return templates
+      .filter((t) => checkedIds.has(t.id))
+      .reduce((a, t) => ({ calories: a.calories + t.calories, protein: a.protein + t.protein, carbs: a.carbs + t.carbs, fats: a.fats + t.fats }), { calories: 0, protein: 0, carbs: 0, fats: 0 });
+  }, [templates, checkedIds]);
 
-  const caloriesRemaining = Math.max(0, state.calorieGoal - totals.calories);
-  const hydrationProgress = state.waterGoalL > 0 ? Math.min(1, state.waterInL / state.waterGoalL) : 0;
+  const caloriesRemaining = Math.max(0, goals.calorieGoal - checkedTotals.calories);
+  const hydrationPct = goals.waterGoalL > 0 ? Math.min(1, goals.waterInL / goals.waterGoalL) : 0;
 
-  const showReward = (title: string, subtitle: string, xp: number, source: string, refId: string) => {
+  /* ── Rewards ── */
+  const showReward = useCallback((title: string, subtitle: string, xp: number, source: string, refId: string) => {
     const id = `${Date.now()}-${Math.random()}`;
     setToast({ id, title, subtitle, xp });
     setTimeout(() => setToast((prev) => (prev?.id === id ? null : prev)), 2200);
-    void onAwardXpEvent(source, refId, xp).catch((error) => {
-      console.error("Failed to award diet XP", error);
-    });
-  };
+    void onAwardXpEvent(source, refId, xp).catch(console.error);
+  }, [onAwardXpEvent]);
 
   useEffect(() => {
     const today = getTodayISO();
     let updated = false;
     let next = { ...rewards };
-
-    if (!next.proteinGoalHit && totals.protein >= state.proteinGoal) {
-      next = { ...next, proteinGoalHit: true };
-      updated = true;
+    if (!next.proteinGoalHit && checkedTotals.protein >= goals.proteinGoal) {
+      next = { ...next, proteinGoalHit: true }; updated = true;
       showReward(t("dietProteinGoalTitle"), t("dietProteinGoalSubtitle"), 20, "protein_goal", `protein-goal-${today}`);
     }
-
-    const inCalorieZone = totals.calories >= state.calorieGoal * 0.95 && totals.calories <= state.calorieGoal * 1.05;
-    if (!next.caloriesOnTarget && inCalorieZone) {
-      next = { ...next, caloriesOnTarget: true };
-      updated = true;
+    const inZone = checkedTotals.calories >= goals.calorieGoal * 0.95 && checkedTotals.calories <= goals.calorieGoal * 1.05;
+    if (!next.caloriesOnTarget && inZone) {
+      next = { ...next, caloriesOnTarget: true }; updated = true;
       showReward(t("dietCaloriesOnTargetTitle"), t("dietCaloriesOnTargetSubtitle"), 20, "calories_on_target", `calories-target-${today}`);
     }
-
-    if (!next.hydrationGoalHit && state.waterInL >= state.waterGoalL) {
-      next = { ...next, hydrationGoalHit: true };
-      updated = true;
+    if (!next.hydrationGoalHit && goals.waterInL >= goals.waterGoalL) {
+      next = { ...next, hydrationGoalHit: true }; updated = true;
       showReward(t("dietHydrationGoalTitle"), t("dietHydrationGoalSubtitle"), 15, "hydration_goal", `hydration-goal-${today}`);
     }
-
-    if (updated) {
-      setRewards(next);
-      persistGoals(state, next);
-    }
+    if (updated) { setRewards(next); persistGoals(goals, next); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [totals.protein, totals.calories, state.proteinGoal, state.calorieGoal, state.waterInL, state.waterGoalL]);
+  }, [checkedTotals.protein, checkedTotals.calories, goals.proteinGoal, goals.calorieGoal, goals.waterInL, goals.waterGoalL]);
 
-  const updateGoals = (patch: Partial<DietState>) => {
-    const next = { ...state, ...patch };
-    setState(next);
+  /* ── Handlers ── */
+  const updateGoals = (patch: Partial<GoalsState>) => {
+    const next = { ...goals, ...patch };
+    setGoals(next);
     persistGoals(next, rewards);
   };
 
-  /* ── Add food ── */
-  const addFood = async (name: string, cal: number, p: number, c: number, f: number, category: string) => {
+  const handleCheck = async (templateId: string) => {
     const today = getTodayISO();
-    const meal: MealEntry = {
-      id: `meal-${Date.now()}`,
-      name,
-      calories: cal,
-      protein: p,
-      carbs: c,
-      fats: f,
-      mealType: category,
-      createdAt: new Date().toISOString(),
-    };
-
-    setState((prev) => ({ ...prev, meals: [meal, ...prev.meals] }));
-
+    const wasChecked = checkedIds.has(templateId);
+    setCheckedIds((prev) => {
+      const s = new Set(prev);
+      if (wasChecked) s.delete(templateId); else s.add(templateId);
+      return s;
+    });
     try {
-      const serverMeal = await serverAddNutritionMeal(userId, today, {
-        mealType: category,
-        name,
-        calories: cal,
-        protein: p,
-        carbs: c,
-        fats: f,
-      });
-
-      if (serverMeal) {
-        setState((prev) => ({
-          ...prev,
-          meals: prev.meals.map((m) => (m.id === meal.id ? { ...m, id: serverMeal.id } : m)),
-        }));
+      if (wasChecked) {
+        await uncheckMealToday(userId, templateId, today);
+      } else {
+        await checkMealToday(userId, templateId, today);
+        if (rewards.mealRewards < 4) {
+          const nr = { ...rewards, mealRewards: rewards.mealRewards + 1 };
+          setRewards(nr);
+          showReward(t("dietMealAdded"), t("dietMealAddedSubtitle"), 8, "meal_added", `meal-${nr.mealRewards}-${today}`);
+          persistGoals(goals, nr);
+        }
       }
-    } catch (err) {
-      console.error("[OPTIZ] Failed to add food", err);
-    }
-
-    if (rewards.mealRewards < 4) {
-      const nextRewards = { ...rewards, mealRewards: rewards.mealRewards + 1 };
-      setRewards(nextRewards);
-      showReward(t("dietMealAdded"), t("dietMealAddedSubtitle"), 8, "meal_added", `meal-${rewards.mealRewards + 1}-${today}`);
-      persistGoals(state, nextRewards);
-    }
+    } catch (e) { console.error("[OPTIZ] check error", e); }
   };
 
-  const addPrefilledFood = (food: FoodItem) => {
+  const handleAddFood = async (food: FoodItem, slot: Slot) => {
     const qty = foodQtys[food.id] ?? food.defaultQty;
-    const macros = scaledMacros(food, qty);
-    const name = locale === "fr" ? food.name.fr : food.name.en;
-    void addFood(name, macros.cal, macros.p, macros.c, macros.f, food.category);
+    const mc = scaledMacros(food, qty);
+    const name = `${food.emoji} ${locale === "fr" ? food.name.fr : food.name.en} · ${qty} ${food.unit}`;
+    const tmpId = `tmp-${Date.now()}`;
+    setTemplates((p) => [...p, { id: tmpId, name, slot, calories: mc.cal, protein: mc.p, carbs: mc.c, fats: mc.f, sortOrder: 0 }]);
+    const created = await createMealTemplate(userId, { name, slot, calories: mc.cal, protein: mc.p, carbs: mc.c, fats: mc.f });
+    if (created) setTemplates((p) => p.map((t) => (t.id === tmpId ? created : t)));
   };
 
-  const addCustomFood = () => {
+  const handleAddCustom = async (slot: Slot) => {
     if (!customName.trim()) return;
-    void addFood(customName.trim(), Math.max(0, customCal), Math.max(0, customP), Math.max(0, customC), Math.max(0, customF), "custom");
-    setCustomName("");
-    setShowCustom(false);
+    const tmpId = `tmp-${Date.now()}`;
+    const cal = Math.max(0, customCal), p = Math.max(0, customP), c = Math.max(0, customC), f = Math.max(0, customF);
+    setTemplates((prev) => [...prev, { id: tmpId, name: customName.trim(), slot, calories: cal, protein: p, carbs: c, fats: f, sortOrder: 0 }]);
+    const created = await createMealTemplate(userId, { name: customName.trim(), slot, calories: cal, protein: p, carbs: c, fats: f });
+    if (created) setTemplates((prev) => prev.map((t) => (t.id === tmpId ? created : t)));
+    setCustomName(""); setShowCustom(false);
   };
 
-  const removeFood = (mealId: string) => {
-    setState((prev) => ({
-      ...prev,
-      meals: prev.meals.filter((m) => m.id !== mealId),
-    }));
-    serverDeleteMeal(userId, mealId).catch((err) => console.error("[OPTIZ] Failed to delete food", err));
+  const handleDelete = async (id: string) => {
+    setTemplates((p) => p.filter((t) => t.id !== id));
+    setCheckedIds((p) => { const s = new Set(p); s.delete(id); return s; });
+    await deleteMealTemplate(userId, id).catch(console.error);
   };
 
-  /* ── Filtered foods ── */
+  const handleMoveSlot = async (id: string, newSlot: string) => {
+    setTemplates((p) => p.map((t) => (t.id === id ? { ...t, slot: newSlot } : t)));
+    await updateMealTemplate(userId, id, { slot: newSlot }).catch(console.error);
+  };
+
   const filteredFoods = activeCategory === "all" ? FOOD_DB : FOOD_DB.filter((f) => f.category === activeCategory);
-
   const categories: { id: FoodCategory; label: string }[] = [
-    { id: "all", label: t("dietAll") },
-    { id: "protein", label: t("dietProtein") },
-    { id: "carb", label: t("dietCarbs") },
-    { id: "fat", label: t("dietFats") },
+    { id: "all", label: t("dietAll") }, { id: "protein", label: t("dietProtein") },
+    { id: "carb", label: t("dietCarbs") }, { id: "fat", label: t("dietFats") },
   ];
 
+  /* ── Weekly computation ── */
+  const weekDates = useMemo(() => getWeekDates(), []);
+  const dayLabels = locale === "fr" ? DAY_LABELS_FR : DAY_LABELS_EN;
+  const todayISO = getTodayISO();
+  const templateMap = useMemo(() => new Map(templates.map((t) => [t.id, t])), [templates]);
+
+  const weeklyBars = useMemo(() => {
+    return weekDates.map((date) => {
+      if (date === todayISO) {
+        return { date, cal: checkedTotals.calories };
+      }
+      const dayCks = weeklyData.checks.filter((c) => c.date === date);
+      const cal = dayCks.reduce((s, c) => s + (templateMap.get(c.templateId)?.calories ?? 0), 0);
+      return { date, cal };
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weekDates, todayISO, checkedTotals.calories, weeklyData.checks, templateMap]);
+
+  const maxWeeklyCal = Math.max(goals.calorieGoal, ...weeklyBars.map((b) => b.cal), 1);
+
+  /* ── Staggered animation helpers ── */
+  const stagger = (i: number) => ({ initial: { opacity: 0, y: 14 }, animate: { opacity: 1, y: 0 }, transition: { delay: 0.06 * i, duration: 0.35, ease: [0.25, 0.1, 0.25, 1] as const } });
+
+  /* ── Render ── */
   return (
     <div className="pb-8 space-y-4 relative">
       <XPToast toast={toast} />
 
       {/* Header */}
-      <div>
+      <motion.div {...stagger(0)}>
         <h2 className="text-[26px] leading-tight font-semibold text-gray-12 mb-1.5">{t("dietTitle")}</h2>
         <p className="text-sm text-gray-8 leading-relaxed">{t("dietSubtitle")}</p>
-      </div>
+      </motion.div>
 
-      {/* ── Calorie Dashboard Hero ── */}
-      <motion.section
-        className="rounded-3xl border border-gray-5/35 bg-gray-2/82 p-5"
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        <CalorieRing eaten={totals.calories} goal={state.calorieGoal} />
+      {/* Daily / Weekly toggle */}
+      <motion.div {...stagger(1)} className="flex gap-2">
+        {(["daily", "weekly"] as const).map((mode) => (
+          <button
+            key={mode}
+            type="button"
+            onClick={() => setViewMode(mode)}
+            className={`rounded-full px-4 py-1.5 text-[12px] font-medium transition-colors ${
+              viewMode === mode ? "bg-[#E80000]/15 text-[#FF6666] border border-[#E80000]/35" : "bg-gray-3/30 text-gray-10 border border-gray-5/25"
+            }`}
+          >
+            {t(mode === "daily" ? "dietDaily" : "dietWeekly")}
+          </button>
+        ))}
+      </motion.div>
 
+      {/* Calorie Dashboard */}
+      <motion.section {...stagger(2)} className="rounded-3xl border border-gray-5/35 bg-gray-2/82 p-5">
+        <CalorieRing eaten={checkedTotals.calories} goal={goals.calorieGoal} />
         <div className="mt-4 flex items-center justify-around">
           <div className="text-center">
             <p className="text-[11px] text-gray-7 uppercase tracking-wider">{t("dietGoalLabel")}</p>
-            <p className="text-[17px] font-semibold text-gray-12 tabular-nums">{state.calorieGoal}</p>
+            <p className="text-[17px] font-semibold text-gray-12 tabular-nums">{goals.calorieGoal}</p>
           </div>
           <div className="w-px h-8 bg-gray-5/20" />
           <div className="text-center">
             <p className="text-[11px] text-gray-7 uppercase tracking-wider">{t("dietCaloriesToday")}</p>
-            <p className="text-[17px] font-semibold text-[#FF6A6A] tabular-nums">{totals.calories}</p>
+            <p className="text-[17px] font-semibold text-[#FF6A6A] tabular-nums">{checkedTotals.calories}</p>
           </div>
           <div className="w-px h-8 bg-gray-5/20" />
           <div className="text-center">
@@ -498,309 +496,275 @@ export function DietScreen({ userId, onAwardXpEvent, initialData }: DietScreenPr
             <p className="text-[17px] font-semibold text-gray-12 tabular-nums">{caloriesRemaining}</p>
           </div>
         </div>
-
         <div className="mt-5 space-y-2.5">
-          <MacroBar label={t("dietProtein")} current={totals.protein} goal={state.proteinGoal} color="#FF6B6B" />
-          <MacroBar label={t("dietCarbs")} current={totals.carbs} goal={state.carbsGoal} color="#FFB347" />
-          <MacroBar label={t("dietFats")} current={totals.fats} goal={state.fatsGoal} color="#4FC3F7" />
+          <MacroBar label={t("dietProtein")} current={checkedTotals.protein} goal={goals.proteinGoal} color="#FF6B6B" />
+          <MacroBar label={t("dietCarbs")} current={checkedTotals.carbs} goal={goals.carbsGoal} color="#FFB347" />
+          <MacroBar label={t("dietFats")} current={checkedTotals.fats} goal={goals.fatsGoal} color="#4FC3F7" />
         </div>
       </motion.section>
 
-      {/* ── Food Selection ── */}
-      <section className="rounded-3xl border border-gray-5/35 bg-gray-2/82 p-4">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-[14px] font-semibold text-gray-12 inline-flex items-center gap-1.5">
-            <Plus size={15} /> {t("dietQuickAdd")}
-          </h3>
-        </div>
-
-        {/* Category pills */}
-        <div className="flex gap-2 mb-3">
-          {categories.map((cat) => (
-            <button
-              key={cat.id}
-              type="button"
-              onClick={() => setActiveCategory(cat.id)}
-              className={`rounded-full px-3 py-1.5 text-[12px] font-medium transition-colors ${
-                activeCategory === cat.id
-                  ? "bg-[#E80000]/15 text-[#FF6666] border border-[#E80000]/35"
-                  : "bg-gray-3/30 text-gray-10 border border-gray-5/25"
-              }`}
-            >
-              {cat.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Food list */}
-        <div className="max-h-[340px] overflow-y-auto -mx-1 px-1">
-          {filteredFoods.map((food) => (
-            <FoodRow
-              key={food.id}
-              food={food}
-              qty={foodQtys[food.id] ?? food.defaultQty}
-              onQtyChange={(qty) => setFoodQtys((prev) => ({ ...prev, [food.id]: qty }))}
-              onAdd={() => addPrefilledFood(food)}
-              locale={locale}
-            />
-          ))}
-        </div>
-
-        {/* Custom food toggle */}
-        <button
-          type="button"
-          onClick={() => setShowCustom(!showCustom)}
-          className="w-full mt-3 h-9 rounded-xl border border-dashed border-gray-5/40 text-[12px] font-medium text-gray-10 flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform"
-        >
-          <Plus size={12} /> {t("dietCustom")}
-        </button>
-
-        {/* Custom food form */}
-        <AnimatePresence>
-          {showCustom && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="overflow-hidden"
-            >
-              <div className="pt-3 space-y-2">
-                <input
-                  value={customName}
-                  onChange={(e) => setCustomName(e.target.value)}
-                  placeholder={t("dietMealNamePlaceholder")}
-                  className="h-10 w-full rounded-xl bg-gray-2/80 border border-gray-5/30 px-3 text-sm text-gray-12"
-                />
-                <input
-                  type="number"
-                  min={0}
-                  value={customCal}
-                  onChange={(e) => setCustomCal(Math.max(0, Number(e.target.value || "0")))}
-                  placeholder="kcal"
-                  className="h-10 w-full rounded-xl bg-gray-2/80 border border-gray-5/30 px-3 text-[15px] font-semibold text-gray-12 text-center tabular-nums"
-                />
-                <div className="grid grid-cols-3 gap-2">
-                  <div>
-                    <span className="text-[10px] font-medium text-[#FF6B6B] mb-1 block">P (g)</span>
-                    <input
-                      type="number"
-                      min={0}
-                      value={customP}
-                      onChange={(e) => setCustomP(Math.max(0, Number(e.target.value || "0")))}
-                      className="h-9 w-full rounded-lg bg-gray-2/80 border border-gray-5/30 px-2.5 text-sm text-gray-12 text-center tabular-nums"
-                    />
-                  </div>
-                  <div>
-                    <span className="text-[10px] font-medium text-[#FFB347] mb-1 block">C (g)</span>
-                    <input
-                      type="number"
-                      min={0}
-                      value={customC}
-                      onChange={(e) => setCustomC(Math.max(0, Number(e.target.value || "0")))}
-                      className="h-9 w-full rounded-lg bg-gray-2/80 border border-gray-5/30 px-2.5 text-sm text-gray-12 text-center tabular-nums"
-                    />
-                  </div>
-                  <div>
-                    <span className="text-[10px] font-medium text-[#4FC3F7] mb-1 block">F (g)</span>
-                    <input
-                      type="number"
-                      min={0}
-                      value={customF}
-                      onChange={(e) => setCustomF(Math.max(0, Number(e.target.value || "0")))}
-                      className="h-9 w-full rounded-lg bg-gray-2/80 border border-gray-5/30 px-2.5 text-sm text-gray-12 text-center tabular-nums"
-                    />
+      {/* ══ DAILY VIEW ══ */}
+      {viewMode === "daily" ? (
+        <>
+          {SLOTS.map((slot, slotIdx) => {
+            const slotTemplates = templates.filter((t) => t.slot === slot);
+            const slotCal = slotTemplates.filter((t) => checkedIds.has(t.id)).reduce((s, t) => s + t.calories, 0);
+            return (
+              <motion.section key={slot} {...stagger(3 + slotIdx)} className="rounded-3xl border border-gray-5/35 bg-gray-2/82 p-4">
+                {/* Slot header */}
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-[14px] font-semibold text-gray-12">{t(SLOT_KEYS[slot] as Parameters<typeof t>[0])}</h3>
+                  <div className="flex items-center gap-2">
+                    {slotCal > 0 && <span className="text-[11px] text-gray-8 tabular-nums">{slotCal} kcal</span>}
+                    <button
+                      type="button"
+                      onClick={() => setAddingSlot(addingSlot === slot ? null : slot)}
+                      className="w-7 h-7 rounded-lg border border-[#E80000]/30 bg-[#E80000]/10 flex items-center justify-center active:scale-90 transition-transform"
+                    >
+                      <Plus size={13} className="text-[#FF6D6D]" />
+                    </button>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={addCustomFood}
-                  className="w-full h-10 rounded-xl optiz-gradient-bg text-white text-sm font-semibold inline-flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform"
-                >
-                  <Plus size={14} /> {t("dietValidateMeal")}
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </section>
 
-      {/* ── Logged Foods Today ── */}
-      <section className="rounded-3xl border border-gray-5/35 bg-gray-2/82 p-4">
-        <h3 className="text-[14px] font-semibold text-gray-12 mb-3">{t("dietMeals")}</h3>
+                {/* Meals in slot */}
+                {loading ? (
+                  <p className="text-[12px] text-gray-8 py-2 text-center">...</p>
+                ) : slotTemplates.length === 0 && addingSlot !== slot ? (
+                  <p className="text-[12px] text-gray-8 py-2 text-center">{t("dietNoMeals")}</p>
+                ) : (
+                  <div className="space-y-0">
+                    {slotTemplates.map((tpl) => {
+                      const isChecked = checkedIds.has(tpl.id);
+                      return (
+                        <div
+                          key={tpl.id}
+                          className={`flex items-center gap-2.5 py-2.5 border-b border-gray-5/15 last:border-0 transition-colors ${isChecked ? "bg-[#E80000]/[0.03] -mx-2 px-2 rounded-xl" : ""}`}
+                        >
+                          {/* Checkbox */}
+                          <button
+                            type="button"
+                            onClick={() => handleCheck(tpl.id)}
+                            className={`w-6 h-6 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${
+                              isChecked ? "bg-[#E80000] border-[#E80000]" : "border-gray-6 bg-transparent"
+                            }`}
+                          >
+                            {isChecked && <Check size={14} className="text-white" strokeWidth={3} />}
+                          </button>
 
-        <div className="space-y-0 max-h-[280px] overflow-y-auto">
-          {state.meals.map((meal, index) => (
-            <div
-              key={meal.id}
-              className={`flex items-center justify-between py-2.5 px-1 ${
-                index < state.meals.length - 1 ? "border-b border-gray-5/15" : ""
-              }`}
-            >
-              <div className="min-w-0 flex-1">
-                <p className="text-[13px] font-medium text-gray-12 truncate">{meal.name}</p>
-                <p className="text-[10px] text-gray-8 tabular-nums mt-0.5">
-                  <span className="text-[#FF6B6B]">P{meal.protein}</span>
-                  {" · "}
-                  <span className="text-[#FFB347]">C{meal.carbs}</span>
-                  {" · "}
-                  <span className="text-[#4FC3F7]">F{meal.fats}</span>
-                </p>
-              </div>
-              <div className="flex items-center gap-2 shrink-0 ml-2">
-                <span className="text-[13px] font-semibold text-gray-11 tabular-nums">{meal.calories} kcal</span>
-                <button
-                  type="button"
-                  onClick={() => removeFood(meal.id)}
-                  className="w-6 h-6 rounded-md flex items-center justify-center text-gray-8 hover:text-[#FF6666] hover:bg-[#E80000]/10 transition-colors"
-                >
-                  <Trash2 size={12} />
-                </button>
-              </div>
-            </div>
-          ))}
+                          {/* Content */}
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-[13px] font-medium truncate ${isChecked ? "text-gray-10 line-through" : "text-gray-12"}`}>{tpl.name}</p>
+                            <p className="text-[10px] text-gray-8 tabular-nums mt-0.5">
+                              <span className="text-[#FF6B6B]">{ml.p}{tpl.protein}</span>{" · "}
+                              <span className="text-[#FFB347]">{ml.c}{tpl.carbs}</span>{" · "}
+                              <span className="text-[#4FC3F7]">{ml.f}{tpl.fats}</span>
+                            </p>
+                          </div>
 
-          {state.meals.length === 0 && (
-            <p className="text-[12px] text-gray-8 py-3 text-center">{t("dietNoMeals")}</p>
-          )}
-        </div>
-      </section>
+                          {/* Kcal + actions */}
+                          <span className="text-[12px] font-semibold text-gray-11 tabular-nums shrink-0">{tpl.calories}</span>
+
+                          {/* Slot selector */}
+                          <select
+                            value={tpl.slot}
+                            onChange={(e) => handleMoveSlot(tpl.id, e.target.value)}
+                            className="text-[10px] bg-transparent text-gray-8 border border-gray-5/30 rounded px-1 py-0.5 outline-none"
+                          >
+                            {SLOTS.map((s) => (
+                              <option key={s} value={s}>{t(SLOT_KEYS[s] as Parameters<typeof t>[0])}</option>
+                            ))}
+                          </select>
+
+                          <button type="button" onClick={() => handleDelete(tpl.id)} className="w-6 h-6 rounded-md flex items-center justify-center text-gray-8 hover:text-[#FF6666] transition-colors shrink-0">
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Add panel */}
+                <AnimatePresence>
+                  {addingSlot === slot && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="pt-3 border-t border-gray-5/20 mt-2">
+                        <p className="text-[12px] font-semibold text-gray-11 mb-2">{t("dietCreateMeal")}</p>
+
+                        {/* Category pills */}
+                        <div className="flex gap-1.5 mb-2 flex-wrap">
+                          {categories.map((cat) => (
+                            <button key={cat.id} type="button" onClick={() => setActiveCategory(cat.id)}
+                              className={`rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                                activeCategory === cat.id ? "bg-[#E80000]/15 text-[#FF6666] border border-[#E80000]/35" : "bg-gray-3/30 text-gray-10 border border-gray-5/25"
+                              }`}
+                            >{cat.label}</button>
+                          ))}
+                        </div>
+
+                        {/* Food list */}
+                        <div className="max-h-[260px] overflow-y-auto -mx-1 px-1">
+                          {filteredFoods.map((food) => (
+                            <FoodRow
+                              key={food.id}
+                              food={food}
+                              qty={foodQtys[food.id] ?? food.defaultQty}
+                              onQtyChange={(q) => setFoodQtys((p) => ({ ...p, [food.id]: q }))}
+                              onAdd={() => handleAddFood(food, slot)}
+                              locale={locale}
+                            />
+                          ))}
+                        </div>
+
+                        {/* Custom toggle */}
+                        <button type="button" onClick={() => setShowCustom(!showCustom)}
+                          className="w-full mt-2 h-8 rounded-lg border border-dashed border-gray-5/40 text-[11px] font-medium text-gray-10 flex items-center justify-center gap-1 active:scale-[0.98] transition-transform"
+                        >
+                          <Plus size={11} /> {t("dietCustom")}
+                        </button>
+
+                        <AnimatePresence>
+                          {showCustom && (
+                            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                              <div className="pt-2 space-y-2">
+                                <input value={customName} onChange={(e) => setCustomName(e.target.value)} placeholder={t("dietMealNamePlaceholder")} className="h-9 w-full rounded-lg bg-gray-2/80 border border-gray-5/30 px-3 text-sm text-gray-12" />
+                                <input type="number" min={0} value={customCal} onChange={(e) => setCustomCal(Math.max(0, Number(e.target.value || "0")))} placeholder="kcal" className="h-9 w-full rounded-lg bg-gray-2/80 border border-gray-5/30 px-3 text-[14px] font-semibold text-gray-12 text-center tabular-nums" />
+                                <div className="grid grid-cols-3 gap-2">
+                                  <div>
+                                    <span className="text-[10px] font-medium text-[#FF6B6B] mb-0.5 block">{ml.p} (g)</span>
+                                    <input type="number" min={0} value={customP} onChange={(e) => setCustomP(Math.max(0, Number(e.target.value || "0")))} className="h-8 w-full rounded-lg bg-gray-2/80 border border-gray-5/30 px-2 text-sm text-gray-12 text-center tabular-nums" />
+                                  </div>
+                                  <div>
+                                    <span className="text-[10px] font-medium text-[#FFB347] mb-0.5 block">{ml.c} (g)</span>
+                                    <input type="number" min={0} value={customC} onChange={(e) => setCustomC(Math.max(0, Number(e.target.value || "0")))} className="h-8 w-full rounded-lg bg-gray-2/80 border border-gray-5/30 px-2 text-sm text-gray-12 text-center tabular-nums" />
+                                  </div>
+                                  <div>
+                                    <span className="text-[10px] font-medium text-[#4FC3F7] mb-0.5 block">{ml.f} (g)</span>
+                                    <input type="number" min={0} value={customF} onChange={(e) => setCustomF(Math.max(0, Number(e.target.value || "0")))} className="h-8 w-full rounded-lg bg-gray-2/80 border border-gray-5/30 px-2 text-sm text-gray-12 text-center tabular-nums" />
+                                  </div>
+                                </div>
+                                <button type="button" onClick={() => handleAddCustom(slot)} className="w-full h-9 rounded-lg optiz-gradient-bg text-white text-sm font-semibold inline-flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform">
+                                  <Plus size={13} /> {t("dietValidateMeal")}
+                                </button>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.section>
+            );
+          })}
+        </>
+      ) : (
+        /* ══ WEEKLY VIEW ══ */
+        <motion.section {...stagger(3)} className="rounded-3xl border border-gray-5/35 bg-gray-2/82 p-5">
+          <h3 className="text-[14px] font-semibold text-gray-12 mb-4">{t("dietWeekly")}</h3>
+          <div className="flex items-end justify-between gap-1.5 h-[140px]">
+            {weeklyBars.map((bar, i) => {
+              const pct = maxWeeklyCal > 0 ? Math.max(4, (bar.cal / maxWeeklyCal) * 100) : 4;
+              const isToday = bar.date === todayISO;
+              const isFuture = bar.date > todayISO;
+              return (
+                <div key={bar.date} className="flex-1 flex flex-col items-center gap-1">
+                  <span className="text-[10px] text-gray-8 tabular-nums">{bar.cal > 0 ? bar.cal : ""}</span>
+                  <div className="w-full flex-1 flex items-end">
+                    <motion.div
+                      className={`w-full rounded-t-md ${isFuture ? "bg-gray-4/20" : isToday ? "bg-gradient-to-t from-[#E80000] to-[#FF4D4D]" : "bg-gray-6/40"}`}
+                      initial={{ height: 0 }}
+                      animate={{ height: `${isFuture ? 8 : pct}%` }}
+                      transition={{ duration: 0.4, delay: i * 0.05 }}
+                    />
+                  </div>
+                  <span className={`text-[10px] font-medium ${isToday ? "text-[#FF6666]" : "text-gray-9"}`}>{dayLabels[i]}</span>
+                </div>
+              );
+            })}
+          </div>
+          {/* Goal line label */}
+          <div className="flex items-center justify-center gap-2 mt-3">
+            <div className="h-px flex-1 bg-gray-5/20" />
+            <span className="text-[10px] text-gray-8">{t("dietGoalLabel")}: {goals.calorieGoal} kcal</span>
+            <div className="h-px flex-1 bg-gray-5/20" />
+          </div>
+        </motion.section>
+      )}
 
       {/* ── Hydration ── */}
-      <section className="rounded-3xl border border-gray-5/35 bg-gray-2/82 p-4">
+      <motion.section {...stagger(6)} className="rounded-3xl border border-gray-5/35 bg-gray-2/82 p-4">
         <div className="flex items-center justify-between mb-3">
           <p className="text-[14px] font-semibold text-gray-12 inline-flex items-center gap-1.5">
             <Droplets size={15} className="text-[#4FC3F7]" /> {t("dietHydration")}
           </p>
-          <p className="text-[12px] text-gray-8 tabular-nums">
-            {state.waterInL.toFixed(2)} / {state.waterGoalL.toFixed(2)} L
-          </p>
+          <p className="text-[12px] text-gray-8 tabular-nums">{goals.waterInL.toFixed(2)} / {goals.waterGoalL.toFixed(2)} L</p>
         </div>
-
         <div className="h-10 rounded-xl bg-gray-3/25 overflow-hidden relative border border-gray-5/20">
           <motion.div
             className="absolute inset-y-0 left-0 bg-gradient-to-r from-[#165DFF] via-[#3D8BFF] to-[#72B2FF]"
-            animate={{ width: `${Math.round(hydrationProgress * 100)}%` }}
+            animate={{ width: `${Math.round(hydrationPct * 100)}%` }}
             transition={{ duration: 0.3 }}
           />
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-[13px] font-semibold text-white drop-shadow-sm tabular-nums">
-              {Math.round(hydrationProgress * 100)}%
-            </span>
+            <span className="text-[13px] font-semibold text-white drop-shadow-sm tabular-nums">{Math.round(hydrationPct * 100)}%</span>
           </div>
         </div>
-
         <div className="mt-2.5 grid grid-cols-4 gap-2">
-          {[
-            { label: "-0.25L", delta: -0.25 },
-            { label: "+0.25L", delta: 0.25 },
-            { label: "+0.5L", delta: 0.5 },
-            { label: "+1L", delta: 1 },
-          ].map((action) => (
-            <button
-              key={action.label}
-              type="button"
-              onClick={() =>
-                updateGoals({
-                  waterInL: roundToQuarter(Math.max(0, Math.min(state.waterGoalL * 1.4, state.waterInL + action.delta))),
-                })
-              }
+          {[{ label: "-0.25L", delta: -0.25 }, { label: "+0.25L", delta: 0.25 }, { label: "+0.5L", delta: 0.5 }, { label: "+1L", delta: 1 }].map((a) => (
+            <button key={a.label} type="button"
+              onClick={() => updateGoals({ waterInL: roundToQuarter(Math.max(0, Math.min(goals.waterGoalL * 1.4, goals.waterInL + a.delta))) })}
               className={`h-9 rounded-xl border text-[12px] font-semibold active:scale-95 transition-transform ${
-                action.delta > 0
-                  ? "border-[#165DFF]/30 bg-[#165DFF]/8 text-[#72B2FF]"
-                  : "border-gray-5/35 bg-gray-3/30 text-gray-11"
+                a.delta > 0 ? "border-[#165DFF]/30 bg-[#165DFF]/8 text-[#72B2FF]" : "border-gray-5/35 bg-gray-3/30 text-gray-11"
               }`}
-            >
-              {action.label}
-            </button>
+            >{a.label}</button>
           ))}
         </div>
-      </section>
+      </motion.section>
 
-      {/* ── Goals Settings — collapsible ── */}
-      <section className="rounded-3xl border border-gray-5/35 bg-gray-2/82 overflow-hidden">
-        <button
-          type="button"
-          onClick={() => setSettingsExpanded(!settingsExpanded)}
-          className="w-full flex items-center justify-between px-4 py-3"
-        >
-          <span className="text-[14px] font-semibold text-gray-12 inline-flex items-center gap-1.5">
-            <Zap size={14} /> {t("dietGoalLabel")}
-          </span>
-          <motion.div
-            animate={{ rotate: settingsExpanded ? 180 : 0 }}
-            transition={{ duration: 0.2 }}
-          >
+      {/* ── Goals Settings ── */}
+      <motion.section {...stagger(7)} className="rounded-3xl border border-gray-5/35 bg-gray-2/82 overflow-hidden">
+        <button type="button" onClick={() => setSettingsExpanded(!settingsExpanded)} className="w-full flex items-center justify-between px-4 py-3">
+          <span className="text-[14px] font-semibold text-gray-12 inline-flex items-center gap-1.5"><Zap size={14} /> {t("dietGoalLabel")}</span>
+          <motion.div animate={{ rotate: settingsExpanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
             <ChevronDown size={16} className="text-gray-8" />
           </motion.div>
         </button>
-
         <AnimatePresence>
           {settingsExpanded && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.25 }}
-              className="overflow-hidden"
-            >
+            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
               <div className="px-4 pb-4 space-y-1">
                 <div className="flex items-center justify-between py-2.5 border-b border-gray-5/20">
                   <span className="text-[13px] text-gray-10">{t("dietCalorieGoalInput")}</span>
-                  <input
-                    type="number"
-                    min={1200}
-                    value={state.calorieGoal}
-                    onChange={(e) => updateGoals({ calorieGoal: Math.max(1200, Number(e.target.value || "1200")) })}
-                    className="w-20 text-right text-[14px] font-semibold text-gray-12 bg-transparent outline-none tabular-nums"
-                  />
+                  <input type="number" min={1200} value={goals.calorieGoal} onChange={(e) => updateGoals({ calorieGoal: Math.max(1200, Number(e.target.value || "1200")) })} className="w-20 text-right text-[14px] font-semibold text-gray-12 bg-transparent outline-none tabular-nums" />
                 </div>
                 <div className="flex items-center justify-between py-2.5 border-b border-gray-5/20">
                   <span className="text-[13px] text-[#FF6B6B]">{t("dietProtein")} (g)</span>
-                  <input
-                    type="number"
-                    min={0}
-                    value={state.proteinGoal}
-                    onChange={(e) => updateGoals({ proteinGoal: Math.max(0, Number(e.target.value || "0")) })}
-                    className="w-16 text-right text-[14px] font-semibold text-gray-12 bg-transparent outline-none tabular-nums"
-                  />
+                  <input type="number" min={0} value={goals.proteinGoal} onChange={(e) => updateGoals({ proteinGoal: Math.max(0, Number(e.target.value || "0")) })} className="w-16 text-right text-[14px] font-semibold text-gray-12 bg-transparent outline-none tabular-nums" />
                 </div>
                 <div className="flex items-center justify-between py-2.5 border-b border-gray-5/20">
                   <span className="text-[13px] text-[#FFB347]">{t("dietCarbs")} (g)</span>
-                  <input
-                    type="number"
-                    min={0}
-                    value={state.carbsGoal}
-                    onChange={(e) => updateGoals({ carbsGoal: Math.max(0, Number(e.target.value || "0")) })}
-                    className="w-16 text-right text-[14px] font-semibold text-gray-12 bg-transparent outline-none tabular-nums"
-                  />
+                  <input type="number" min={0} value={goals.carbsGoal} onChange={(e) => updateGoals({ carbsGoal: Math.max(0, Number(e.target.value || "0")) })} className="w-16 text-right text-[14px] font-semibold text-gray-12 bg-transparent outline-none tabular-nums" />
                 </div>
                 <div className="flex items-center justify-between py-2.5 border-b border-gray-5/20">
                   <span className="text-[13px] text-[#4FC3F7]">{t("dietFats")} (g)</span>
-                  <input
-                    type="number"
-                    min={0}
-                    value={state.fatsGoal}
-                    onChange={(e) => updateGoals({ fatsGoal: Math.max(0, Number(e.target.value || "0")) })}
-                    className="w-16 text-right text-[14px] font-semibold text-gray-12 bg-transparent outline-none tabular-nums"
-                  />
+                  <input type="number" min={0} value={goals.fatsGoal} onChange={(e) => updateGoals({ fatsGoal: Math.max(0, Number(e.target.value || "0")) })} className="w-16 text-right text-[14px] font-semibold text-gray-12 bg-transparent outline-none tabular-nums" />
                 </div>
                 <div className="flex items-center justify-between py-2.5">
                   <span className="text-[13px] text-[#4FC3F7]">{t("dietWaterGoalInput")}</span>
-                  <input
-                    type="number"
-                    min={1}
-                    step={0.1}
-                    value={state.waterGoalL}
-                    onChange={(e) => updateGoals({ waterGoalL: Math.max(1, Number(e.target.value || "1")) })}
-                    className="w-16 text-right text-[14px] font-semibold text-gray-12 bg-transparent outline-none tabular-nums"
-                  />
+                  <input type="number" min={1} step={0.1} value={goals.waterGoalL} onChange={(e) => updateGoals({ waterGoalL: Math.max(1, Number(e.target.value || "1")) })} className="w-16 text-right text-[14px] font-semibold text-gray-12 bg-transparent outline-none tabular-nums" />
                 </div>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
-      </section>
+      </motion.section>
     </div>
   );
 }

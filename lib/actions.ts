@@ -755,6 +755,145 @@ export async function getDailyNutrition(userId: string, date: string) {
 }
 
 // ══════════════════════════════════════
+// V2: Meal Templates & Daily Checks
+// ══════════════════════════════════════
+
+/** Get all meal templates for a user */
+export async function getMealTemplates(userId: string) {
+    const db = createServerSupabase();
+    const { data } = await db
+        .from("nutrition_meal_templates")
+        .select("*")
+        .eq("user_id", userId)
+        .order("sort_order")
+        .order("created_at");
+    return (data ?? []).map((t: Record<string, unknown>) => ({
+        id: t.id as string,
+        name: t.name as string,
+        slot: t.slot as string,
+        calories: (t.calories as number) ?? 0,
+        protein: (t.protein as number) ?? 0,
+        carbs: (t.carbs as number) ?? 0,
+        fats: (t.fats as number) ?? 0,
+        sortOrder: (t.sort_order as number) ?? 0,
+    }));
+}
+
+/** Create a persistent meal template */
+export async function createMealTemplate(
+    userId: string,
+    template: { name: string; slot: string; calories: number; protein: number; carbs: number; fats: number },
+) {
+    const db = createServerSupabase();
+    const { data, error } = await db
+        .from("nutrition_meal_templates")
+        .insert({
+            user_id: userId,
+            name: template.name,
+            slot: template.slot,
+            calories: template.calories,
+            protein: template.protein,
+            carbs: template.carbs,
+            fats: template.fats,
+        })
+        .select("id, name, slot, calories, protein, carbs, fats, sort_order")
+        .single();
+    if (error) {
+        console.error("[OPTIZ] createMealTemplate error:", error);
+        return null;
+    }
+    return {
+        id: data.id as string,
+        name: data.name as string,
+        slot: data.slot as string,
+        calories: (data.calories as number) ?? 0,
+        protein: (data.protein as number) ?? 0,
+        carbs: (data.carbs as number) ?? 0,
+        fats: (data.fats as number) ?? 0,
+        sortOrder: (data.sort_order as number) ?? 0,
+    };
+}
+
+/** Update a meal template (name, slot, macros) */
+export async function updateMealTemplate(
+    userId: string,
+    templateId: string,
+    updates: { name?: string; slot?: string; calories?: number; protein?: number; carbs?: number; fats?: number },
+) {
+    const db = createServerSupabase();
+    const payload: Record<string, unknown> = {};
+    if (updates.name !== undefined) payload.name = updates.name;
+    if (updates.slot !== undefined) payload.slot = updates.slot;
+    if (updates.calories !== undefined) payload.calories = updates.calories;
+    if (updates.protein !== undefined) payload.protein = updates.protein;
+    if (updates.carbs !== undefined) payload.carbs = updates.carbs;
+    if (updates.fats !== undefined) payload.fats = updates.fats;
+    await db.from("nutrition_meal_templates").update(payload).eq("id", templateId).eq("user_id", userId);
+}
+
+/** Delete a meal template */
+export async function deleteMealTemplate(userId: string, templateId: string) {
+    const db = createServerSupabase();
+    await db.from("nutrition_meal_templates").delete().eq("id", templateId).eq("user_id", userId);
+}
+
+/** Mark a meal as eaten for a given date */
+export async function checkMealToday(userId: string, templateId: string, date: string) {
+    const db = createServerSupabase();
+    await db.from("nutrition_daily_checks").upsert(
+        { user_id: userId, template_id: templateId, date },
+        { onConflict: "user_id,template_id,date" },
+    );
+}
+
+/** Unmark a meal for a given date */
+export async function uncheckMealToday(userId: string, templateId: string, date: string) {
+    const db = createServerSupabase();
+    await db.from("nutrition_daily_checks").delete()
+        .eq("user_id", userId)
+        .eq("template_id", templateId)
+        .eq("date", date);
+}
+
+/** Get checked template IDs for a given date */
+export async function getDailyChecks(userId: string, date: string) {
+    const db = createServerSupabase();
+    const { data } = await db
+        .from("nutrition_daily_checks")
+        .select("template_id")
+        .eq("user_id", userId)
+        .eq("date", date);
+    return (data ?? []).map((d: Record<string, unknown>) => d.template_id as string);
+}
+
+/** Get weekly checks + water data for a date range */
+export async function getWeeklyNutritionData(userId: string, startDate: string, endDate: string) {
+    const db = createServerSupabase();
+    const [checksRes, logsRes] = await Promise.all([
+        db.from("nutrition_daily_checks")
+            .select("template_id, date")
+            .eq("user_id", userId)
+            .gte("date", startDate)
+            .lte("date", endDate),
+        db.from("nutrition_daily_logs")
+            .select("log_date, water_in_l")
+            .eq("user_id", userId)
+            .gte("log_date", startDate)
+            .lte("log_date", endDate),
+    ]);
+    return {
+        checks: (checksRes.data ?? []).map((d: Record<string, unknown>) => ({
+            templateId: d.template_id as string,
+            date: d.date as string,
+        })),
+        waterLogs: (logsRes.data ?? []).map((d: Record<string, unknown>) => ({
+            date: d.log_date as string,
+            waterInL: (d.water_in_l as number) ?? 0,
+        })),
+    };
+}
+
+// ══════════════════════════════════════
 // V2: Breathwork Actions
 // ══════════════════════════════════════
 
@@ -937,6 +1076,8 @@ export async function deleteUserData(userId: string) {
     // V2 tables (cascade handles nested, but explicit is safer)
     await db.from("xp_events").delete().eq("user_id", userId);
     await db.from("workout_logs").delete().eq("user_id", userId);
+    await db.from("nutrition_daily_checks").delete().eq("user_id", userId);
+    await db.from("nutrition_meal_templates").delete().eq("user_id", userId);
     await db.from("nutrition_daily_logs").delete().eq("user_id", userId);
     await db.from("steps_daily_logs").delete().eq("user_id", userId);
     await db.from("breathwork_sessions").delete().eq("user_id", userId);
