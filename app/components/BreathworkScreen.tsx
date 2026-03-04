@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { Pause, Play, RotateCcw, Volume2, VolumeX } from "lucide-react";
 import {
   isSoundEnabled,
@@ -47,10 +47,6 @@ const PRESETS: Preset[] = [
 const DEFAULT_PRESET_ID: Preset["id"] = "focus";
 const TICK_MS = 120;
 
-function clamp01(value: number) {
-  return Math.max(0, Math.min(1, value));
-}
-
 function formatDuration(totalSeconds: number) {
   const m = Math.floor(totalSeconds / 60);
   const s = totalSeconds % 60;
@@ -65,98 +61,77 @@ function formatClock(totalSeconds: number) {
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
-function BreathOrb({
-  phaseProgress,
-  totalProgress,
+/* ── BreathingOrb — Pure CSS / Framer Motion (no SVG) ── */
+function BreathingOrb({
   seconds,
   orbScale,
   phase,
+  idle,
 }: {
-  phaseProgress: number;
-  totalProgress: number;
   seconds: number;
   orbScale: number;
   phase: PhaseKey;
+  idle: boolean;
 }) {
-  const size = 300;
-  const radius = 118;
-  const circumference = 2 * Math.PI * radius;
-  const phaseOffset = circumference * (1 - clamp01(phaseProgress));
-  const totalOffset = circumference * (1 - clamp01(totalProgress));
+  const idleTransition = { duration: 4, repeat: Infinity, ease: "easeInOut" as const };
+  const phaseTransition = { duration: 0.5, ease: [0.4, 0, 0.2, 1] as const };
 
   return (
-    <motion.div
-      className="relative mx-auto w-[300px] h-[300px]"
-      animate={{
-        scale: phase === "hold" ? 1.02 : 1,
-      }}
-      transition={{ duration: 0.6, ease: "easeInOut" }}
-    >
+    <div className="relative mx-auto w-[220px] h-[220px] flex items-center justify-center">
+      {/* Outer glow */}
       <motion.div
         className="absolute inset-0 rounded-full pointer-events-none"
-        animate={{
-          opacity: phase === "inhale" ? 0.36 : phase === "hold" ? 0.42 : 0.24,
-          scale: orbScale + 0.08,
-        }}
-        transition={{ duration: 0.45, ease: "easeInOut" }}
-        style={{
-          background: "radial-gradient(circle, rgba(232,0,0,0.35) 0%, rgba(232,0,0,0.12) 45%, rgba(232,0,0,0) 72%)",
-          filter: "blur(20px)",
-        }}
+        style={{ background: "rgba(232,0,0,0.12)", filter: "blur(80px)" }}
+        animate={
+          idle
+            ? { scale: [1, 1.04, 1], opacity: 0.5 }
+            : { scale: orbScale + 0.1, opacity: phase === "inhale" ? 0.7 : phase === "hold" ? 0.6 : 0.35 }
+        }
+        transition={idle ? idleTransition : phaseTransition}
       />
 
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90 relative z-10">
-        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgba(255,255,255,0.10)" strokeWidth="16" />
-        <motion.circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke="rgba(232,0,0,0.30)"
-          strokeWidth="14"
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          animate={{ strokeDashoffset: totalOffset }}
-          transition={{ duration: 0.12, ease: "linear" }}
-        />
-        <motion.circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius - 14}
-          fill="none"
-          stroke="#E80000"
-          strokeWidth="12"
-          strokeLinecap="round"
-          strokeDasharray={2 * Math.PI * (radius - 14)}
-          animate={{ strokeDashoffset: phaseOffset }}
-          transition={{ duration: 0.12, ease: "linear" }}
-        />
-      </svg>
-
+      {/* Mid glow */}
       <motion.div
-        className="absolute inset-0 z-20 flex items-center justify-center"
-        animate={{ scale: orbScale }}
-        transition={{ duration: 0.45, ease: "easeInOut" }}
+        className="absolute rounded-full pointer-events-none"
+        style={{ width: 180, height: 180, background: "rgba(255,80,80,0.25)", filter: "blur(50px)" }}
+        animate={
+          idle
+            ? { scale: [1, 1.04, 1], opacity: 0.4 }
+            : { scale: orbScale, opacity: phase === "inhale" ? 0.8 : phase === "hold" ? 0.7 : 0.35 }
+        }
+        transition={idle ? idleTransition : phaseTransition}
+      />
+
+      {/* Core orb */}
+      <motion.div
+        className="absolute rounded-full pointer-events-none"
+        style={{
+          width: 140,
+          height: 140,
+          background: "radial-gradient(circle, #E80000 0%, rgba(232,0,0,0.6) 50%, rgba(232,0,0,0.1) 100%)",
+          filter: "blur(30px)",
+        }}
+        animate={
+          idle
+            ? { scale: [1, 1.04, 1], opacity: 0.6 }
+            : { scale: orbScale, opacity: phase === "inhale" ? 0.9 : phase === "hold" ? 0.85 : 0.5 }
+        }
+        transition={idle ? idleTransition : phaseTransition}
+      />
+
+      {/* Center countdown */}
+      <motion.div
+        className="relative z-10"
+        animate={idle ? { scale: [1, 1.04, 1] } : { scale: Math.max(0.7, orbScale * 0.92) }}
+        transition={idle ? idleTransition : phaseTransition}
       >
-        <div className="relative w-[184px] h-[184px] rounded-full border border-[#E80000]/35 bg-[#15090A]">
-          <motion.div
-            className="absolute inset-0 rounded-full"
-            animate={{ opacity: phase === "hold" ? 0.42 : 0.34 }}
-            transition={{ duration: 0.45, ease: "easeInOut" }}
-            style={{
-              background: "radial-gradient(circle, rgba(232,0,0,0.45) 0%, rgba(232,0,0,0.20) 48%, rgba(232,0,0,0.02) 100%)",
-            }}
-          />
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <p className="text-[64px] leading-none font-semibold text-gray-12 tabular-nums">{seconds}</p>
-            <p className="text-[10px] uppercase tracking-[0.2em] text-gray-7 mt-1">sec</p>
-          </div>
-        </div>
+        <span className="text-[42px] font-light text-white tabular-nums select-none">{seconds}</span>
       </motion.div>
-    </motion.div>
+    </div>
   );
 }
 
+/* ── Main component ── */
 export function BreathworkScreen({ userId, initialSessionsToday }: BreathworkScreenProps) {
   const { t } = useI18n();
 
@@ -243,19 +218,18 @@ export function BreathworkScreen({ userId, initialSessionsToday }: BreathworkScr
 
   const cycleNumber = Math.min(config.cycles, Math.floor(elapsedSecFloat / Math.max(1, cycleSeconds)) + 1);
   const phaseProgress = Math.min(1, phaseData.elapsed / Math.max(1, phaseData.duration));
-  const totalProgress = Math.min(1, elapsedSecFloat / totalSeconds);
 
   const orbScale = useMemo(() => {
-    if (elapsedSecFloat >= totalSeconds) return 0.9;
-    if (!running && elapsedMs === 0) return 0.95;
+    if (elapsedSecFloat >= totalSeconds) return 0.85;
+    if (!running && elapsedMs === 0) return 1;
 
     if (phaseData.key === "inhale") {
-      return 0.9 + 0.22 * phaseProgress;
+      return 0.85 + 0.30 * phaseProgress;
     }
     if (phaseData.key === "hold") {
-      return 1.12;
+      return 1.15;
     }
-    return 1.12 - 0.24 * phaseProgress;
+    return 1.15 - 0.30 * phaseProgress;
   }, [elapsedMs, elapsedSecFloat, phaseData.key, phaseProgress, running, totalSeconds]);
 
   const finishSession = useCallback(() => {
@@ -340,130 +314,148 @@ export function BreathworkScreen({ userId, initialSessionsToday }: BreathworkScr
     setRunning(true);
   };
 
-  const mainActionLabel =
-    running
-      ? t("breathworkPause")
-      : elapsedMs > 0 && elapsedMs < totalMs
-        ? t("breathworkResume")
-        : t("breathworkStart");
-
   const remainingTotal = Math.max(0, totalSeconds - elapsedSecFloat);
   const isFinished = elapsedMs >= totalMs;
+  const isIdle = !running && elapsedMs === 0;
+  const hasStarted = running || elapsedMs > 0;
 
   return (
     <div className="pb-8 space-y-4 relative">
       <XPToast toast={toast} />
 
+      {/* Header: title left + remaining time badge right */}
       <div className="flex items-end justify-between gap-4">
         <div>
           <h2 className="text-[26px] leading-tight font-semibold text-gray-12 mb-1">{t("breathworkTitle")}</h2>
           <p className="text-sm text-gray-8 leading-relaxed">{t("breathworkSubtitle")}</p>
         </div>
-        <div className="shrink-0 rounded-xl border border-gray-5/35 bg-gray-2/82 px-3 py-2 text-right min-w-[82px]">
-          <p className="text-[10px] uppercase tracking-[0.14em] text-gray-7">{t("breathworkDurationLabel")}</p>
-          <p className="text-[16px] font-semibold text-gray-12 tabular-nums mt-0.5">{formatClock(remainingTotal)}</p>
+        <div className="shrink-0 rounded-full bg-gray-3/50 px-3.5 py-1.5">
+          <p className="text-[14px] font-semibold text-gray-12 tabular-nums">{formatClock(remainingTotal)}</p>
         </div>
       </div>
 
-      <section className="rounded-3xl border border-gray-5/35 bg-gray-2/82 p-4 sm:p-5">
-        <div className="mb-2 text-center">
-          <p className="text-[11px] text-gray-7 uppercase tracking-[0.14em]">{t("breathworkCurrentPhase")}</p>
-          <p className="text-[24px] text-[#FF6666] font-semibold mt-1">
-            {isFinished ? t("breathworkFinished") : phaseLabel}
-          </p>
+      {/* Main card */}
+      <section className="rounded-3xl border border-gray-5/35 bg-gray-2/82 p-5">
+        {/* Phase label with AnimatePresence crossfade */}
+        <div className="text-center mb-1">
+          <AnimatePresence mode="wait">
+            <motion.p
+              key={isFinished ? "finished" : phaseData.key}
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.2 }}
+              className="text-[28px] font-semibold text-gray-12"
+            >
+              {isFinished ? t("breathworkFinished") : phaseLabel}
+            </motion.p>
+          </AnimatePresence>
+
+          {/* Cycle info */}
           <p className="text-[12px] text-gray-8 mt-0.5">
             {t("breathworkCycle")} {cycleNumber}/{config.cycles}
             {!isFinished ? ` · ${t("breathworkNextPhase")} ${nextPhaseLabel}` : ""}
           </p>
         </div>
 
-        <BreathOrb
-          phaseProgress={phaseProgress}
-          totalProgress={totalProgress}
-          seconds={isFinished ? 0 : phaseData.remaining}
-          orbScale={orbScale}
-          phase={phaseData.key}
-        />
+        {/* BreathingOrb hero */}
+        <div className="my-6">
+          <BreathingOrb
+            seconds={isFinished ? 0 : phaseData.remaining}
+            orbScale={orbScale}
+            phase={phaseData.key}
+            idle={isIdle}
+          />
+        </div>
 
-        <div className={`mt-3 grid ${phaseSegments.length === 2 ? "grid-cols-2" : "grid-cols-3"} gap-2 text-[11px]`}>
-          {phaseSegments.map((phase) => {
-            const active = phase.key === phaseData.key && running;
-            const label =
-              phase.key === "inhale"
-                ? t("breathworkInhale")
-                : phase.key === "hold"
-                  ? t("breathworkHold")
-                  : t("breathworkExhale");
+        {/* Cycle dots */}
+        <div className="flex items-center justify-center gap-1.5 mb-5">
+          {Array.from({ length: config.cycles }).map((_, i) => {
+            const completed = i < cycleNumber - 1;
+            const current = i === cycleNumber - 1 && hasStarted;
             return (
               <div
-                key={phase.key}
-                className={`rounded-xl border p-2 text-center ${
-                  active ? "border-[#E80000]/35 bg-[#E80000]/12 text-[#FF6666]" : "border-gray-5/30 bg-gray-3/20 text-gray-10"
+                key={i}
+                className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                  completed
+                    ? "bg-[#E80000]"
+                    : current
+                      ? "bg-[#E80000] shadow-[0_0_6px_rgba(232,0,0,0.6)]"
+                      : "bg-white/10"
                 }`}
-              >
-                {label} {phase.seconds}{t("breathworkSecondsShort")}
-              </div>
+              />
             );
           })}
         </div>
 
-        <div className="mt-5 flex items-center justify-center gap-2.5">
-          <button
-            type="button"
-            onClick={resetSession}
-            className="w-11 h-11 rounded-xl border border-gray-5/35 bg-gray-3/35 text-gray-10 inline-flex items-center justify-center"
-            aria-label={t("reset")}
-          >
-            <RotateCcw size={15} />
-          </button>
+        {/* Controls: single Start when idle, 3-button layout otherwise */}
+        {!hasStarted ? (
+          <div className="flex justify-center">
+            <button
+              type="button"
+              onClick={handleMainAction}
+              className="h-14 px-10 rounded-full optiz-gradient-bg text-white text-[15px] font-semibold inline-flex items-center gap-2"
+            >
+              <Play size={16} /> {t("breathworkStart")}
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={resetSession}
+              className="w-10 h-10 rounded-full border border-gray-5/35 bg-transparent text-gray-10 inline-flex items-center justify-center"
+              aria-label={t("reset")}
+            >
+              <RotateCcw size={15} />
+            </button>
 
-          <button
-            type="button"
-            onClick={handleMainAction}
-            className="h-11 px-6 rounded-xl optiz-gradient-bg text-white text-sm font-semibold inline-flex items-center gap-1.5 min-w-[148px] justify-center"
-          >
-            {running ? <Pause size={14} /> : <Play size={14} />} {mainActionLabel}
-          </button>
+            <button
+              type="button"
+              onClick={handleMainAction}
+              className="w-14 h-14 rounded-full optiz-gradient-bg text-white inline-flex items-center justify-center"
+            >
+              {running ? <Pause size={20} /> : <Play size={20} />}
+            </button>
 
-          <button
-            type="button"
-            onClick={toggleSound}
-            className="w-11 h-11 rounded-xl border border-gray-5/35 bg-gray-3/35 text-gray-10 inline-flex items-center justify-center"
-            aria-label={t("sound")}
-          >
-            {soundOn ? <Volume2 size={15} /> : <VolumeX size={15} />}
-          </button>
-        </div>
+            <button
+              type="button"
+              onClick={toggleSound}
+              className="w-10 h-10 rounded-full border border-gray-5/35 bg-transparent text-gray-10 inline-flex items-center justify-center"
+              aria-label={t("sound")}
+            >
+              {soundOn ? <Volume2 size={15} /> : <VolumeX size={15} />}
+            </button>
+          </div>
+        )}
       </section>
 
-      <section className="rounded-3xl border border-gray-5/35 bg-gray-2/82 p-3">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-          {PRESETS.map((preset) => {
-            const presetSeconds = (preset.inhale + preset.hold + preset.exhale) * preset.cycles;
-            const selected = activePreset === preset.id;
-            return (
-              <button
-                key={preset.id}
-                type="button"
-                onClick={() => applyPreset(preset.id)}
-                className={`rounded-xl border px-3 py-2.5 text-left transition-colors ${
-                  selected ? "border-[#E80000]/45 bg-[#E80000]/12" : "border-gray-5/30 bg-gray-3/16 hover:bg-gray-3/28"
-                }`}
-              >
-                <p className="text-[14px] font-semibold text-gray-12">{t(preset.titleKey)}</p>
-                <p className="text-[11px] text-gray-8 mt-0.5">
-                  {preset.inhale}-{preset.hold}-{preset.exhale} · {formatDuration(presetSeconds)}
-                </p>
-              </button>
-            );
-          })}
-        </div>
+      {/* Preset pills — inline rounded-full buttons, no card wrapper */}
+      <div className="flex flex-wrap gap-2">
+        {PRESETS.map((preset) => {
+          const presetSeconds = (preset.inhale + preset.hold + preset.exhale) * preset.cycles;
+          const selected = activePreset === preset.id;
+          return (
+            <button
+              key={preset.id}
+              type="button"
+              onClick={() => applyPreset(preset.id)}
+              className={`rounded-full px-4 py-2 text-[13px] font-medium transition-colors ${
+                selected
+                  ? "bg-[#E80000]/15 text-[#FF6666] border border-[#E80000]/35"
+                  : "bg-gray-3/30 text-gray-10 border border-gray-5/25 hover:bg-gray-3/50"
+              }`}
+            >
+              {t(preset.titleKey)} · {formatDuration(presetSeconds)}
+            </button>
+          );
+        })}
+      </div>
 
-        <div className="mt-3 flex items-center justify-between rounded-xl border border-gray-5/25 bg-gray-3/16 px-3 py-2">
-          <span className="text-[11px] uppercase tracking-[0.12em] text-gray-7">{t("breathworkSessionsToday")}</span>
-          <span className="text-[14px] font-semibold text-gray-12 tabular-nums">{sessionsToday}</span>
-        </div>
-      </section>
+      {/* Sessions counter — single muted line */}
+      <p className="text-[11px] text-gray-8 text-center">
+        {t("breathworkSessionsToday")}: {sessionsToday}
+      </p>
     </div>
   );
 }
