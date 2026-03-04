@@ -31,7 +31,7 @@ export default async function DashboardPage({
         <header className="space-y-2">
           <h1 className="text-3xl font-bold">OPTIZ Dashboard</h1>
           <p className="text-gray-500">
-            Manage your app setup and review high-level performance signals.
+            Manage app settings and basic analytics.
           </p>
         </header>
 
@@ -55,7 +55,7 @@ export default async function DashboardPage({
         <section className="rounded-xl border p-6 space-y-4">
           <h2 className="text-xl font-semibold">App Settings</h2>
           <p className="text-gray-500">
-            Configure training content, member experience, and product settings from here.
+            Configure workouts, content, and member settings.
           </p>
         </section>
 

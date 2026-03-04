@@ -6,7 +6,7 @@ export default function DiscoverPage() {
         <header className="space-y-4 py-12">
           <h1 className="text-4xl font-bold">⚡ OPTIZ</h1>
           <p className="text-xl text-gray-500 max-w-2xl mx-auto">
-            Build real consistency with guided workouts, visible progress, and a leaderboard that keeps you accountable.
+            Workouts, progress, and leaderboard in one app.
           </p>
         </header>
 
@@ -15,21 +15,21 @@ export default function DiscoverPage() {
           <div className="rounded-xl border p-6 space-y-3">
             <h3 className="text-lg font-semibold">💪 Structured Workouts</h3>
             <p className="text-gray-500">
-              Follow clear training sessions with practical progression built in.
+              Clear sessions you can follow every day.
             </p>
           </div>
 
           <div className="rounded-xl border p-6 space-y-3">
             <h3 className="text-lg font-semibold">📊 Track What Matters</h3>
             <p className="text-gray-500">
-              Monitor XP, streaks, steps, and nutrition in one focused dashboard.
+              See XP, streaks, steps, and nutrition in one place.
             </p>
           </div>
 
           <div className="rounded-xl border p-6 space-y-3">
             <h3 className="text-lg font-semibold">🏆 Competitive Momentum</h3>
             <p className="text-gray-500">
-              Stay consistent through ranking, milestones, and daily validation loops.
+              Compare your rank with other members.
             </p>
           </div>
         </section>
