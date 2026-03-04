@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Footprints, Target, Zap } from "lucide-react";
 import { XPToast, type XPToastData } from "./XPToast";
 import { useI18n } from "./i18n";
-import { upsertDailySteps } from "@/lib/actions";
+import { upsertDailySteps, getDailySteps } from "@/lib/actions";
 
 interface StepsScreenProps {
   userId: string;
@@ -162,10 +162,21 @@ export function StepsScreen({ userId, onAwardXpEvent, initialData }: StepsScreen
     debounceRef.current = setTimeout(flushNow, 800);
   };
 
-  // Flush pending data on unmount (navigation / app close)
+  // Fetch fresh data on mount (fixes stale SSR initialData after tab switches)
   useEffect(() => {
-    return () => { flushNow(); };
-  }, [flushNow]);
+    let cancelled = false;
+    getDailySteps(userId, getTodayISO()).then((row) => {
+      if (cancelled || !row) return;
+      setState({
+        baseline: row.baseline ?? 6000,
+        goal: row.goal ?? 8000,
+        done: row.done ?? 0,
+      });
+      setMilestonesAwarded((row.milestones_awarded as number[]) ?? []);
+      setGoalHit(row.goal_hit ?? false);
+    }).catch((err) => console.error("[OPTIZ] Steps fetch error:", err));
+    return () => { cancelled = true; flushNow(); };
+  }, [userId, flushNow]);
 
   const progress = useMemo(() => {
     if (state.goal <= 0) return 0;

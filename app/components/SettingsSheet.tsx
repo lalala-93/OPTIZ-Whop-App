@@ -115,12 +115,6 @@ export function SettingsSheet({
                                             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
                                         </svg>
                                     )}
-                                    {/* Camera badge — always visible */}
-                                    <div className="absolute bottom-0 right-0 w-5 h-5 rounded-full bg-[#E80000] border-2 border-gray-2 flex items-center justify-center">
-                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" />
-                                        </svg>
-                                    </div>
                                     <input ref={fileInputRef} type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" />
                                 </button>
 
