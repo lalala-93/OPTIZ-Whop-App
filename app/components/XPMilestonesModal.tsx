@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { RANK_TIERS, getXpForLevel, getRankForLevel, formatNumber } from "./rankSystem";
+import { RANK_TIERS, getXpForLevel, getRankForLevel, getRankNameKey, formatNumber } from "./rankSystem";
 import { RankBadge } from "./RankBadge";
 import { useRef, useEffect, useMemo } from "react";
 import { useI18n } from "./i18n";
@@ -79,7 +79,7 @@ export function XPMilestonesModal({ isOpen, onClose, currentLevel, totalXp }: XP
                                     <div>
                                         <h2 className="text-base font-bold text-gray-12">{t("milestonesHeaderTitle")}</h2>
                                         <p className="text-[11px] text-gray-8 mt-0.5">
-                                            {t("milestonesSummary", { level: currentLevel, rank: currentRank.fullName, xp: formatNumber(totalXp) })}
+                                            {t("milestonesSummary", { level: currentLevel, rank: t(getRankNameKey(currentRank.tier.name) as Parameters<typeof t>[0]), xp: formatNumber(totalXp) })}
                                         </p>
                                     </div>
                                 </div>
@@ -112,7 +112,7 @@ export function XPMilestonesModal({ isOpen, onClose, currentLevel, totalXp }: XP
                                             className="text-[8px] font-bold uppercase tracking-wider"
                                             style={{ color: currentLevel >= tier.minLevel ? tier.color : "var(--gray-6)" }}
                                         >
-                                            {tier.name}
+                                            {t(getRankNameKey(tier.name) as Parameters<typeof t>[0])}
                                         </span>
                                     ))}
                                 </div>
@@ -137,7 +137,7 @@ export function XPMilestonesModal({ isOpen, onClose, currentLevel, totalXp }: XP
                                                     className="text-[10px] font-bold uppercase tracking-widest"
                                                     style={{ color: item.rank.tier.color }}
                                                 >
-                                                    {item.rank.tier.name}
+                                                    {t(getRankNameKey(item.rank.tier.name) as Parameters<typeof t>[0])}
                                                 </span>
                                                 <div className="flex-1 h-px" style={{ background: `${item.rank.tier.color}20` }} />
                                                 <span className="text-[8px] text-gray-6 font-medium">

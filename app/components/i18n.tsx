@@ -304,6 +304,12 @@ const translations = {
     trainingVolumeLabel: "volume",
     trainingRecordsLabel: "records",
 
+    // Rank names
+    rankRecruit: "Recruit",
+    rankSoldier: "Soldier",
+    rankVeteran: "Veteran",
+    rankPrestige: "Prestige",
+
     // Home V2
     homeStreak: "Streak",
     homeMomentumActive: "On track",
@@ -311,6 +317,12 @@ const translations = {
     homeLeaderboard: "Leaderboard",
     homeGlobalRanking: "Global ranking",
     homeQuote: "Quote",
+    homeActivity: "Activity",
+    homeShowMore: "See all",
+    homeShowLess: "Collapse",
+    homeToday: "Today",
+    homeNoActivity: "No activity",
+    homeMonths: "Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec",
   },
   fr: {
     home: "Accueil",
@@ -611,6 +623,12 @@ const translations = {
     trainingVolumeLabel: "volume",
     trainingRecordsLabel: "records",
 
+    // Rank names
+    rankRecruit: "Recrue",
+    rankSoldier: "Soldat",
+    rankVeteran: "Vétéran",
+    rankPrestige: "Prestige",
+
     // Home V2
     homeStreak: "Série",
     homeMomentumActive: "En cours",
@@ -618,6 +636,12 @@ const translations = {
     homeLeaderboard: "Classement",
     homeGlobalRanking: "Classement global",
     homeQuote: "Citation",
+    homeActivity: "Activité",
+    homeShowMore: "Voir tout",
+    homeShowLess: "Réduire",
+    homeToday: "Aujourd'hui",
+    homeNoActivity: "Aucune activité",
+    homeMonths: "Jan,Fév,Mar,Avr,Mai,Jun,Jul,Aoû,Sep,Oct,Nov,Déc",
   },
 } as const;
 

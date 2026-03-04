@@ -18,7 +18,7 @@ import { XPMilestonesModal } from "./XPMilestonesModal";
 import { StreakEarnedAnimation } from "./StreakEarnedAnimation";
 import { AnimatedFireIcon, AnimatedBoltIcon } from "./AnimatedIcons";
 import { I18nProvider, useI18n } from "./i18n";
-import { getLevelProgress, getRankForLevel } from "./rankSystem";
+import { getLevelProgress, getRankForLevel, getRankNameKey } from "./rankSystem";
 import {
   awardXpEvent as serverAwardXpEvent,
   updateProfile as serverUpdateProfile,
@@ -229,7 +229,7 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
       <header className="px-4 sm:px-6 pt-4 pb-3 sticky top-0 bg-gray-1/90 backdrop-blur-2xl z-30 border-b border-[var(--optiz-border)]">
         <div className="flex items-center justify-between mb-2.5">
           <div className="flex items-center gap-2.5 h-10">
-            <motion.div whileTap={{ scale: 0.95 }} className="flex items-center">
+            <motion.div whileTap={{ scale: 0.95 }} className="flex items-center relative overflow-hidden rounded-lg">
               <Image
                 src="/Logo-optiz.png"
                 alt="OPTIZ"
@@ -237,6 +237,15 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
                 height={52}
                 className="object-contain -mt-0.5"
                 style={{ borderRadius: 0 }}
+              />
+              <motion.div
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  background: "linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.25) 45%, rgba(255,255,255,0.35) 50%, rgba(255,255,255,0.25) 55%, transparent 60%)",
+                  backgroundSize: "200% 100%",
+                }}
+                animate={{ backgroundPosition: ["200% 0%", "-200% 0%"] }}
+                transition={{ duration: 1.8, repeat: Infinity, repeatDelay: 6, ease: "easeInOut" }}
               />
             </motion.div>
 
@@ -337,7 +346,7 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
             xpForNextLevel={levelData.xpForNextLevel}
             progressPercent={levelData.progressPercent}
             tier={rankData.tier}
-            rankFullName={rankData.fullName}
+            rankFullName={t(getRankNameKey(rankData.tier.name) as Parameters<typeof t>[0])}
             rankColors={rankData.tier.gradient}
             streakDays={streakDays}
             weeklyProgress={weeklyProgress}

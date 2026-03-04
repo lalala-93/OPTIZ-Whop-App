@@ -13,7 +13,7 @@ interface RankBadgeProps {
 
 export function RankBadge({ colors, glowColor, tierName, size = 80, className = "", mousePosition }: RankBadgeProps) {
     const id = `rb-${(tierName || "def").slice(0, 4)}-${size}`;
-    const t = (tierName || "Initiate").toLowerCase();
+    const t = (tierName || "Recruit").toLowerCase();
 
     // Global breathing animation to make badges feel alive
     const breathing = {
@@ -36,15 +36,15 @@ export function RankBadge({ colors, glowColor, tierName, size = 80, className = 
             whileHover={{ scale: 1.05 }}
         >
             {/* Ambient Background Glow for higher tiers */}
-            {(t === "elite" || t === "apex") && (
+            {(t === "veteran" || t === "prestige") && (
                 <motion.div
                     className="absolute inset-0 rounded-full"
                     style={{
                         background: `radial-gradient(circle, ${glowColor} 0%, transparent 65%)`,
                         filter: `blur(${size * 0.15}px)`,
-                        opacity: t === "apex" ? 0.8 : 0.5
+                        opacity: t === "prestige" ? 0.8 : 0.5
                     }}
-                    animate={{ opacity: t === "apex" ? [0.6, 1, 0.6] : [0.3, 0.6, 0.3], scale: [0.95, 1.05, 0.95] }}
+                    animate={{ opacity: t === "prestige" ? [0.6, 1, 0.6] : [0.3, 0.6, 0.3], scale: [0.95, 1.05, 0.95] }}
                     transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
                 />
             )}
@@ -108,10 +108,10 @@ export function RankBadge({ colors, glowColor, tierName, size = 80, className = 
                 </defs>
 
                 {/* Render specific geometry based on rank */}
-                {t === "initiate" && <InitiateBadge id={id} />}
-                {t === "grinder" && <GrinderBadge id={id} />}
-                {t === "elite" && <EliteBadge id={id} />}
-                {t === "apex" && <ApexBadge id={id} />}
+                {t === "recruit" && <InitiateBadge id={id} />}
+                {t === "soldier" && <GrinderBadge id={id} />}
+                {t === "veteran" && <EliteBadge id={id} />}
+                {t === "prestige" && <ApexBadge id={id} />}
             </motion.svg>
         </motion.div>
     );

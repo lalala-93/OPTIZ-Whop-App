@@ -14,11 +14,22 @@ export interface RankTier {
 }
 
 export const RANK_TIERS: RankTier[] = [
-    { name: "Initiate", minLevel: 1, maxLevel: 5, color: "#9CA3AF", colorLight: "#E5E7EB", gradient: ["#374151", "#9CA3AF"], glowColor: "rgba(156,163,175,0.3)", ringBg: "rgba(156,163,175,0.15)" },
-    { name: "Grinder", minLevel: 6, maxLevel: 10, color: "#D97706", colorLight: "#FBBF24", gradient: ["#92400E", "#FBBF24"], glowColor: "rgba(217,119,6,0.3)", ringBg: "rgba(217,119,6,0.15)" },
-    { name: "Elite", minLevel: 11, maxLevel: 15, color: "#E80000", colorLight: "#FF5252", gradient: ["#7F1D1D", "#FF5252"], glowColor: "rgba(232,0,0,0.4)", ringBg: "rgba(232,0,0,0.2)" },
-    { name: "Apex", minLevel: 16, maxLevel: 999, color: "#FFD700", colorLight: "#FEF08A", gradient: ["#B45309", "#FEF08A"], glowColor: "rgba(255,215,0,0.5)", ringBg: "rgba(255,215,0,0.25)" },
+    { name: "Recruit", minLevel: 1, maxLevel: 5, color: "#9CA3AF", colorLight: "#E5E7EB", gradient: ["#374151", "#9CA3AF"], glowColor: "rgba(156,163,175,0.3)", ringBg: "rgba(156,163,175,0.15)" },
+    { name: "Soldier", minLevel: 6, maxLevel: 10, color: "#D97706", colorLight: "#FBBF24", gradient: ["#92400E", "#FBBF24"], glowColor: "rgba(217,119,6,0.3)", ringBg: "rgba(217,119,6,0.15)" },
+    { name: "Veteran", minLevel: 11, maxLevel: 15, color: "#E80000", colorLight: "#FF5252", gradient: ["#7F1D1D", "#FF5252"], glowColor: "rgba(232,0,0,0.4)", ringBg: "rgba(232,0,0,0.2)" },
+    { name: "Prestige", minLevel: 16, maxLevel: 999, color: "#FFD700", colorLight: "#FEF08A", gradient: ["#B45309", "#FEF08A"], glowColor: "rgba(255,215,0,0.5)", ringBg: "rgba(255,215,0,0.25)" },
 ];
+
+// Map tier internal name → i18n key
+export function getRankNameKey(tierName: string): string {
+    const map: Record<string, string> = {
+        Recruit: "rankRecruit",
+        Soldier: "rankSoldier",
+        Veteran: "rankVeteran",
+        Prestige: "rankPrestige",
+    };
+    return map[tierName] ?? "rankRecruit";
+}
 
 // ── XP Calculation ── (uncapped — users can go beyond level 20)
 export function getXpForLevel(level: number): number {
