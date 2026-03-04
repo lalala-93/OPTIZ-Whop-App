@@ -2,13 +2,16 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Apple, ChevronDown, Droplets, Flame, Plus, UtensilsCrossed, Zap } from "lucide-react";
+import { ChevronDown, Droplets, Flame, Plus, Trash2, Zap } from "lucide-react";
 import { XPToast, type XPToastData } from "./XPToast";
 import { useI18n } from "./i18n";
 import {
   upsertDailyNutrition,
   addNutritionMeal as serverAddNutritionMeal,
+  deleteNutritionMeal as serverDeleteMeal,
 } from "@/lib/actions";
+
+/* ── Types ── */
 
 interface DietScreenProps {
   userId: string;
@@ -66,17 +69,50 @@ interface DietRewardsState {
   hydrationGoalHit: boolean;
 }
 
-interface MealType {
+/* ── Food database ── */
+
+interface FoodItem {
   id: string;
-  labelKey: string;
+  emoji: string;
+  name: { en: string; fr: string };
+  category: "protein" | "carb" | "fat";
+  defaultQty: number;
+  unit: string;
+  step: number;
+  cal: number;
+  p: number;
+  c: number;
+  f: number;
 }
 
-const MEAL_TYPES: MealType[] = [
-  { id: "breakfast", labelKey: "dietBreakfast" },
-  { id: "lunch", labelKey: "dietLunch" },
-  { id: "snack", labelKey: "dietSnack" },
-  { id: "dinner", labelKey: "dietDinner" },
+type FoodCategory = "all" | "protein" | "carb" | "fat";
+
+const FOOD_DB: FoodItem[] = [
+  // Proteins
+  { id: "ground-beef", emoji: "🥩", name: { en: "Ground beef 15%", fr: "Viande hachée 15%" }, category: "protein", defaultQty: 150, unit: "g", step: 50, cal: 327, p: 29, c: 0, f: 23 },
+  { id: "chicken", emoji: "🍗", name: { en: "Chicken breast", fr: "Poulet" }, category: "protein", defaultQty: 150, unit: "g", step: 50, cal: 247, p: 47, c: 0, f: 5 },
+  { id: "fatty-fish", emoji: "🐟", name: { en: "Fatty fish", fr: "Poisson gras" }, category: "protein", defaultQty: 150, unit: "g", step: 50, cal: 312, p: 30, c: 0, f: 20 },
+  { id: "eggs", emoji: "🥚", name: { en: "Eggs", fr: "Œufs" }, category: "protein", defaultQty: 3, unit: "pcs", step: 1, cal: 234, p: 19, c: 2, f: 17 },
+  { id: "kefir", emoji: "🥛", name: { en: "Kefir", fr: "Kéfir" }, category: "protein", defaultQty: 200, unit: "ml", step: 50, cal: 126, p: 7, c: 9, f: 7 },
+  { id: "skyr", emoji: "🥣", name: { en: "Skyr", fr: "Skyr" }, category: "protein", defaultQty: 150, unit: "g", step: 50, cal: 95, p: 17, c: 6, f: 0 },
+  // Carbs
+  { id: "rice", emoji: "🍚", name: { en: "Rice (raw)", fr: "Riz cru" }, category: "carb", defaultQty: 80, unit: "g", step: 10, cal: 292, p: 6, c: 64, f: 0 },
+  { id: "potato", emoji: "🥔", name: { en: "Potatoes", fr: "Pommes de terre" }, category: "carb", defaultQty: 200, unit: "g", step: 50, cal: 154, p: 4, c: 34, f: 0 },
+  { id: "sweet-potato", emoji: "🍠", name: { en: "Sweet potato", fr: "Patates douces" }, category: "carb", defaultQty: 200, unit: "g", step: 50, cal: 172, p: 3, c: 40, f: 0 },
+  { id: "sourdough", emoji: "🍞", name: { en: "Sourdough bread", fr: "Pain au levain" }, category: "carb", defaultQty: 60, unit: "g", step: 10, cal: 155, p: 5, c: 30, f: 1 },
+  { id: "honey", emoji: "🍯", name: { en: "Honey", fr: "Miel" }, category: "carb", defaultQty: 15, unit: "g", step: 5, cal: 46, p: 0, c: 12, f: 0 },
+  { id: "banana", emoji: "🍌", name: { en: "Banana", fr: "Banane" }, category: "carb", defaultQty: 120, unit: "g", step: 30, cal: 107, p: 1, c: 28, f: 0 },
+  { id: "apple", emoji: "🍎", name: { en: "Apple", fr: "Pomme" }, category: "carb", defaultQty: 150, unit: "g", step: 50, cal: 78, p: 1, c: 21, f: 0 },
+  { id: "blueberries", emoji: "🫐", name: { en: "Blueberries", fr: "Myrtilles" }, category: "carb", defaultQty: 100, unit: "g", step: 25, cal: 57, p: 1, c: 14, f: 0 },
+  { id: "kiwi", emoji: "🥝", name: { en: "Kiwi", fr: "Kiwi" }, category: "carb", defaultQty: 80, unit: "g", step: 20, cal: 49, p: 1, c: 12, f: 0 },
+  { id: "orange", emoji: "🍊", name: { en: "Orange", fr: "Orange" }, category: "carb", defaultQty: 150, unit: "g", step: 50, cal: 71, p: 1, c: 18, f: 0 },
+  // Fats
+  { id: "raw-cheese", emoji: "🧀", name: { en: "Raw milk cheese", fr: "Fromage lait cru" }, category: "fat", defaultQty: 30, unit: "g", step: 10, cal: 121, p: 8, c: 0, f: 10 },
+  { id: "raw-cream", emoji: "🫙", name: { en: "Raw cream", fr: "Crème crue" }, category: "fat", defaultQty: 20, unit: "ml", step: 10, cal: 69, p: 0, c: 1, f: 7 },
+  { id: "avocado", emoji: "🥑", name: { en: "Avocado", fr: "Avocat" }, category: "fat", defaultQty: 80, unit: "g", step: 20, cal: 128, p: 2, c: 7, f: 12 },
 ];
+
+/* ── Helpers ── */
 
 function getTodayISO() {
   return new Date().toISOString().split("T")[0];
@@ -86,7 +122,17 @@ function roundToQuarter(value: number) {
   return Math.round(value * 4) / 4;
 }
 
-/* ── CalorieRing — SVG circular progress ── */
+function scaledMacros(food: FoodItem, qty: number) {
+  const ratio = qty / food.defaultQty;
+  return {
+    cal: Math.round(food.cal * ratio),
+    p: Math.round(food.p * ratio),
+    c: Math.round(food.c * ratio),
+    f: Math.round(food.f * ratio),
+  };
+}
+
+/* ── CalorieRing ── */
 function CalorieRing({ eaten, goal }: { eaten: number; goal: number }) {
   const size = 160;
   const strokeWidth = 12;
@@ -127,7 +173,7 @@ function CalorieRing({ eaten, goal }: { eaten: number; goal: number }) {
   );
 }
 
-/* ── MacroBar — compact inline progress ── */
+/* ── MacroBar ── */
 function MacroBar({ label, current, goal, color }: { label: string; current: number; goal: number; color: string }) {
   const pct = goal > 0 ? Math.min(100, Math.round((current / goal) * 100)) : 0;
 
@@ -152,9 +198,76 @@ function MacroBar({ label, current, goal, color }: { label: string; current: num
   );
 }
 
+/* ── FoodRow ── */
+function FoodRow({
+  food,
+  qty,
+  onQtyChange,
+  onAdd,
+  locale,
+}: {
+  food: FoodItem;
+  qty: number;
+  onQtyChange: (qty: number) => void;
+  onAdd: () => void;
+  locale: string;
+}) {
+  const macros = scaledMacros(food, qty);
+  const name = locale === "fr" ? food.name.fr : food.name.en;
+
+  return (
+    <div className="py-2.5 border-b border-gray-5/15 last:border-0">
+      <div className="flex items-center gap-2.5">
+        <span className="text-lg shrink-0 w-7 text-center">{food.emoji}</span>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between">
+            <p className="text-[13px] font-medium text-gray-12 truncate pr-2">{name}</p>
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="text-[12px] font-semibold text-gray-11 tabular-nums">{macros.cal}</span>
+              <button
+                type="button"
+                onClick={onAdd}
+                className="w-7 h-7 rounded-lg border border-[#E80000]/30 bg-[#E80000]/10 flex items-center justify-center active:scale-90 transition-transform"
+              >
+                <Plus size={12} className="text-[#FF6D6D]" />
+              </button>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 mt-1">
+            <button
+              type="button"
+              onClick={() => onQtyChange(Math.max(food.step, qty - food.step))}
+              className="w-5 h-5 rounded bg-gray-4/40 text-[10px] font-bold text-gray-10 flex items-center justify-center active:scale-90 transition-transform"
+            >
+              -
+            </button>
+            <span className="text-[11px] text-gray-9 tabular-nums min-w-[40px] text-center">
+              {qty} {food.unit}
+            </span>
+            <button
+              type="button"
+              onClick={() => onQtyChange(qty + food.step)}
+              className="w-5 h-5 rounded bg-gray-4/40 text-[10px] font-bold text-gray-10 flex items-center justify-center active:scale-90 transition-transform"
+            >
+              +
+            </button>
+            <span className="text-[10px] text-gray-8 tabular-nums ml-1">
+              <span className="text-[#FF6B6B]">P{macros.p}</span>
+              {" · "}
+              <span className="text-[#FFB347]">C{macros.c}</span>
+              {" · "}
+              <span className="text-[#4FC3F7]">F{macros.f}</span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── Main component ── */
 export function DietScreen({ userId, onAwardXpEvent, initialData }: DietScreenProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
 
   const [state, setState] = useState<DietState>(() => ({
     calorieGoal: initialData?.calorieGoal ?? 2500,
@@ -175,14 +288,6 @@ export function DietScreen({ userId, onAwardXpEvent, initialData }: DietScreenPr
     })),
   }));
 
-  const [activeMealType, setActiveMealType] = useState<string>(MEAL_TYPES[0].id);
-  const [mealName, setMealName] = useState("");
-  const [mealCalories, setMealCalories] = useState(450);
-  const [mealProtein, setMealProtein] = useState(30);
-  const [mealCarbs, setMealCarbs] = useState(35);
-  const [mealFats, setMealFats] = useState(15);
-  const [settingsExpanded, setSettingsExpanded] = useState(false);
-
   const [rewards, setRewards] = useState<DietRewardsState>({
     mealRewards: initialData?.mealRewardsCount ?? 0,
     proteinGoalHit: initialData?.proteinGoalHit ?? false,
@@ -191,6 +296,15 @@ export function DietScreen({ userId, onAwardXpEvent, initialData }: DietScreenPr
   });
 
   const [toast, setToast] = useState<XPToastData | null>(null);
+  const [activeCategory, setActiveCategory] = useState<FoodCategory>("all");
+  const [foodQtys, setFoodQtys] = useState<Record<string, number>>({});
+  const [showCustom, setShowCustom] = useState(false);
+  const [customName, setCustomName] = useState("");
+  const [customCal, setCustomCal] = useState(200);
+  const [customP, setCustomP] = useState(10);
+  const [customC, setCustomC] = useState(20);
+  const [customF, setCustomF] = useState(5);
+  const [settingsExpanded, setSettingsExpanded] = useState(false);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -227,18 +341,6 @@ export function DietScreen({ userId, onAwardXpEvent, initialData }: DietScreenPr
 
   const caloriesRemaining = Math.max(0, state.calorieGoal - totals.calories);
   const hydrationProgress = state.waterGoalL > 0 ? Math.min(1, state.waterInL / state.waterGoalL) : 0;
-
-  const mealsByType = useMemo(() => {
-    const map: Record<string, MealEntry[]> = {};
-    MEAL_TYPES.forEach((type) => {
-      map[type.id] = [];
-    });
-    state.meals.forEach((meal) => {
-      if (!map[meal.mealType]) map[meal.mealType] = [];
-      map[meal.mealType].push(meal);
-    });
-    return map;
-  }, [state.meals]);
 
   const showReward = (title: string, subtitle: string, xp: number, source: string, refId: string) => {
     const id = `${Date.now()}-${Math.random()}`;
@@ -286,32 +388,30 @@ export function DietScreen({ userId, onAwardXpEvent, initialData }: DietScreenPr
     persistGoals(next, rewards);
   };
 
-  const addMeal = async () => {
-    if (!mealName.trim()) return;
-
+  /* ── Add food ── */
+  const addFood = async (name: string, cal: number, p: number, c: number, f: number, category: string) => {
     const today = getTodayISO();
     const meal: MealEntry = {
       id: `meal-${Date.now()}`,
-      name: mealName.trim(),
-      calories: Math.max(0, mealCalories),
-      protein: Math.max(0, mealProtein),
-      carbs: Math.max(0, mealCarbs),
-      fats: Math.max(0, mealFats),
-      mealType: activeMealType,
+      name,
+      calories: cal,
+      protein: p,
+      carbs: c,
+      fats: f,
+      mealType: category,
       createdAt: new Date().toISOString(),
     };
 
     setState((prev) => ({ ...prev, meals: [meal, ...prev.meals] }));
-    setMealName("");
 
     try {
       const serverMeal = await serverAddNutritionMeal(userId, today, {
-        mealType: meal.mealType,
-        name: meal.name,
-        calories: meal.calories,
-        protein: meal.protein,
-        carbs: meal.carbs,
-        fats: meal.fats,
+        mealType: category,
+        name,
+        calories: cal,
+        protein: p,
+        carbs: c,
+        fats: f,
       });
 
       if (serverMeal) {
@@ -321,7 +421,7 @@ export function DietScreen({ userId, onAwardXpEvent, initialData }: DietScreenPr
         }));
       }
     } catch (err) {
-      console.error("[OPTIZ] Failed to add meal", err);
+      console.error("[OPTIZ] Failed to add food", err);
     }
 
     if (rewards.mealRewards < 4) {
@@ -331,6 +431,38 @@ export function DietScreen({ userId, onAwardXpEvent, initialData }: DietScreenPr
       persistGoals(state, nextRewards);
     }
   };
+
+  const addPrefilledFood = (food: FoodItem) => {
+    const qty = foodQtys[food.id] ?? food.defaultQty;
+    const macros = scaledMacros(food, qty);
+    const name = locale === "fr" ? food.name.fr : food.name.en;
+    void addFood(name, macros.cal, macros.p, macros.c, macros.f, food.category);
+  };
+
+  const addCustomFood = () => {
+    if (!customName.trim()) return;
+    void addFood(customName.trim(), Math.max(0, customCal), Math.max(0, customP), Math.max(0, customC), Math.max(0, customF), "custom");
+    setCustomName("");
+    setShowCustom(false);
+  };
+
+  const removeFood = (mealId: string) => {
+    setState((prev) => ({
+      ...prev,
+      meals: prev.meals.filter((m) => m.id !== mealId),
+    }));
+    serverDeleteMeal(userId, mealId).catch((err) => console.error("[OPTIZ] Failed to delete food", err));
+  };
+
+  /* ── Filtered foods ── */
+  const filteredFoods = activeCategory === "all" ? FOOD_DB : FOOD_DB.filter((f) => f.category === activeCategory);
+
+  const categories: { id: FoodCategory; label: string }[] = [
+    { id: "all", label: t("dietAll") },
+    { id: "protein", label: t("dietProtein") },
+    { id: "carb", label: t("dietCarbs") },
+    { id: "fat", label: t("dietFats") },
+  ];
 
   return (
     <div className="pb-8 space-y-4 relative">
@@ -350,7 +482,6 @@ export function DietScreen({ userId, onAwardXpEvent, initialData }: DietScreenPr
       >
         <CalorieRing eaten={totals.calories} goal={state.calorieGoal} />
 
-        {/* Stats row */}
         <div className="mt-4 flex items-center justify-around">
           <div className="text-center">
             <p className="text-[11px] text-gray-7 uppercase tracking-wider">{t("dietGoalLabel")}</p>
@@ -368,13 +499,172 @@ export function DietScreen({ userId, onAwardXpEvent, initialData }: DietScreenPr
           </div>
         </div>
 
-        {/* Inline macro bars */}
         <div className="mt-5 space-y-2.5">
           <MacroBar label={t("dietProtein")} current={totals.protein} goal={state.proteinGoal} color="#FF6B6B" />
           <MacroBar label={t("dietCarbs")} current={totals.carbs} goal={state.carbsGoal} color="#FFB347" />
           <MacroBar label={t("dietFats")} current={totals.fats} goal={state.fatsGoal} color="#4FC3F7" />
         </div>
       </motion.section>
+
+      {/* ── Food Selection ── */}
+      <section className="rounded-3xl border border-gray-5/35 bg-gray-2/82 p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-[14px] font-semibold text-gray-12 inline-flex items-center gap-1.5">
+            <Plus size={15} /> {t("dietQuickAdd")}
+          </h3>
+        </div>
+
+        {/* Category pills */}
+        <div className="flex gap-2 mb-3">
+          {categories.map((cat) => (
+            <button
+              key={cat.id}
+              type="button"
+              onClick={() => setActiveCategory(cat.id)}
+              className={`rounded-full px-3 py-1.5 text-[12px] font-medium transition-colors ${
+                activeCategory === cat.id
+                  ? "bg-[#E80000]/15 text-[#FF6666] border border-[#E80000]/35"
+                  : "bg-gray-3/30 text-gray-10 border border-gray-5/25"
+              }`}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Food list */}
+        <div className="max-h-[340px] overflow-y-auto -mx-1 px-1">
+          {filteredFoods.map((food) => (
+            <FoodRow
+              key={food.id}
+              food={food}
+              qty={foodQtys[food.id] ?? food.defaultQty}
+              onQtyChange={(qty) => setFoodQtys((prev) => ({ ...prev, [food.id]: qty }))}
+              onAdd={() => addPrefilledFood(food)}
+              locale={locale}
+            />
+          ))}
+        </div>
+
+        {/* Custom food toggle */}
+        <button
+          type="button"
+          onClick={() => setShowCustom(!showCustom)}
+          className="w-full mt-3 h-9 rounded-xl border border-dashed border-gray-5/40 text-[12px] font-medium text-gray-10 flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform"
+        >
+          <Plus size={12} /> {t("dietCustom")}
+        </button>
+
+        {/* Custom food form */}
+        <AnimatePresence>
+          {showCustom && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden"
+            >
+              <div className="pt-3 space-y-2">
+                <input
+                  value={customName}
+                  onChange={(e) => setCustomName(e.target.value)}
+                  placeholder={t("dietMealNamePlaceholder")}
+                  className="h-10 w-full rounded-xl bg-gray-2/80 border border-gray-5/30 px-3 text-sm text-gray-12"
+                />
+                <input
+                  type="number"
+                  min={0}
+                  value={customCal}
+                  onChange={(e) => setCustomCal(Math.max(0, Number(e.target.value || "0")))}
+                  placeholder="kcal"
+                  className="h-10 w-full rounded-xl bg-gray-2/80 border border-gray-5/30 px-3 text-[15px] font-semibold text-gray-12 text-center tabular-nums"
+                />
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <span className="text-[10px] font-medium text-[#FF6B6B] mb-1 block">P (g)</span>
+                    <input
+                      type="number"
+                      min={0}
+                      value={customP}
+                      onChange={(e) => setCustomP(Math.max(0, Number(e.target.value || "0")))}
+                      className="h-9 w-full rounded-lg bg-gray-2/80 border border-gray-5/30 px-2.5 text-sm text-gray-12 text-center tabular-nums"
+                    />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-medium text-[#FFB347] mb-1 block">C (g)</span>
+                    <input
+                      type="number"
+                      min={0}
+                      value={customC}
+                      onChange={(e) => setCustomC(Math.max(0, Number(e.target.value || "0")))}
+                      className="h-9 w-full rounded-lg bg-gray-2/80 border border-gray-5/30 px-2.5 text-sm text-gray-12 text-center tabular-nums"
+                    />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-medium text-[#4FC3F7] mb-1 block">F (g)</span>
+                    <input
+                      type="number"
+                      min={0}
+                      value={customF}
+                      onChange={(e) => setCustomF(Math.max(0, Number(e.target.value || "0")))}
+                      className="h-9 w-full rounded-lg bg-gray-2/80 border border-gray-5/30 px-2.5 text-sm text-gray-12 text-center tabular-nums"
+                    />
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={addCustomFood}
+                  className="w-full h-10 rounded-xl optiz-gradient-bg text-white text-sm font-semibold inline-flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform"
+                >
+                  <Plus size={14} /> {t("dietValidateMeal")}
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </section>
+
+      {/* ── Logged Foods Today ── */}
+      <section className="rounded-3xl border border-gray-5/35 bg-gray-2/82 p-4">
+        <h3 className="text-[14px] font-semibold text-gray-12 mb-3">{t("dietMeals")}</h3>
+
+        <div className="space-y-0 max-h-[280px] overflow-y-auto">
+          {state.meals.map((meal, index) => (
+            <div
+              key={meal.id}
+              className={`flex items-center justify-between py-2.5 px-1 ${
+                index < state.meals.length - 1 ? "border-b border-gray-5/15" : ""
+              }`}
+            >
+              <div className="min-w-0 flex-1">
+                <p className="text-[13px] font-medium text-gray-12 truncate">{meal.name}</p>
+                <p className="text-[10px] text-gray-8 tabular-nums mt-0.5">
+                  <span className="text-[#FF6B6B]">P{meal.protein}</span>
+                  {" · "}
+                  <span className="text-[#FFB347]">C{meal.carbs}</span>
+                  {" · "}
+                  <span className="text-[#4FC3F7]">F{meal.fats}</span>
+                </p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0 ml-2">
+                <span className="text-[13px] font-semibold text-gray-11 tabular-nums">{meal.calories} kcal</span>
+                <button
+                  type="button"
+                  onClick={() => removeFood(meal.id)}
+                  className="w-6 h-6 rounded-md flex items-center justify-center text-gray-8 hover:text-[#FF6666] hover:bg-[#E80000]/10 transition-colors"
+                >
+                  <Trash2 size={12} />
+                </button>
+              </div>
+            </div>
+          ))}
+
+          {state.meals.length === 0 && (
+            <p className="text-[12px] text-gray-8 py-3 text-center">{t("dietNoMeals")}</p>
+          )}
+        </div>
+      </section>
 
       {/* ── Hydration ── */}
       <section className="rounded-3xl border border-gray-5/35 bg-gray-2/82 p-4">
@@ -387,7 +677,6 @@ export function DietScreen({ userId, onAwardXpEvent, initialData }: DietScreenPr
           </p>
         </div>
 
-        {/* Water progress bar */}
         <div className="h-10 rounded-xl bg-gray-3/25 overflow-hidden relative border border-gray-5/20">
           <motion.div
             className="absolute inset-y-0 left-0 bg-gradient-to-r from-[#165DFF] via-[#3D8BFF] to-[#72B2FF]"
@@ -401,7 +690,6 @@ export function DietScreen({ userId, onAwardXpEvent, initialData }: DietScreenPr
           </div>
         </div>
 
-        {/* Quick water buttons */}
         <div className="mt-2.5 grid grid-cols-4 gap-2">
           {[
             { label: "-0.25L", delta: -0.25 },
@@ -426,134 +714,6 @@ export function DietScreen({ userId, onAwardXpEvent, initialData }: DietScreenPr
               {action.label}
             </button>
           ))}
-        </div>
-      </section>
-
-      {/* ── Meals ── */}
-      <section className="rounded-3xl border border-gray-5/35 bg-gray-2/82 p-4">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-[14px] font-semibold text-gray-12 inline-flex items-center gap-1.5">
-            <UtensilsCrossed size={15} /> {t("dietMeals")}
-          </h3>
-          <p className="text-[11px] text-gray-8">{t("dietQuickAdd")}</p>
-        </div>
-
-        {/* Horizontal meal type tabs */}
-        <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 mb-3">
-          {MEAL_TYPES.map((type) => {
-            const meals = mealsByType[type.id] || [];
-            const kcal = meals.reduce((sum, m) => sum + m.calories, 0);
-            const active = activeMealType === type.id;
-            return (
-              <button
-                key={type.id}
-                type="button"
-                onClick={() => setActiveMealType(type.id)}
-                className={`shrink-0 rounded-full px-3.5 py-1.5 text-[12px] font-medium transition-colors ${
-                  active
-                    ? "bg-[#E80000]/15 text-[#FF6666] border border-[#E80000]/35"
-                    : "bg-gray-3/30 text-gray-10 border border-gray-5/25"
-                }`}
-              >
-                {t(type.labelKey as keyof typeof t)}{meals.length > 0 ? ` · ${kcal}` : ""}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Add meal form */}
-        <div className="rounded-xl border border-gray-5/30 bg-gray-3/15 p-3 mb-3">
-          <p className="text-[12px] text-gray-11 font-semibold inline-flex items-center gap-1.5 mb-2.5">
-            <Apple size={13} /> {t("dietAddMeal")} — {t(MEAL_TYPES.find((m) => m.id === activeMealType)?.labelKey as keyof typeof t)}
-          </p>
-
-          {/* Name */}
-          <input
-            value={mealName}
-            onChange={(event) => setMealName(event.target.value)}
-            placeholder={t("dietMealNamePlaceholder")}
-            className="h-10 w-full rounded-xl bg-gray-2/80 border border-gray-5/30 px-3 text-sm text-gray-12 mb-2"
-          />
-
-          {/* Calories — prominent */}
-          <input
-            type="number"
-            min={0}
-            value={mealCalories}
-            onChange={(event) => setMealCalories(Math.max(0, Number(event.target.value || "0")))}
-            placeholder="kcal"
-            className="h-11 w-full rounded-xl bg-gray-2/80 border border-gray-5/30 px-3 text-[16px] font-semibold text-gray-12 text-center tabular-nums mb-2"
-          />
-
-          {/* Macros — compact row with colored labels */}
-          <div className="grid grid-cols-3 gap-2 mb-3">
-            <div>
-              <span className="text-[10px] font-medium text-[#FF6B6B] mb-1 block">P (g)</span>
-              <input
-                type="number"
-                min={0}
-                value={mealProtein}
-                onChange={(event) => setMealProtein(Math.max(0, Number(event.target.value || "0")))}
-                className="h-9 w-full rounded-lg bg-gray-2/80 border border-gray-5/30 px-2.5 text-sm text-gray-12 text-center tabular-nums"
-              />
-            </div>
-            <div>
-              <span className="text-[10px] font-medium text-[#FFB347] mb-1 block">C (g)</span>
-              <input
-                type="number"
-                min={0}
-                value={mealCarbs}
-                onChange={(event) => setMealCarbs(Math.max(0, Number(event.target.value || "0")))}
-                className="h-9 w-full rounded-lg bg-gray-2/80 border border-gray-5/30 px-2.5 text-sm text-gray-12 text-center tabular-nums"
-              />
-            </div>
-            <div>
-              <span className="text-[10px] font-medium text-[#4FC3F7] mb-1 block">F (g)</span>
-              <input
-                type="number"
-                min={0}
-                value={mealFats}
-                onChange={(event) => setMealFats(Math.max(0, Number(event.target.value || "0")))}
-                className="h-9 w-full rounded-lg bg-gray-2/80 border border-gray-5/30 px-2.5 text-sm text-gray-12 text-center tabular-nums"
-              />
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={addMeal}
-            className="w-full h-10 rounded-xl optiz-gradient-bg text-white text-sm font-semibold inline-flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform"
-          >
-            <Plus size={14} /> {t("dietValidateMeal")}
-          </button>
-        </div>
-
-        {/* Logged meals */}
-        <div className="space-y-0 max-h-[240px] overflow-y-auto">
-          {state.meals.slice(0, 10).map((meal, index) => (
-            <div
-              key={meal.id}
-              className={`flex items-center justify-between py-2.5 px-1 ${
-                index < Math.min(state.meals.length, 10) - 1 ? "border-b border-gray-5/15" : ""
-              }`}
-            >
-              <div className="min-w-0">
-                <p className="text-[13px] font-medium text-gray-12 truncate">{meal.name}</p>
-                <p className="text-[10px] text-gray-8 tabular-nums mt-0.5">
-                  <span className="text-[#FF6B6B]">P{meal.protein}</span>
-                  {" · "}
-                  <span className="text-[#FFB347]">C{meal.carbs}</span>
-                  {" · "}
-                  <span className="text-[#4FC3F7]">F{meal.fats}</span>
-                </p>
-              </div>
-              <span className="text-[13px] font-semibold text-gray-11 tabular-nums shrink-0 ml-3">{meal.calories} kcal</span>
-            </div>
-          ))}
-
-          {state.meals.length === 0 && (
-            <p className="text-[12px] text-gray-8 py-3 text-center">{t("dietNoMeals")}</p>
-          )}
         </div>
       </section>
 
@@ -585,26 +745,23 @@ export function DietScreen({ userId, onAwardXpEvent, initialData }: DietScreenPr
               className="overflow-hidden"
             >
               <div className="px-4 pb-4 space-y-1">
-                {/* Calorie goal */}
                 <div className="flex items-center justify-between py-2.5 border-b border-gray-5/20">
                   <span className="text-[13px] text-gray-10">{t("dietCalorieGoalInput")}</span>
                   <input
                     type="number"
                     min={1200}
                     value={state.calorieGoal}
-                    onChange={(event) => updateGoals({ calorieGoal: Math.max(1200, Number(event.target.value || "1200")) })}
+                    onChange={(e) => updateGoals({ calorieGoal: Math.max(1200, Number(e.target.value || "1200")) })}
                     className="w-20 text-right text-[14px] font-semibold text-gray-12 bg-transparent outline-none tabular-nums"
                   />
                 </div>
-
-                {/* Macro goals */}
                 <div className="flex items-center justify-between py-2.5 border-b border-gray-5/20">
                   <span className="text-[13px] text-[#FF6B6B]">{t("dietProtein")} (g)</span>
                   <input
                     type="number"
                     min={0}
                     value={state.proteinGoal}
-                    onChange={(event) => updateGoals({ proteinGoal: Math.max(0, Number(event.target.value || "0")) })}
+                    onChange={(e) => updateGoals({ proteinGoal: Math.max(0, Number(e.target.value || "0")) })}
                     className="w-16 text-right text-[14px] font-semibold text-gray-12 bg-transparent outline-none tabular-nums"
                   />
                 </div>
@@ -614,7 +771,7 @@ export function DietScreen({ userId, onAwardXpEvent, initialData }: DietScreenPr
                     type="number"
                     min={0}
                     value={state.carbsGoal}
-                    onChange={(event) => updateGoals({ carbsGoal: Math.max(0, Number(event.target.value || "0")) })}
+                    onChange={(e) => updateGoals({ carbsGoal: Math.max(0, Number(e.target.value || "0")) })}
                     className="w-16 text-right text-[14px] font-semibold text-gray-12 bg-transparent outline-none tabular-nums"
                   />
                 </div>
@@ -624,12 +781,10 @@ export function DietScreen({ userId, onAwardXpEvent, initialData }: DietScreenPr
                     type="number"
                     min={0}
                     value={state.fatsGoal}
-                    onChange={(event) => updateGoals({ fatsGoal: Math.max(0, Number(event.target.value || "0")) })}
+                    onChange={(e) => updateGoals({ fatsGoal: Math.max(0, Number(e.target.value || "0")) })}
                     className="w-16 text-right text-[14px] font-semibold text-gray-12 bg-transparent outline-none tabular-nums"
                   />
                 </div>
-
-                {/* Water goal */}
                 <div className="flex items-center justify-between py-2.5">
                   <span className="text-[13px] text-[#4FC3F7]">{t("dietWaterGoalInput")}</span>
                   <input
@@ -637,7 +792,7 @@ export function DietScreen({ userId, onAwardXpEvent, initialData }: DietScreenPr
                     min={1}
                     step={0.1}
                     value={state.waterGoalL}
-                    onChange={(event) => updateGoals({ waterGoalL: Math.max(1, Number(event.target.value || "1")) })}
+                    onChange={(e) => updateGoals({ waterGoalL: Math.max(1, Number(e.target.value || "1")) })}
                     className="w-16 text-right text-[14px] font-semibold text-gray-12 bg-transparent outline-none tabular-nums"
                   />
                 </div>
