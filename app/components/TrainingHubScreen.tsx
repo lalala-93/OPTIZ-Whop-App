@@ -169,6 +169,7 @@ function SessionTracker({
   const [flash, setFlash] = useState("");
   const [restLeft, setRestLeft] = useState<number | null>(null);
   const [soundOn, setSoundOnState] = useState(() => isSoundEnabled());
+  const [rpeExpanded, setRpeExpanded] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (soundOn) playStartSound();
@@ -363,10 +364,10 @@ function SessionTracker({
 
         <button
           onClick={toggleSound}
-          className="w-9 h-9 rounded-full border border-gray-5/35 bg-gray-3/35 text-gray-9 flex items-center justify-center"
+          className="w-11 h-11 rounded-full border border-gray-5/35 bg-gray-3/35 text-gray-9 flex items-center justify-center"
           aria-label={t("sound")}
         >
-          {soundOn ? <Volume2 size={14} /> : <VolumeX size={14} />}
+          {soundOn ? <Volume2 size={16} /> : <VolumeX size={16} />}
         </button>
       </div>
 
@@ -375,11 +376,11 @@ function SessionTracker({
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <p className="text-[10px] uppercase tracking-[0.16em] text-gray-7 font-semibold mb-1">{programTitle}</p>
+        <p className="text-xs uppercase tracking-[0.16em] text-gray-7 font-semibold mb-1">{programTitle}</p>
         <h3 className="text-[24px] font-semibold text-gray-12 leading-tight">{session.name}</h3>
-        <p className="text-[12px] text-gray-8 mt-1">{session.focus}</p>
+        <p className="text-sm text-gray-8 mt-1">{session.focus}</p>
 
-        <div className="mt-3 grid grid-cols-4 gap-2 text-[11px]">
+        <div className="mt-3 grid grid-cols-4 gap-2 text-xs">
           <div className="rounded-xl border border-gray-5/30 bg-gray-3/22 px-2 py-2 text-gray-9 text-center">
             {session.exercises.length} {t("exercises")}
           </div>
@@ -389,33 +390,41 @@ function SessionTracker({
           <div className="rounded-xl border border-gray-5/30 bg-gray-3/22 px-2 py-2 text-gray-9 text-center">
             {session.durationMin} {t("minutesShort")}
           </div>
-          <div className="rounded-xl border border-gray-5/30 bg-gray-3/22 px-2 py-2 text-[#FF6666] text-center font-semibold">
+          <div className="rounded-xl border border-gray-5/30 bg-gray-3/22 px-2 py-2 text-[#FF5C5C] text-center font-semibold">
             +100 XP
           </div>
         </div>
 
-        <div className="mt-3 h-1.5 rounded-full bg-gray-4/45 overflow-hidden">
-          <motion.div className="h-full optiz-gradient-bg" animate={{ width: `${progress}%` }} />
+        <div className="mt-3 flex items-center gap-3">
+          <div className="flex-1 h-3 rounded-full bg-gray-4/45 overflow-hidden">
+            <motion.div
+              className="h-full optiz-gradient-bg"
+              animate={{ width: `${progress}%` }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            />
+          </div>
+          <span className="text-xs text-gray-8 tabular-nums font-semibold">{progress}%</span>
         </div>
-        <p className="mt-2 text-[11px] text-gray-8 tabular-nums">{completedSets}/{totalSets} {t("trainingValidSets")}</p>
+        <p className="mt-2 text-xs text-gray-8 tabular-nums">{completedSets}/{totalSets} {t("trainingValidSets")}</p>
       </motion.div>
 
       <AnimatePresence>
         {restLeft !== null ? (
           <motion.div
-            initial={{ opacity: 0, y: -4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
-            className="rounded-xl border border-[#E80000]/30 bg-[#E80000]/10 px-3 py-2 mb-3 flex items-center justify-between"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="rounded-2xl border-2 border-[#E80000]/40 bg-[#E80000]/10 p-5 mb-3 flex flex-col items-center justify-center"
           >
-            <p className="text-[12px] text-[#FF7D7D] font-semibold">{t("trainingRest")} {restLeft}s</p>
+            <p className="text-xs uppercase tracking-[0.18em] text-[#FF6D6D] font-semibold mb-1">{t("trainingRest")}</p>
+            <p className="text-[48px] font-bold text-[#FF6D6D] tabular-nums leading-none">{restLeft}s</p>
             <button
               type="button"
               onClick={() => setRestLeft(null)}
-              className="w-7 h-7 rounded-lg border border-[#E80000]/35 bg-[#E80000]/12 text-[#FF8080] flex items-center justify-center"
+              className="mt-3 h-11 px-6 rounded-xl border border-[#E80000]/35 bg-[#E80000]/12 text-[#FF6D6D] text-sm font-semibold"
               aria-label={t("trainingSkipRestAria")}
             >
-              <X size={13} />
+              {t("trainingSkipRestAria")}
             </button>
           </motion.div>
         ) : null}
@@ -427,7 +436,7 @@ function SessionTracker({
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            className="rounded-xl border border-[#E80000]/35 bg-[#E80000]/10 text-[#FF6D6D] text-sm px-3 py-2 mb-3"
+            className="rounded-xl border border-[#E80000]/35 bg-[#E80000]/10 text-[#FF6D6D] text-base px-3 py-2 mb-3"
           >
             {flash}
           </motion.div>
@@ -455,7 +464,7 @@ function SessionTracker({
                   <p className={`text-[17px] font-semibold truncate ${isCurrent ? "text-[#FF6D6D]" : "text-gray-12"}`}>
                     {exercise.name}
                   </p>
-                  <p className="text-[11px] text-gray-8 truncate">{exercise.muscles}</p>
+                  <p className="text-xs text-gray-8 truncate">{exercise.muscles}</p>
                 </div>
 
                 <div className="flex items-center gap-1.5">
@@ -463,18 +472,18 @@ function SessionTracker({
                     href={exercise.videoUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-8 h-8 rounded-lg border border-gray-5/35 bg-gray-4/35 text-gray-8 flex items-center justify-center"
+                    className="w-11 h-11 rounded-lg border border-gray-5/35 bg-gray-4/35 text-gray-8 flex items-center justify-center"
                     aria-label={t("trainingVideoAria")}
                   >
-                    <ExternalLink size={13} />
+                    <ExternalLink size={16} />
                   </a>
                   <button
                     type="button"
                     onClick={() => addSet(exercise)}
-                    className="w-8 h-8 rounded-lg border border-gray-5/35 bg-gray-4/35 text-gray-8 flex items-center justify-center"
+                    className="w-11 h-11 rounded-lg border border-gray-5/35 bg-gray-4/35 text-gray-8 flex items-center justify-center"
                     aria-label={t("trainingAddSetAria")}
                   >
-                    <Plus size={13} />
+                    <Plus size={16} />
                   </button>
                 </div>
               </div>
@@ -483,35 +492,32 @@ function SessionTracker({
                 <button
                   type="button"
                   onClick={() => applyPreviousToAllSets(exercise)}
-                  className="h-7 px-2.5 rounded-lg border border-gray-5/30 bg-gray-2 text-[10px] text-gray-9 font-semibold"
+                  className="h-11 px-3 rounded-lg border border-gray-5/30 bg-gray-2 text-xs text-gray-9 font-semibold"
                 >
                   {t("trainingCopyPrev")}
                 </button>
                 <button
                   type="button"
                   onClick={() => applyDeltaToExercise(exercise, "reps", 1)}
-                  className="h-7 px-2.5 rounded-lg border border-gray-5/30 bg-gray-2 text-[10px] text-gray-9 font-semibold"
+                  className="h-11 px-3 rounded-lg border border-gray-5/30 bg-gray-2 text-xs text-gray-9 font-semibold"
                 >
                   {t("trainingPlusOneRep")}
                 </button>
                 <button
                   type="button"
                   onClick={() => applyDeltaToExercise(exercise, "load", 2.5)}
-                  className="h-7 px-2.5 rounded-lg border border-gray-5/30 bg-gray-2 text-[10px] text-gray-9 font-semibold"
+                  className="h-11 px-3 rounded-lg border border-gray-5/30 bg-gray-2 text-xs text-gray-9 font-semibold"
                 >
                   {t("trainingPlusTwoPointFiveKg")}
                 </button>
               </div>
 
-              <div className="grid grid-cols-[2rem_2rem_minmax(0,1fr)_3.8rem_3.8rem_3.8rem_2.6rem] md:grid-cols-[2.4rem_2.2rem_minmax(0,1fr)_4.6rem_4.6rem_4.6rem_2.8rem] gap-1.5 px-1 pb-1 text-[10px] uppercase tracking-[0.1em] text-gray-7">
-                    <span className="text-center">{t("trainingHeaderSet")}</span>
-                    <span className="text-center">{t("trainingHeaderType")}</span>
-                    <span className="text-center">{t("trainingHeaderPrev")}</span>
-                    <span className="text-center">{t("trainingHeaderKg")}</span>
-                    <span className="text-center">{t("trainingHeaderReps")}</span>
-                    <span className="text-center">{t("trainingHeaderRpe")}</span>
-                    <span />
-                  </div>
+              <div className="grid grid-cols-[minmax(0,1fr)_5rem_5rem_3rem] gap-1.5 px-1 pb-1 text-xs uppercase tracking-[0.1em] text-gray-7 pl-8">
+                <span className="text-center">{t("trainingHeaderPrev")}</span>
+                <span className="text-center">{t("trainingHeaderKg")}</span>
+                <span className="text-center">{t("trainingHeaderReps")}</span>
+                <span />
+              </div>
 
               <div className="space-y-1.5">
                 {rows.map((row, rowIdx) => {
@@ -521,87 +527,126 @@ function SessionTracker({
 
                   return (
                     <div key={key}>
-                      <div className={`grid grid-cols-[2rem_2rem_minmax(0,1fr)_3.8rem_3.8rem_3.8rem_2.6rem] md:grid-cols-[2.4rem_2.2rem_minmax(0,1fr)_4.6rem_4.6rem_4.6rem_2.8rem] items-center gap-1.5 p-1.5 rounded-xl border ${row.done ? "bg-gray-4/28 border-[#E80000]/20" : "bg-gray-3/23 border-gray-5/25"}`}>
-                        <span className="text-[11px] text-gray-8 font-semibold text-center">{rowIdx + 1}</span>
-
+                      <div className="flex items-center gap-1.5">
                         <button
                           type="button"
                           onClick={() => updateSet(exercise.id, rowIdx, { type: nextSetType(row.type) })}
                           disabled={row.done}
-                          className="h-8 rounded-lg border border-gray-5/30 bg-gray-2 text-[10px] text-gray-9 font-semibold disabled:opacity-50"
+                          className="flex flex-col items-center justify-center w-6 shrink-0 disabled:opacity-50"
                         >
-                          {row.type}
+                          <span className="text-xs text-gray-8 font-semibold">{rowIdx + 1}</span>
+                          {row.type !== "N" && (
+                            <span className={`text-[10px] font-bold mt-0.5 px-1 rounded ${row.type === "W" ? "text-yellow-500 bg-yellow-500/15" : "text-red-400 bg-red-400/15"}`}>
+                              {row.type}
+                            </span>
+                          )}
                         </button>
 
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (!previous || row.done) return;
-                            updateSet(exercise.id, rowIdx, {
-                              load: String(previous.load),
-                              reps: String(previous.reps),
-                              rpe: String(previous.rpe),
-                            });
-                          }}
-                          className="text-[10px] text-gray-7 text-center truncate rounded-lg border border-transparent hover:border-gray-5/20 px-1 h-8"
-                        >
-                          {previous ? `${previous.load}x${previous.reps}` : "-"}
-                        </button>
+                        <div className={`flex-1 grid grid-cols-[minmax(0,1fr)_5rem_5rem_3rem] items-center gap-1.5 p-1.5 rounded-xl border ${row.done ? "bg-gray-4/28 border-[#E80000]/20" : "bg-gray-3/23 border-gray-5/25"}`}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!previous || row.done) return;
+                              updateSet(exercise.id, rowIdx, {
+                                load: String(previous.load),
+                                reps: String(previous.reps),
+                                rpe: String(previous.rpe),
+                              });
+                            }}
+                            className="text-xs text-gray-7 text-center truncate rounded-lg border border-transparent hover:border-gray-5/20 px-1 h-11"
+                          >
+                            {previous ? `${previous.load}x${previous.reps}` : "-"}
+                          </button>
 
-                        <input
-                          type="number"
-                          value={row.load}
-                          inputMode="numeric"
-                          onChange={(event) => updateSet(exercise.id, rowIdx, { load: event.target.value })}
-                          disabled={row.done}
-                          placeholder="0"
-                          className="h-8 rounded-lg bg-gray-2 border border-gray-5/30 text-center text-xs text-gray-12 disabled:opacity-55"
-                        />
+                          <input
+                            type="number"
+                            value={row.load}
+                            inputMode="numeric"
+                            onChange={(event) => updateSet(exercise.id, rowIdx, { load: event.target.value })}
+                            disabled={row.done}
+                            placeholder="0"
+                            className="h-11 rounded-lg bg-gray-2 border border-gray-5/30 text-center text-xs text-gray-12 disabled:opacity-55"
+                          />
 
-                        <input
-                          type="number"
-                          value={row.reps}
-                          inputMode="numeric"
-                          onChange={(event) => updateSet(exercise.id, rowIdx, { reps: event.target.value })}
-                          disabled={row.done}
-                          placeholder={String(exercise.reps)}
-                          className="h-8 rounded-lg bg-gray-2 border border-gray-5/30 text-center text-xs text-gray-12 disabled:opacity-55"
-                        />
+                          <input
+                            type="number"
+                            value={row.reps}
+                            inputMode="numeric"
+                            onChange={(event) => updateSet(exercise.id, rowIdx, { reps: event.target.value })}
+                            disabled={row.done}
+                            placeholder={String(exercise.reps)}
+                            className="h-11 rounded-lg bg-gray-2 border border-gray-5/30 text-center text-xs text-gray-12 disabled:opacity-55"
+                          />
 
-                        <input
-                          type="number"
-                          value={row.rpe}
-                          inputMode="numeric"
-                          min={1}
-                          max={10}
-                          onChange={(event) => updateSet(exercise.id, rowIdx, { rpe: event.target.value })}
-                          disabled={row.done}
-                          placeholder="8"
-                          className="h-8 rounded-lg bg-gray-2 border border-gray-5/30 text-center text-xs text-gray-12 disabled:opacity-55"
-                        />
-
-                        <button
-                          type="button"
-                          onClick={() => toggleDone(exercise, rowIdx)}
-                          className={`w-8 h-8 rounded-lg border flex items-center justify-center ${
-                            row.done
-                              ? "border-[#E80000]/35 bg-[#E80000]/16 text-[#FF6D6D]"
-                              : "border-gray-5/35 bg-gray-2 text-gray-8"
-                          }`}
-                        >
-                          {row.done ? <Check size={13} /> : "OK"}
-                        </button>
+                          <button
+                            type="button"
+                            onClick={() => toggleDone(exercise, rowIdx)}
+                            className={`w-11 h-11 rounded-lg border flex items-center justify-center ${
+                              row.done
+                                ? "border-[#E80000]/35 bg-[#E80000]/16 text-[#FF6D6D]"
+                                : "border-gray-5/35 bg-gray-2 text-gray-8"
+                            }`}
+                          >
+                            {row.done ? <Check size={16} /> : "OK"}
+                          </button>
+                        </div>
                       </div>
 
                       {isImproved ? (
-                        <p className="mt-1 text-[10px] text-[#FF6D6D] font-semibold text-right inline-flex items-center justify-end gap-1 w-full">
-                          <Sparkles size={11} /> PR
-                        </p>
+                        <motion.p
+                          initial={{ scale: 0.8, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          className="mt-1 text-xs font-bold text-[#FF6D6D] text-right inline-flex items-center justify-end gap-1 w-full"
+                        >
+                          <Sparkles size={13} /> PR
+                        </motion.p>
                       ) : null}
                     </div>
                   );
                 })}
               </div>
+
+              <button
+                type="button"
+                onClick={() => setRpeExpanded((prev) => ({ ...prev, [exercise.id]: !prev[exercise.id] }))}
+                className="mt-2 h-11 w-full rounded-lg border border-gray-5/25 bg-gray-3/15 text-xs text-gray-8 font-semibold flex items-center justify-center gap-1"
+              >
+                RPE
+                <ChevronDown
+                  size={14}
+                  className={`transition-transform ${rpeExpanded[exercise.id] ? "rotate-180" : ""}`}
+                />
+              </button>
+
+              <AnimatePresence>
+                {rpeExpanded[exercise.id] && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="pt-2 space-y-1.5">
+                      {rows.map((row, rowIdx) => (
+                        <div key={`rpe-${exercise.id}-${rowIdx}`} className="flex items-center gap-2 px-1">
+                          <span className="text-xs text-gray-7 w-14 shrink-0">Set {rowIdx + 1}</span>
+                          <input
+                            type="number"
+                            value={row.rpe}
+                            inputMode="numeric"
+                            min={1}
+                            max={10}
+                            onChange={(event) => updateSet(exercise.id, rowIdx, { rpe: event.target.value })}
+                            disabled={row.done}
+                            placeholder="8"
+                            className="h-11 flex-1 rounded-lg bg-gray-2 border border-gray-5/30 text-center text-xs text-gray-12 disabled:opacity-55"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
           );
         })}
@@ -643,6 +688,7 @@ export function TrainingHubScreen({ userId, onAwardXpEvent, initialCompletionsTo
     return set;
   });
   const [flash, setFlash] = useState("");
+  const [historyExpanded, setHistoryExpanded] = useState(false);
 
   const [builderName, setBuilderName] = useState(() => t("trainingFreestyleDefaultName"));
   const [builderRows, setBuilderRows] = useState<Array<{ exerciseId: string; sets: number; reps: number }>>([
@@ -879,7 +925,7 @@ export function TrainingHubScreen({ userId, onAwardXpEvent, initialCompletionsTo
           <input
             value={builderName}
             onChange={(event) => setBuilderName(event.target.value)}
-            className="mt-3 w-full h-10 rounded-xl bg-gray-3/45 border border-gray-5/35 px-3 text-sm text-gray-12"
+            className="mt-3 w-full h-12 rounded-xl bg-gray-3/45 border border-gray-5/35 px-3 text-sm text-gray-12"
             placeholder={t("trainingSessionName")}
           />
         </div>
@@ -887,7 +933,7 @@ export function TrainingHubScreen({ userId, onAwardXpEvent, initialCompletionsTo
         <div className="space-y-2.5 mb-4">
           {builderRows.map((row, index) => (
             <div key={`builder-${index}`} className="rounded-2xl border border-gray-5/34 bg-gray-3/20 p-3">
-              <div className="grid grid-cols-[minmax(0,1fr)_4.6rem_4.6rem_2.6rem] gap-2 items-center">
+              <div className="grid grid-cols-[minmax(0,1fr)_4.6rem_4.6rem_3rem] gap-2 items-center">
                 <div className="relative">
                   <select
                     value={row.exerciseId}
@@ -895,13 +941,13 @@ export function TrainingHubScreen({ userId, onAwardXpEvent, initialCompletionsTo
                       const next = event.target.value;
                       setBuilderRows((prev) => prev.map((item, idx) => (idx === index ? { ...item, exerciseId: next } : item)));
                     }}
-                    className="w-full h-10 rounded-xl bg-gray-2 border border-gray-5/35 px-3 text-sm text-gray-12 appearance-none"
+                    className="w-full h-12 rounded-xl bg-gray-2 border border-gray-5/35 px-3 text-sm text-gray-12 appearance-none"
                   >
                     {EXERCISE_LIBRARY.map((exercise) => (
                       <option key={exercise.id} value={exercise.id}>{exercise.name}</option>
                     ))}
                   </select>
-                  <ChevronDown size={14} className="absolute right-2.5 top-3 text-gray-7 pointer-events-none" />
+                  <ChevronDown size={14} className="absolute right-2.5 top-4 text-gray-7 pointer-events-none" />
                 </div>
 
                 <input
@@ -912,7 +958,7 @@ export function TrainingHubScreen({ userId, onAwardXpEvent, initialCompletionsTo
                     const value = Math.max(1, Number(event.target.value || "1"));
                     setBuilderRows((prev) => prev.map((item, idx) => (idx === index ? { ...item, sets: value } : item)));
                   }}
-                  className="h-10 rounded-xl bg-gray-2 border border-gray-5/35 text-center text-sm text-gray-12"
+                  className="h-12 rounded-xl bg-gray-2 border border-gray-5/35 text-center text-sm text-gray-12"
                   aria-label={t("trainingAriaSets")}
                 />
 
@@ -924,13 +970,13 @@ export function TrainingHubScreen({ userId, onAwardXpEvent, initialCompletionsTo
                     const value = Math.max(1, Number(event.target.value || "1"));
                     setBuilderRows((prev) => prev.map((item, idx) => (idx === index ? { ...item, reps: value } : item)));
                   }}
-                  className="h-10 rounded-xl bg-gray-2 border border-gray-5/35 text-center text-sm text-gray-12"
+                  className="h-12 rounded-xl bg-gray-2 border border-gray-5/35 text-center text-sm text-gray-12"
                   aria-label={t("trainingAriaReps")}
                 />
 
                 <button
                   onClick={() => setBuilderRows((prev) => prev.filter((_, idx) => idx !== index))}
-                  className="h-10 rounded-xl border border-gray-5/35 bg-gray-2 text-gray-8 flex items-center justify-center"
+                  className="h-12 w-12 rounded-xl border border-gray-5/35 bg-gray-2 text-gray-8 flex items-center justify-center active:scale-[0.98]"
                   aria-label={t("trainingAriaDelete")}
                 >
                   <X size={14} />
@@ -942,17 +988,19 @@ export function TrainingHubScreen({ userId, onAwardXpEvent, initialCompletionsTo
 
         <button
           onClick={() => setBuilderRows((prev) => [...prev, { exerciseId: EXERCISE_LIBRARY[0].id, sets: 3, reps: 10 }])}
-          className="w-full h-10 rounded-xl border border-gray-5/35 bg-gray-3/25 text-sm text-gray-11 font-semibold inline-flex items-center justify-center gap-1.5 mb-3"
+          className="w-full h-12 rounded-xl border border-gray-5/35 bg-gray-3/25 text-sm text-gray-11 font-semibold inline-flex items-center justify-center gap-1.5 mb-3 active:scale-[0.98]"
         >
           <Plus size={14} /> {t("trainingAddExercise")}
         </button>
 
-        <button onClick={handleSaveFreestyle} className="w-full h-12 rounded-2xl optiz-gradient-bg text-white font-semibold">
+        <button onClick={handleSaveFreestyle} className="w-full h-14 rounded-2xl optiz-gradient-bg text-white font-semibold active:scale-[0.98]">
           {t("trainingSaveFreestyle")}
         </button>
       </div>
     );
   }
+
+  const historyLimit = historyExpanded ? 20 : 5;
 
   return (
     <div className="pb-8">
@@ -992,7 +1040,7 @@ export function TrainingHubScreen({ userId, onAwardXpEvent, initialCompletionsTo
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.04 }}
-              className={`w-full text-left rounded-3xl border p-4 transition-all ${
+              className={`w-full text-left rounded-3xl border p-5 transition-all active:scale-[0.98] ${
                 completed
                   ? "bg-gray-3/20 border-gray-5/15 opacity-40 cursor-not-allowed"
                   : "bg-gray-2/82 border-gray-5/35 hover:border-[#E80000]/35"
@@ -1001,26 +1049,26 @@ export function TrainingHubScreen({ userId, onAwardXpEvent, initialCompletionsTo
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <p className={`text-[20px] font-semibold leading-tight ${completed ? "text-gray-10" : "text-gray-12"}`}>{program.title}</p>
-                  <p className="text-[12px] text-gray-8 mt-1">{program.subtitle}</p>
+                  <p className="text-sm text-gray-8 mt-1">{program.subtitle}</p>
                 </div>
                 <span className={`text-[18px] font-semibold ${completed ? "text-gray-8" : "text-[#FF5C5C]"}`}>
                   +100 XP
                 </span>
               </div>
 
-              <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
-                <span className="rounded-full px-2.5 py-1 bg-gray-4/40 border border-gray-5/30 text-gray-9">
+              <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                <span className="rounded-full px-3 py-1.5 bg-gray-4/40 border border-gray-5/30 text-gray-9">
                   {session.exercises.length} {t("exercises")}
                 </span>
-                <span className="rounded-full px-2.5 py-1 bg-gray-4/40 border border-gray-5/30 text-gray-9">
+                <span className="rounded-full px-3 py-1.5 bg-gray-4/40 border border-gray-5/30 text-gray-9">
                   {setsCount} {t("sets")}
                 </span>
-                <span className="rounded-full px-2.5 py-1 bg-gray-4/40 border border-gray-5/30 text-gray-9">
+                <span className="rounded-full px-3 py-1.5 bg-gray-4/40 border border-gray-5/30 text-gray-9">
                   {session.durationMin} {t("minutesShort")}
                 </span>
               </div>
 
-              <p className="mt-3 text-[11px] text-gray-7">
+              <p className="mt-3 text-xs text-gray-7">
                 {completed
                   ? t("trainingDoneReopens")
                   : previous
@@ -1029,8 +1077,8 @@ export function TrainingHubScreen({ userId, onAwardXpEvent, initialCompletionsTo
               </p>
 
               {!completed && (
-                <p className="mt-2 text-[13px] font-semibold text-gray-11 inline-flex items-center gap-1">
-                  {t("trainingLaunch")} <Play size={13} />
+                <p className="mt-2 text-sm font-semibold text-gray-11 inline-flex items-center gap-1">
+                  {t("trainingLaunch")} <Play size={14} />
                 </p>
               )}
             </motion.button>
@@ -1043,38 +1091,38 @@ export function TrainingHubScreen({ userId, onAwardXpEvent, initialCompletionsTo
           <h3 className="text-sm font-semibold text-gray-12">{t("trainingFreestyleSaved")}</h3>
           <button
             onClick={() => setMainView({ mode: "freestyle-builder" })}
-            className="h-8 px-3 rounded-lg border border-[#E80000]/35 bg-[#E80000]/10 text-[#FF6666] text-xs font-semibold inline-flex items-center gap-1.5"
+            className="h-11 px-4 rounded-lg border border-[#E80000]/35 bg-[#E80000]/10 text-[#FF5C5C] text-xs font-semibold inline-flex items-center gap-1.5"
           >
-            <Plus size={12} /> {t("trainingNew")}
+            <Plus size={14} /> {t("trainingNew")}
           </button>
         </div>
 
         {freestyleTemplates.length === 0 ? (
-          <p className="text-[12px] text-gray-8">{t("trainingNoFreestyle")}</p>
+          <p className="text-xs text-gray-8">{t("trainingNoFreestyle")}</p>
         ) : (
           <div className="space-y-2">
             {freestyleTemplates.map((template) => (
-              <div key={template.id} className="rounded-xl border border-gray-5/25 bg-gray-3/20 px-3 py-2.5">
+              <div key={template.id} className="rounded-xl border border-gray-5/25 bg-gray-3/20 px-4 py-3">
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <p className="text-[13px] font-semibold text-gray-12">{template.name}</p>
-                    <p className="text-[11px] text-gray-8 mt-0.5">
+                    <p className="text-sm font-semibold text-gray-12">{template.name}</p>
+                    <p className="text-xs text-gray-8 mt-0.5">
                       {template.rows.length} {t("exercises")} · {t("trainingCreatedOn")} {formatDate(template.createdAt, locale)}
                     </p>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => launchFreestyleTemplate(template.id)}
-                      className="h-8 px-2.5 rounded-md border border-gray-5/35 bg-gray-2 text-gray-11 text-[11px] font-semibold"
+                      className="h-11 px-4 rounded-md border border-gray-5/35 bg-gray-2 text-gray-11 text-xs font-semibold active:scale-[0.98]"
                     >
                       {t("trainingLaunch")}
                     </button>
                     <button
                       onClick={() => handleDeleteFreestyle(template.id)}
-                      className="w-8 h-8 rounded-md border border-gray-5/35 bg-gray-2 text-gray-8 flex items-center justify-center"
+                      className="w-11 h-11 rounded-md border border-gray-5/35 bg-gray-2 text-gray-8 flex items-center justify-center active:scale-[0.98]"
                       aria-label={t("trainingAriaDelete")}
                     >
-                      <X size={13} />
+                      <X size={14} />
                     </button>
                   </div>
                 </div>
@@ -1087,23 +1135,38 @@ export function TrainingHubScreen({ userId, onAwardXpEvent, initialCompletionsTo
       <div className="rounded-2xl border border-gray-5/34 bg-gray-3/18 p-4">
         <h3 className="text-sm font-semibold text-gray-12 mb-2">{t("trainingHistory")}</h3>
         {archives.length === 0 ? (
-          <p className="text-[12px] text-gray-8">{t("trainingNoArchive")}</p>
+          <p className="text-xs text-gray-8">{t("trainingNoArchive")}</p>
         ) : (
-          <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1">
-            {archives.slice(0, 20).map((archive) => (
-              <div key={archive.id} className="rounded-xl border border-gray-5/25 bg-gray-2/55 px-3 py-2.5">
+          <div className="space-y-2">
+            {archives.slice(0, historyLimit).map((archive) => (
+              <div key={archive.id} className="rounded-xl border border-gray-5/25 bg-gray-2/55 px-4 py-3">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-[13px] font-semibold text-gray-12 truncate">{archive.programTitle}</p>
-                  <span className="text-[11px] text-[#FF6666] font-semibold">+{archive.xpEarned} XP</span>
+                  <p className="text-sm font-semibold text-gray-12 truncate">{archive.programTitle}</p>
+                  <span className="text-xs text-[#FF5C5C] font-semibold">+{archive.xpEarned} XP</span>
                 </div>
-                <p className="text-[11px] text-gray-8 mt-1">
+                <p className="text-xs text-gray-8 mt-1">
                   {formatDate(archive.completedAt, locale)} · {t("trainingVolumeLabel")} {archive.totalVolume.toFixed(0)}
                 </p>
-                <p className="text-[10px] text-gray-7 mt-1 inline-flex items-center gap-1">
-                  <Sparkles size={11} /> {archive.improvedSets} {t("trainingRecordsLabel")}
-                </p>
+                {archive.improvedSets > 0 && (
+                  <p className="text-xs text-gray-7 mt-1 inline-flex items-center gap-1">
+                    <Sparkles size={12} /> {archive.improvedSets} {t("trainingRecordsLabel")}
+                  </p>
+                )}
               </div>
             ))}
+            {archives.length > 5 && (
+              <button
+                type="button"
+                onClick={() => setHistoryExpanded((prev) => !prev)}
+                className="w-full h-11 rounded-lg border border-gray-5/25 bg-gray-3/15 text-xs text-gray-8 font-semibold flex items-center justify-center gap-1"
+              >
+                {historyExpanded ? "Show less" : "Show more"}
+                <ChevronDown
+                  size={14}
+                  className={`transition-transform ${historyExpanded ? "rotate-180" : ""}`}
+                />
+              </button>
+            )}
           </div>
         )}
       </div>
