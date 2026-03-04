@@ -258,7 +258,7 @@ export function HomeScreen({
         <p className="text-[15px] text-gray-12 font-semibold inline-flex items-center gap-1.5 mb-2">
           <Quote size={14} /> {t("homeQuote")}
         </p>
-        <p className="text-[13px] text-gray-11 italic leading-relaxed">"{quote.text}"</p>
+        <p className="text-[13px] text-gray-11 italic leading-relaxed">&ldquo;{quote.text}&rdquo;</p>
         <div className="mt-2 flex items-center justify-between">
           <p className="text-[10px] text-gray-7">{quote.author}</p>
           <button

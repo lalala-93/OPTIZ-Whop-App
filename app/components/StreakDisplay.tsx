@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { AnimatedFireIcon } from "./AnimatedIcons";
 import { useI18n } from "./i18n";
@@ -14,12 +13,8 @@ const DAY_LABELS = ["M", "T", "W", "T", "F", "S", "S"];
 
 export function StreakDisplay({ streakDays, weeklyProgress }: StreakDisplayProps) {
     const { t } = useI18n();
-    const [todayIndex, setTodayIndex] = useState<number>(-1);
-
-    useEffect(() => {
-        const day = new Date().getDay();
-        setTodayIndex(day === 0 ? 6 : day - 1);
-    }, []);
+    const day = new Date().getDay();
+    const todayIndex = day === 0 ? 6 : day - 1;
 
     return (
         <motion.div

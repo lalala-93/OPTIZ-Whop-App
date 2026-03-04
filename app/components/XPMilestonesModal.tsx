@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { RANK_TIERS, getXpForLevel, getRankForLevel, formatNumber } from "./rankSystem";
 import { RankBadge } from "./RankBadge";
 import { useRef, useEffect, useMemo } from "react";
-import { useI18n } from "./i18n";
 
 interface XPMilestonesModalProps {
     isOpen: boolean;
@@ -14,20 +13,18 @@ interface XPMilestonesModalProps {
 }
 
 export function XPMilestonesModal({ isOpen, onClose, currentLevel, totalXp }: XPMilestonesModalProps) {
-    const { t } = useI18n();
     const currentRef = useRef<HTMLDivElement>(null);
 
     // Always show 20 levels + any beyond if user is past 20
     const maxShow = Math.max(20, currentLevel + 3);
 
     const levels = useMemo(() => {
-        let lastTier = "";
         return Array.from({ length: maxShow }, (_, i) => {
             const lvl = i + 1;
             const rank = getRankForLevel(lvl);
             const xpNeeded = getXpForLevel(lvl);
-            const isTierStart = rank.tier.name !== lastTier;
-            lastTier = rank.tier.name;
+            const previousTier = i === 0 ? "" : getRankForLevel(lvl - 1).tier.name;
+            const isTierStart = rank.tier.name !== previousTier;
             return {
                 level: lvl, rank, xpNeeded, isTierStart,
                 isCurrent: lvl === currentLevel,

@@ -24,7 +24,12 @@ export function RankBadge({ colors, glowColor, tierName, size = 80, className = 
     return (
         <motion.div
             className={`relative flex items-center justify-center pointer-events-none ${className}`}
-            style={{ width: size, height: size }}
+            style={{
+                width: size,
+                height: size,
+                background: `radial-gradient(circle at 30% 20%, ${colors[0]}18 0%, transparent 62%)`,
+                borderRadius: "50%",
+            }}
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ type: "spring", stiffness: 250, damping: 20 }}

@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AnimatedFireIcon } from "./AnimatedIcons";
 import { useI18n } from "./i18n";
@@ -16,12 +15,8 @@ const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 export function StreakModal({ isOpen, onClose, streakDays, weeklyProgress }: StreakModalProps) {
     const { t } = useI18n();
-    const [todayIndex, setTodayIndex] = useState<number>(-1);
-
-    useEffect(() => {
-        const day = new Date().getDay();
-        setTodayIndex(day === 0 ? 6 : day - 1);
-    }, []);
+    const day = new Date().getDay();
+    const todayIndex = day === 0 ? 6 : day - 1;
 
     return (
         <AnimatePresence>
@@ -125,12 +120,29 @@ export function StreakModal({ isOpen, onClose, streakDays, weeklyProgress }: Str
                             <div className="space-y-3 mb-5">
                                 <h3 className="text-sm font-bold text-gray-12">{t("howStreaksWork")}</h3>
                                 {[
-                                    { emoji: "✅", text: t("streakRule1") },
-                                    { emoji: "💀", text: t("streakRule2") },
-                                    { emoji: "🏅", text: t("streakRule3") },
+                                    { icon: "check", text: t("streakRule1") },
+                                    { icon: "reset", text: t("streakRule2") },
+                                    { icon: "badge", text: t("streakRule3") },
                                 ].map((item) => (
                                     <div key={item.text} className="flex items-start gap-2.5">
-                                        <span className="text-base mt-0.5 shrink-0">{item.emoji}</span>
+                                        <span className="mt-0.5 shrink-0 w-4 h-4 text-gray-9">
+                                            {item.icon === "check" ? (
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                                    <polyline points="20 6 9 17 4 12" />
+                                                </svg>
+                                            ) : item.icon === "reset" ? (
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+                                                    <path d="M3 2v6h6" />
+                                                    <path d="M3 8a9 9 0 1 0 2.6-4.3" />
+                                                </svg>
+                                            ) : (
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+                                                    <path d="M8 21h8" />
+                                                    <path d="M12 17v4" />
+                                                    <path d="M7 4h10l-1 7a4 4 0 0 1-8 0L7 4z" />
+                                                </svg>
+                                            )}
+                                        </span>
                                         <p className="text-xs text-gray-10 leading-relaxed">{item.text}</p>
                                     </div>
                                 ))}

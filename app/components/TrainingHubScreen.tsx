@@ -41,7 +41,7 @@ import { useI18n } from "./i18n";
 
 interface TrainingHubScreenProps {
   userId: string;
-  onAwardXp: (xp: number) => Promise<void>;
+  onAwardXpEvent: (source: string, referenceId: string, xpAmount: number) => Promise<void>;
   initialCompletionsToday?: { programId: string; sessionId: string }[];
 }
 
@@ -98,14 +98,6 @@ interface DraftSet {
 
 type MainView = { mode: "library" } | { mode: "freestyle-builder" };
 
-function todayKey() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
 function sessionKey(programId: string, sessionId: string) {
   return `${programId}:${sessionId}`;
 }
@@ -137,6 +129,30 @@ function nextSetType(type: SetType): SetType {
   return "N";
 }
 
+function buildInitialSets(
+  session: ProgramSessionTemplate,
+  previousArchive: SessionArchive | null,
+): Record<string, DraftSet[]> {
+  const initial: Record<string, DraftSet[]> = {};
+
+  session.exercises.forEach((exercise) => {
+    const previousRows = previousArchive?.exercises.find((item) => item.exerciseId === exercise.id)?.sets || [];
+    const rowCount = Math.max(exercise.sets, previousRows.length);
+    initial[exercise.id] = Array.from({ length: rowCount }).map((_, idx) => {
+      const prev = previousRows[idx];
+      return {
+        load: prev ? String(prev.load) : "",
+        reps: prev ? String(prev.reps) : String(exercise.reps),
+        rpe: prev ? String(prev.rpe) : "8",
+        done: false,
+        type: "N",
+      };
+    });
+  });
+
+  return initial;
+}
+
 function SessionTracker({
   programId,
   programTitle,
@@ -146,51 +162,30 @@ function SessionTracker({
   onSave,
 }: SessionTrackerProps) {
   const { t } = useI18n();
-  const [setsState, setSetsState] = useState<Record<string, DraftSet[]>>({});
+  const [setsState, setSetsState] = useState<Record<string, DraftSet[]>>(() =>
+    buildInitialSets(session, previousArchive),
+  );
   const [improvedKeys, setImprovedKeys] = useState<string[]>([]);
   const [flash, setFlash] = useState("");
   const [restLeft, setRestLeft] = useState<number | null>(null);
   const [soundOn, setSoundOnState] = useState(() => isSoundEnabled());
 
   useEffect(() => {
-    const initial: Record<string, DraftSet[]> = {};
-
-    session.exercises.forEach((exercise) => {
-      const previousRows = previousArchive?.exercises.find((item) => item.exerciseId === exercise.id)?.sets || [];
-      const rowCount = Math.max(exercise.sets, previousRows.length);
-      initial[exercise.id] = Array.from({ length: rowCount }).map((_, idx) => {
-        const prev = previousRows[idx];
-        return {
-          load: prev ? String(prev.load) : "",
-          reps: prev ? String(prev.reps) : String(exercise.reps),
-          rpe: prev ? String(prev.rpe) : "8",
-          done: false,
-          type: "N",
-        };
-      });
-    });
-
-    setSetsState(initial);
-    setImprovedKeys([]);
-    setFlash("");
-    setRestLeft(null);
     if (soundOn) playStartSound();
-  }, [session, previousArchive, soundOn]);
+  }, [soundOn]);
 
   useEffect(() => {
     if (restLeft === null) return;
 
-    if (restLeft <= 0) {
-      setRestLeft(null);
-      if (soundOn) playRoundStartSound();
-      return;
-    }
-
     const timer = setTimeout(() => {
       const next = restLeft - 1;
-      if (soundOn && next <= 3 && next > 0) {
-        playTickSound();
+      if (next <= 0) {
+        if (soundOn) playRoundStartSound();
+        setRestLeft(null);
+        return;
       }
+
+      if (soundOn && next <= 3) playTickSound();
       setRestLeft(next);
     }, 1000);
 
@@ -631,7 +626,7 @@ function SessionTracker({
   );
 }
 
-export function TrainingHubScreen({ userId, onAwardXp, initialCompletionsToday }: TrainingHubScreenProps) {
+export function TrainingHubScreen({ userId, onAwardXpEvent, initialCompletionsToday }: TrainingHubScreenProps) {
   const { t } = useI18n();
   const [mainView, setMainView] = useState<MainView>({ mode: "library" });
   const [activeTracker, setActiveTracker] = useState<{
@@ -648,7 +643,6 @@ export function TrainingHubScreen({ userId, onAwardXp, initialCompletionsToday }
     return set;
   });
   const [flash, setFlash] = useState("");
-  const [loaded, setLoaded] = useState(false);
 
   const [builderName, setBuilderName] = useState("Freestyle");
   const [builderRows, setBuilderRows] = useState<Array<{ exerciseId: string; sets: number; reps: number }>>([
@@ -696,10 +690,8 @@ export function TrainingHubScreen({ userId, onAwardXp, initialCompletionsToday }
 
         setArchives(serverArchives);
         setFreestyleTemplates(templatesData || []);
-        setLoaded(true);
       } catch (err) {
         console.error("[OPTIZ] Failed to load training data", err);
-        setLoaded(true);
       }
     }
 
@@ -831,8 +823,13 @@ export function TrainingHubScreen({ userId, onAwardXp, initialCompletionsToday }
       console.error("[OPTIZ] Failed to save workout log", err);
     }
 
-    // Award XP via parent callback
-    await onAwardXp(archive.xpEarned);
+    // Award XP via centralized idempotent event system
+    const today = new Date().toISOString().split("T")[0];
+    await onAwardXpEvent(
+      "workout_complete",
+      `workout-${archive.programId}-${archive.sessionId}-${today}`,
+      archive.xpEarned,
+    );
 
     setFlash(
       archive.improvedSets > 0
@@ -850,6 +847,7 @@ export function TrainingHubScreen({ userId, onAwardXp, initialCompletionsToday }
   if (activeTracker) {
     return (
       <SessionTracker
+        key={`${activeTracker.programId}:${activeTracker.session.id}`}
         programId={activeTracker.programId}
         programTitle={activeTracker.programTitle}
         session={activeTracker.session}

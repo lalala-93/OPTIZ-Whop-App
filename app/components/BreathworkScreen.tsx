@@ -28,7 +28,7 @@ interface BreathState {
 
 interface Preset extends BreathState {
   id: string;
-  titleKey: string;
+  titleKey: "breathworkPresetQuick" | "breathworkPresetFocus" | "breathworkPresetCalm";
   subtitle: string;
 }
 
@@ -97,7 +97,16 @@ function BreathRing({
 
 export function BreathworkScreen({ userId, initialSessionsToday }: BreathworkScreenProps) {
   const { t } = useI18n();
-  const [config, setConfig] = useState<BreathState>(DEFAULT_CONFIG);
+  const [config, setConfig] = useState<BreathState>(() => {
+    if (typeof window === "undefined") return DEFAULT_CONFIG;
+    const raw = localStorage.getItem(`optiz-breathwork-config-${userId}`);
+    if (!raw) return DEFAULT_CONFIG;
+    try {
+      return JSON.parse(raw) as BreathState;
+    } catch {
+      return DEFAULT_CONFIG;
+    }
+  });
   const [activePreset, setActivePreset] = useState(DEFAULT_CONFIG.id);
   const [running, setRunning] = useState(false);
   const [elapsed, setElapsed] = useState(0);
@@ -106,17 +115,6 @@ export function BreathworkScreen({ userId, initialSessionsToday }: BreathworkScr
   const [sessionsToday, setSessionsToday] = useState(initialSessionsToday);
 
   const lastPhaseRef = useRef("Inspire");
-
-  // Keep config in localStorage as UI preference only
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const raw = localStorage.getItem(`optiz-breathwork-config-${userId}`);
-    if (raw) {
-      try {
-        setConfig(JSON.parse(raw) as BreathState);
-      } catch { /* ignore */ }
-    }
-  }, [userId]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -243,7 +241,7 @@ export function BreathworkScreen({ userId, initialSessionsToday }: BreathworkScr
                 activePreset === preset.id ? "border-[#E80000]/35 bg-[#E80000]/12" : "border-gray-5/30 bg-gray-3/20"
               }`}
             >
-              <p className="text-[13px] font-semibold text-gray-12">{t(preset.titleKey as keyof typeof t)}</p>
+              <p className="text-[13px] font-semibold text-gray-12">{t(preset.titleKey)}</p>
               <p className="text-[11px] text-gray-8 mt-0.5">{preset.subtitle}</p>
             </button>
           ))}
@@ -264,6 +262,7 @@ export function BreathworkScreen({ userId, initialSessionsToday }: BreathworkScr
         <div className="mt-3 text-center">
           <p className="text-[17px] font-semibold text-[#FF6666]">{phaseLabel}</p>
           <p className="text-[12px] text-gray-8">{t("breathworkCycle")} {cycleNumber}/{config.cycles}</p>
+          <p className="text-[11px] text-gray-8 mt-1">{t("breathworkSessionsToday")} {sessionsToday}</p>
         </div>
 
         <div className="mt-3 grid grid-cols-3 gap-2 text-[11px]">

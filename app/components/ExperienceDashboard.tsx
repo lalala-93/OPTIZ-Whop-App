@@ -20,7 +20,6 @@ import { AnimatedFireIcon, AnimatedBoltIcon } from "./AnimatedIcons";
 import { I18nProvider, useI18n } from "./i18n";
 import { getLevelProgress, getRankForLevel } from "./rankSystem";
 import {
-  awardXp as serverAwardXp,
   awardXpEvent as serverAwardXpEvent,
   updateProfile as serverUpdateProfile,
   deleteUserData as serverDeleteUserData,
@@ -175,51 +174,27 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
     }
   }, [deletingData, userId]);
 
-  const handleAwardTrainingXp = useCallback(
-    async (xp: number) => {
-      if (xp <= 0) return;
-
-      const previousLevel = getLevelProgress(totalXp).level;
-      const optimisticTotalXp = totalXp + xp;
-      const optimisticLevel = getLevelProgress(optimisticTotalXp).level;
-
-      setTotalXp(optimisticTotalXp);
-      setWorkoutsDone((prev) => prev + 1);
-      setTaskCompleteAnim({ visible: true, xp });
-
-      if (optimisticLevel > previousLevel) {
-        setTimeout(() => setLevelUpAnim({ visible: true, newLevel: optimisticLevel }), 1100);
-      }
-
-      startTransition(async () => {
-        try {
-          const result = await serverAwardXp(userId, xp, "todo");
-          setTotalXp(result.totalXp);
-          setStreakDays(result.streakDays);
-          if (result.streakEarned) setStreakAnim(true);
-        } catch (err) {
-          console.error("Failed to award training XP:", err);
-          setTotalXp((prev) => Math.max(0, prev - xp));
-          setWorkoutsDone((prev) => Math.max(0, prev - 1));
-        }
-      });
-    },
-    [totalXp, userId, startTransition],
-  );
-
   /** V2 XP handler — uses idempotent awardXpEvent */
   const handleAwardXpEvent = useCallback(
     async (source: string, referenceId: string, xpAmount: number) => {
       if (xpAmount <= 0) return;
+      const isWorkout = source.startsWith("workout");
 
       const previousLevel = getLevelProgress(totalXp).level;
       const optimisticTotalXp = totalXp + xpAmount;
       const optimisticLevel = getLevelProgress(optimisticTotalXp).level;
 
       setTotalXp(optimisticTotalXp);
+      if (isWorkout) {
+        setWorkoutsDone((prev) => prev + 1);
+        setTaskCompleteAnim({ visible: true, xp: xpAmount });
+      }
 
       if (optimisticLevel > previousLevel) {
-        setTimeout(() => setLevelUpAnim({ visible: true, newLevel: optimisticLevel }), 700);
+        setTimeout(
+          () => setLevelUpAnim({ visible: true, newLevel: optimisticLevel }),
+          isWorkout ? 1100 : 700,
+        );
       }
 
       startTransition(async () => {
@@ -229,6 +204,9 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
           if (!result.awarded) {
             // Duplicate — revert optimistic update
             setTotalXp(result.totalXp);
+            if (isWorkout) {
+              setWorkoutsDone((prev) => Math.max(0, prev - 1));
+            }
           } else {
             setTotalXp(result.totalXp);
             setStreakDays(result.streakDays);
@@ -237,6 +215,9 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
         } catch (err) {
           console.error("Failed to award XP event:", err);
           setTotalXp((prev) => Math.max(0, prev - xpAmount));
+          if (isWorkout) {
+            setWorkoutsDone((prev) => Math.max(0, prev - 1));
+          }
         }
       });
     },
@@ -365,7 +346,7 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
         ) : activeTab === "training" ? (
           <TrainingHubScreen
             userId={userId}
-            onAwardXp={handleAwardTrainingXp}
+            onAwardXpEvent={handleAwardXpEvent}
             initialCompletionsToday={initialData.workoutCompletionsToday}
           />
         ) : activeTab === "steps" ? (

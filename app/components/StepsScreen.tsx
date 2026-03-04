@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Footprints, Target } from "lucide-react";
 import { XPToast, type XPToastData } from "./XPToast";
 import { useI18n } from "./i18n";
-import { upsertDailySteps, awardXpEvent } from "@/lib/actions";
+import { upsertDailySteps } from "@/lib/actions";
 
 interface StepsScreenProps {
   userId: string;

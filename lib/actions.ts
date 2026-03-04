@@ -440,8 +440,8 @@ export interface WorkoutLogPayload {
 
 /** Save a completed workout log + set logs + award XP */
 export async function saveWorkoutLog(userId: string, payload: WorkoutLogPayload) {
-    const db = createServerSupabase();
-    const today = getTodayISO();
+  const db = createServerSupabase();
+  const today = getTodayISO();
 
     // Insert workout log
     const { data: workoutLog, error: workoutErr } = await db
@@ -483,15 +483,11 @@ export async function saveWorkoutLog(userId: string, payload: WorkoutLogPayload)
         })),
     );
 
-    if (setRows.length > 0) {
-        await db.from("workout_set_logs").insert(setRows);
-    }
+  if (setRows.length > 0) {
+    await db.from("workout_set_logs").insert(setRows);
+  }
 
-    // Award XP idempotently
-    const refId = `workout-${payload.programId}-${payload.sessionId}-${today}`;
-    const xpResult = await awardXpEvent(userId, "workout", refId, today, payload.xpEarned);
-
-    return { success: true, duplicate: false, ...xpResult };
+  return { success: true, duplicate: false };
 }
 
 /** Get workout history */
