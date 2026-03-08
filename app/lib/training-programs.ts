@@ -21,6 +21,7 @@ export interface ProgramTemplate {
   subtitle: string;
   level: "beginner" | "intermediate";
   location: "gym" | "home" | "bodyweight";
+  image: string;
   sessions: ProgramSessionTemplate[];
 }
 
@@ -80,6 +81,7 @@ const BASE_LIBRARY: ExerciseLibraryItem[] = [
 
 const buildSession = (
   programId: string,
+  sessionName: string,
   focus: string,
   durationMin: number,
   exerciseList: Array<{ id: string; sets: number; reps: number }>,
@@ -102,7 +104,7 @@ const buildSession = (
 
   return {
     id: `${programId}-session`,
-    name: "Seance du jour",
+    name: sessionName,
     focus,
     durationMin,
     exercises,
@@ -111,87 +113,38 @@ const buildSession = (
 
 export const MASS_PROGRAMS: ProgramTemplate[] = [
   {
-    id: "gym-beginner",
-    title: "Debutant salle",
-    subtitle: "Base masse sans dips/tractions",
+    id: "optiz-start",
+    title: "OPTIZ Start",
+    subtitle: "Construis tes bases, pose les fondations.",
     level: "beginner",
     location: "gym",
+    image: "/images/optiz-start.jpeg",
     sessions: [
-      buildSession("gym-beginner", "Corps complet", 60, [
-        { id: "db-bench-press", sets: 4, reps: 10 },
-        { id: "lat-pulldown", sets: 4, reps: 10 },
-        { id: "leg-press", sets: 4, reps: 10 },
+      buildSession("optiz-start", "Full Body Fondations", "Corps complet", 55, [
+        { id: "db-bench-press", sets: 3, reps: 10 },
+        { id: "lat-pulldown", sets: 3, reps: 10 },
+        { id: "goblet-squat", sets: 3, reps: 12 },
         { id: "romanian-deadlift", sets: 3, reps: 10 },
         { id: "overhead-press", sets: 3, reps: 10 },
-        { id: "triceps-pushdown", sets: 3, reps: 12 },
+        { id: "hammer-curl", sets: 3, reps: 12 },
       ]),
     ],
   },
   {
-    id: "gym-intermediate",
-    title: "Intermediaire salle",
-    subtitle: "Masse avec dips/tractions",
+    id: "optiz-max",
+    title: "OPTIZ Max",
+    subtitle: "Force, volume, intensite. Aucune excuse.",
     level: "intermediate",
     location: "gym",
+    image: "/images/optiz-max.jpeg",
     sessions: [
-      buildSession("gym-intermediate", "Corps complet", 65, [
-        { id: "dips", sets: 4, reps: 6 },
+      buildSession("optiz-max", "Full Body Intensif", "Corps complet", 70, [
+        { id: "dips", sets: 4, reps: 8 },
         { id: "pull-up", sets: 4, reps: 6 },
         { id: "barbell-row", sets: 4, reps: 8 },
-        { id: "leg-press", sets: 4, reps: 8 },
+        { id: "leg-press", sets: 4, reps: 10 },
         { id: "romanian-deadlift", sets: 4, reps: 8 },
         { id: "overhead-press", sets: 3, reps: 8 },
-      ]),
-    ],
-  },
-  {
-    id: "home-beginner",
-    title: "Debutant maison",
-    subtitle: "Halteres + progression traction/dips",
-    level: "beginner",
-    location: "home",
-    sessions: [
-      buildSession("home-beginner", "Corps complet", 55, [
-        { id: "db-floor-press", sets: 4, reps: 10 },
-        { id: "db-row", sets: 4, reps: 10 },
-        { id: "goblet-squat", sets: 4, reps: 12 },
-        { id: "romanian-deadlift", sets: 3, reps: 10 },
-        { id: "negative-pull-up", sets: 3, reps: 5 },
-        { id: "scapular-pull-up", sets: 3, reps: 10 },
-      ]),
-    ],
-  },
-  {
-    id: "home-intermediate",
-    title: "Intermediaire maison",
-    subtitle: "Dips, tractions, halteres",
-    level: "intermediate",
-    location: "home",
-    sessions: [
-      buildSession("home-intermediate", "Corps complet", 60, [
-        { id: "dips", sets: 4, reps: 6 },
-        { id: "pull-up", sets: 4, reps: 6 },
-        { id: "db-floor-press", sets: 4, reps: 8 },
-        { id: "db-row", sets: 4, reps: 8 },
-        { id: "goblet-squat", sets: 4, reps: 10 },
-        { id: "hip-thrust", sets: 3, reps: 10 },
-      ]),
-    ],
-  },
-  {
-    id: "home-bodyweight",
-    title: "Maison sans materiel",
-    subtitle: "Full body poids du corps",
-    level: "beginner",
-    location: "bodyweight",
-    sessions: [
-      buildSession("home-bodyweight", "Corps complet", 45, [
-        { id: "incline-push-up", sets: 4, reps: 12 },
-        { id: "bodyweight-squat", sets: 4, reps: 15 },
-        { id: "reverse-lunge", sets: 4, reps: 10 },
-        { id: "glute-bridge", sets: 3, reps: 15 },
-        { id: "scapular-push-up", sets: 3, reps: 12 },
-        { id: "crunch", sets: 3, reps: 20 },
       ]),
     ],
   },

@@ -17,8 +17,8 @@ import {
   Volume2,
   VolumeX,
   X,
-  Zap,
 } from "lucide-react";
+import Image from "next/image";
 import {
   EXERCISE_LIBRARY,
   MASS_PROGRAMS,
@@ -29,9 +29,6 @@ import {
 import {
   isSoundEnabled,
   playCompleteSound,
-  playRoundStartSound,
-  playStartSound,
-  playTickSound,
   playWorkoutCompleteSound,
   setSoundEnabled,
 } from "./sounds";
@@ -45,7 +42,7 @@ import {
 } from "@/lib/actions";
 import { useI18n } from "./i18n";
 
-// ── Interfaces ──
+// ── Types ──
 
 interface TrainingHubScreenProps {
   userId: string;
@@ -53,17 +50,8 @@ interface TrainingHubScreenProps {
   initialCompletionsToday?: { programId: string; sessionId: string }[];
 }
 
-interface SessionSetLog {
-  load: number;
-  reps: number;
-  rpe: number;
-}
-
-interface ExerciseLog {
-  exerciseId: string;
-  exerciseName: string;
-  sets: SessionSetLog[];
-}
+interface SessionSetLog { load: number; reps: number; rpe: number; }
+interface ExerciseLog { exerciseId: string; exerciseName: string; sets: SessionSetLog[]; }
 
 interface SessionArchive {
   id: string;
@@ -85,15 +73,7 @@ interface FreestyleTemplate {
   rows: Array<{ exerciseId: string; sets: number; reps: number }>;
 }
 
-type SetType = "N" | "W" | "D";
-
-interface DraftSet {
-  load: string;
-  reps: string;
-  rpe: string;
-  done: boolean;
-  type: SetType;
-}
+interface DraftSet { load: string; reps: string; done: boolean; }
 
 type MainView =
   | { mode: "library" }
@@ -102,340 +82,163 @@ type MainView =
 
 // ── Helpers ──
 
-function sessionKey(programId: string, sessionId: string) {
-  return `${programId}:${sessionId}`;
+function sessionKey(pid: string, sid: string) { return `${pid}:${sid}`; }
+
+function parseNum(raw: string, fb: number) {
+  const n = Number(raw);
+  return Number.isFinite(n) && n > 0 ? Math.round(n) : fb;
 }
 
-function parsePositiveInt(raw: string, fallback: number) {
-  const num = Number(raw);
-  if (!Number.isFinite(num) || num <= 0) return fallback;
-  return Math.round(num);
+function fmtDate(iso: string, loc: "en" | "fr") {
+  return new Date(iso).toLocaleDateString(loc === "fr" ? "fr-FR" : "en-US", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
-function formatDate(iso: string, locale: "en" | "fr") {
-  return new Date(iso).toLocaleDateString(locale === "fr" ? "fr-FR" : "en-US", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
+function fmtTimer(s: number) {
+  return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 }
 
-function compareProgress(current: SessionSetLog, previous?: SessionSetLog) {
-  if (!previous) return false;
-  if (current.reps > previous.reps) return true;
-  if (current.reps === previous.reps && current.load > previous.load) return true;
-  return false;
+function isImproved(cur: SessionSetLog, prev?: SessionSetLog) {
+  if (!prev) return false;
+  return cur.reps > prev.reps || (cur.reps === prev.reps && cur.load > prev.load);
 }
 
-function nextSetType(type: SetType): SetType {
-  if (type === "N") return "W";
-  if (type === "W") return "D";
-  return "N";
-}
-
-function buildInitialSets(
-  session: ProgramSessionTemplate,
-  previousArchive: SessionArchive | null,
-): Record<string, DraftSet[]> {
-  const initial: Record<string, DraftSet[]> = {};
-
-  session.exercises.forEach((exercise) => {
-    const previousSets = previousArchive?.exercises.find((e) => e.exerciseId === exercise.id)?.sets || [];
-    initial[exercise.id] = Array.from({ length: exercise.sets }, (_, i) => ({
-      load: previousSets[i] ? String(previousSets[i].load) : "",
-      reps: previousSets[i] ? String(previousSets[i].reps) : String(exercise.reps),
-      rpe: previousSets[i] ? String(previousSets[i].rpe) : "8",
+function buildSets(session: ProgramSessionTemplate, prev: SessionArchive | null): Record<string, DraftSet[]> {
+  const m: Record<string, DraftSet[]> = {};
+  session.exercises.forEach((ex) => {
+    const ps = prev?.exercises.find((e) => e.exerciseId === ex.id)?.sets || [];
+    m[ex.id] = Array.from({ length: ex.sets }, (_, i) => ({
+      load: ps[i] ? String(ps[i].load) : "",
+      reps: ps[i] ? String(ps[i].reps) : String(ex.reps),
       done: false,
-      type: "N" as SetType,
     }));
   });
-
-  return initial;
+  return m;
 }
 
-function formatTimer(seconds: number) {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-}
-
-const GRADIENTS: string[] = [
-  "from-[#E80000]/20 to-[#E80000]/5",
-  "from-[#C62828]/20 to-[#7F1D1D]/5",
-  "from-[#A61B1B]/20 to-[#4A0E0E]/5",
-  "from-[#7F1D1D]/20 to-[#3B0D0D]/5",
-  "from-[#E80000]/15 to-[#C62828]/5",
-];
-
 // ══════════════════════════════════════════
-// WorkoutFunnel — Everfit-style exercise-by-exercise flow
+// WorkoutFunnel — clean iOS exercise-by-exercise
 // ══════════════════════════════════════════
 
-interface WorkoutFunnelProps {
+function WorkoutFunnel({
+  programId, programTitle, session, previousArchive, onBack, onSave,
+}: {
   programId: string;
   programTitle: string;
   session: ProgramSessionTemplate;
   previousArchive: SessionArchive | null;
   onBack: () => void;
-  onSave: (archive: SessionArchive) => void;
-}
-
-function WorkoutFunnel({
-  programId,
-  programTitle,
-  session,
-  previousArchive,
-  onBack,
-  onSave,
-}: WorkoutFunnelProps) {
+  onSave: (a: SessionArchive) => void;
+}) {
   const { t } = useI18n();
-  const [currentExIdx, setCurrentExIdx] = useState(0);
-  const [setsState, setSetsState] = useState<Record<string, DraftSet[]>>(() =>
-    buildInitialSets(session, previousArchive),
-  );
-  const [improvedKeys, setImprovedKeys] = useState<string[]>([]);
-  const [restLeft, setRestLeft] = useState<number | null>(null);
-  const [soundOn, setSoundOnState] = useState(() => isSoundEnabled());
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [completed, setCompleted] = useState(false);
-  const [flash, setFlash] = useState("");
+  const [exIdx, setExIdx] = useState(0);
+  const [sets, setSets] = useState(() => buildSets(session, previousArchive));
+  const [prKeys, setPrKeys] = useState<string[]>([]);
+  const [soundOn, setSoundOn] = useState(() => isSoundEnabled());
+  const [elapsed, setElapsed] = useState(0);
+  const [done, setDone] = useState(false);
+  const [result, setResult] = useState<SessionArchive | null>(null);
+  const t0 = useRef(Date.now());
 
-  const startTimeRef = useRef(Date.now());
-
-  // Duration timer
   useEffect(() => {
-    if (completed) return;
-    const interval = setInterval(() => {
-      setElapsedSeconds(Math.floor((Date.now() - startTimeRef.current) / 1000));
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [completed]);
+    if (done) return;
+    const iv = setInterval(() => setElapsed(Math.floor((Date.now() - t0.current) / 1000)), 1000);
+    return () => clearInterval(iv);
+  }, [done]);
 
-  // Start sound
-  useEffect(() => {
-    if (soundOn) playStartSound();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const ex = session.exercises[exIdx];
+  const rows = ex ? sets[ex.id] || [] : [];
+  const prevRows = ex ? previousArchive?.exercises.find((e) => e.exerciseId === ex.id)?.sets || [] : [];
+  const allDone = rows.length > 0 && rows.every((r) => r.done);
+  const isLast = exIdx === session.exercises.length - 1;
 
-  // Rest timer countdown
-  useEffect(() => {
-    if (restLeft === null) return;
-    const timer = setTimeout(() => {
-      const next = restLeft - 1;
-      if (next <= 0) {
-        if (soundOn) playRoundStartSound();
-        setRestLeft(null);
-        return;
-      }
-      if (soundOn && next <= 3) playTickSound();
-      setRestLeft(next);
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, [restLeft, soundOn]);
-
-  const exercise = session.exercises[currentExIdx];
-  const rows = exercise ? setsState[exercise.id] || [] : [];
-  const previousRows = exercise
-    ? previousArchive?.exercises.find((e) => e.exerciseId === exercise.id)?.sets || []
-    : [];
-  const allCurrentDone = rows.every((r) => r.done);
-  const isLastExercise = currentExIdx === session.exercises.length - 1;
-
-  const updateSet = (exerciseId: string, setIndex: number, patch: Partial<DraftSet>) => {
-    setSetsState((prev) => {
-      const r = prev[exerciseId] || [];
-      return { ...prev, [exerciseId]: r.map((row, i) => (i === setIndex ? { ...row, ...patch } : row)) };
-    });
-  };
-
-  const addSet = () => {
-    if (!exercise) return;
-    setSetsState((prev) => ({
+  const upd = (eid: string, i: number, p: Partial<DraftSet>) => {
+    setSets((prev) => ({
       ...prev,
-      [exercise.id]: [...(prev[exercise.id] || []), { load: "", reps: String(exercise.reps), rpe: "8", done: false, type: "N" }],
+      [eid]: (prev[eid] || []).map((r, idx) => (idx === i ? { ...r, ...p } : r)),
     }));
   };
 
-  const toggleDone = (setIndex: number) => {
-    if (!exercise) return;
-    const row = rows[setIndex];
-    if (!row) return;
-    const nextDone = !row.done;
-    updateSet(exercise.id, setIndex, { done: nextDone });
-
-    if (!nextDone) return;
+  const check = (i: number) => {
+    if (!ex) return;
+    const r = rows[i];
+    if (!r) return;
+    const next = !r.done;
+    upd(ex.id, i, { done: next });
+    if (!next) return;
     if (soundOn) playCompleteSound();
-    setRestLeft(75);
-
-    const previous = previousRows[setIndex];
-    const current: SessionSetLog = {
-      load: parsePositiveInt(row.load, 0),
-      reps: parsePositiveInt(row.reps, exercise.reps),
-      rpe: parsePositiveInt(row.rpe, 8),
-    };
-    const key = `${exercise.id}-${setIndex}`;
-    if (!improvedKeys.includes(key) && compareProgress(current, previous)) {
-      setImprovedKeys((prev) => [...prev, key]);
-      setFlash(t("trainingRecordBeaten"));
-      setTimeout(() => setFlash(""), 1300);
-    }
+    const cur: SessionSetLog = { load: parseNum(r.load, 0), reps: parseNum(r.reps, ex.reps), rpe: 8 };
+    const k = `${ex.id}-${i}`;
+    if (!prKeys.includes(k) && isImproved(cur, prevRows[i])) setPrKeys((p) => [...p, k]);
   };
 
-  const markAllDone = () => {
-    if (!exercise) return;
-    setSetsState((prev) => ({
-      ...prev,
-      [exercise.id]: (prev[exercise.id] || []).map((row) => ({ ...row, done: true })),
+  const finish = () => {
+    const logs: ExerciseLog[] = session.exercises.map((e) => ({
+      exerciseId: e.id,
+      exerciseName: e.name,
+      sets: (sets[e.id] || []).map((r) => ({ load: parseNum(r.load, 0), reps: parseNum(r.reps, e.reps), rpe: 8 })),
     }));
-    if (soundOn) playCompleteSound();
-  };
-
-  const goToNextExercise = () => {
-    if (!allCurrentDone) return;
-    setRestLeft(null);
-    if (isLastExercise) {
-      finishWorkout();
-    } else {
-      setCurrentExIdx((prev) => prev + 1);
-      setRestLeft(90); // rest between exercises
-    }
-  };
-
-  const finishWorkout = () => {
-    const logs: ExerciseLog[] = session.exercises.map((ex) => ({
-      exerciseId: ex.id,
-      exerciseName: ex.name,
-      sets: (setsState[ex.id] || []).map((row) => ({
-        load: parsePositiveInt(row.load, 0),
-        reps: parsePositiveInt(row.reps, ex.reps),
-        rpe: parsePositiveInt(row.rpe, 8),
-      })),
-    }));
-
-    const totalVolume = logs.reduce(
-      (sum, exLog) => sum + exLog.sets.reduce((s, row) => s + row.load * row.reps, 0),
-      0,
-    );
-
+    const vol = logs.reduce((s, el) => s + el.sets.reduce((a, r) => a + r.load * r.reps, 0), 0);
     if (soundOn) playWorkoutCompleteSound();
-    setCompleted(true);
-
-    // We'll call onSave from the completion screen's claim button
-    setCompletionData({
+    setDone(true);
+    setResult({
       id: `${session.id}-${Date.now()}`,
-      programId,
-      programTitle,
-      sessionId: session.id,
-      sessionName: session.name,
+      programId, programTitle,
+      sessionId: session.id, sessionName: session.name,
       completedAt: new Date().toISOString(),
-      exercises: logs,
-      totalVolume,
-      improvedSets: improvedKeys.length,
-      xpEarned: 100,
+      exercises: logs, totalVolume: vol, improvedSets: prKeys.length, xpEarned: 100,
     });
   };
 
-  const [completionData, setCompletionData] = useState<SessionArchive | null>(null);
-
-  const toggleSound = () => {
-    const next = !soundOn;
-    setSoundOnState(next);
-    setSoundEnabled(next);
+  const next = () => {
+    if (!allDone) return;
+    if (isLast) finish();
+    else setExIdx((p) => p + 1);
   };
 
-  // ── Completion Screen ──
-  if (completed && completionData) {
+  // ── Completion ──
+  if (done && result) {
     return (
-      <motion.div
-        className="pb-8 flex flex-col items-center justify-center min-h-[70vh]"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-      >
-        {/* Confetti-like particles */}
-        <div className="relative w-full flex justify-center mb-6">
-          {[...Array(12)].map((_, i) => (
-            <motion.div
-              key={i}
-              className="absolute w-2 h-2 rounded-full"
-              style={{
-                background: ["#E80000", "#FF6D6D", "#FFD700", "#FF5C5C", "#FBBF24"][i % 5],
-              }}
-              initial={{
-                x: 0,
-                y: 0,
-                scale: 0,
-                opacity: 1,
-              }}
-              animate={{
-                x: (Math.random() - 0.5) * 200,
-                y: (Math.random() - 0.5) * 200,
-                scale: [0, 1.5, 0],
-                opacity: [1, 1, 0],
-              }}
-              transition={{
-                duration: 1.2,
-                delay: i * 0.05,
-                ease: "easeOut",
-              }}
-            />
-          ))}
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: "spring", stiffness: 200, damping: 12, delay: 0.2 }}
-            className="w-20 h-20 rounded-full bg-[#E80000]/15 border-2 border-[#E80000]/30 flex items-center justify-center"
-          >
-            <Trophy size={36} className="text-[#FF6D6D]" />
-          </motion.div>
-        </div>
-
-        <motion.h2
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="text-[28px] font-bold text-gray-12 text-center"
+      <motion.div className="pb-8 flex flex-col items-center pt-12" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ type: "spring", stiffness: 200, damping: 14, delay: 0.1 }}
+          className="w-16 h-16 rounded-full bg-[#E80000]/12 border border-[#E80000]/25 flex items-center justify-center mb-5"
         >
+          <Trophy size={28} className="text-[#FF6D6D]" />
+        </motion.div>
+
+        <motion.h2 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="text-xl font-bold text-gray-12">
           {t("trainingCongrats")}
         </motion.h2>
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          className="text-sm text-gray-8 mt-1 text-center"
-        >
+        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.35 }} className="text-[13px] text-gray-8 mt-1">
           {t("trainingCongratsSubtitle")}
         </motion.p>
 
-        {/* Stats Grid */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-          className="w-full mt-6 grid grid-cols-3 gap-3"
-        >
-          <div className="rounded-2xl border border-gray-5/35 bg-gray-2/82 p-4 text-center">
-            <Clock size={18} className="text-gray-8 mx-auto mb-1.5" />
-            <p className="text-[20px] font-bold text-gray-12 tabular-nums">{formatTimer(elapsedSeconds)}</p>
-            <p className="text-[11px] text-gray-7 mt-0.5">{t("trainingDuration")}</p>
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }} className="w-full mt-6 grid grid-cols-3 gap-2.5">
+          <div className="rounded-2xl border border-gray-5/30 bg-gray-2/70 p-3 text-center">
+            <Clock size={15} className="text-gray-7 mx-auto mb-1" />
+            <p className="text-[15px] font-bold text-gray-12 tabular-nums">{fmtTimer(elapsed)}</p>
+            <p className="text-[10px] text-gray-7 mt-0.5">{t("trainingDuration")}</p>
           </div>
-          <div className="rounded-2xl border border-gray-5/35 bg-gray-2/82 p-4 text-center">
-            <Dumbbell size={18} className="text-gray-8 mx-auto mb-1.5" />
-            <p className="text-[20px] font-bold text-gray-12 tabular-nums">{completionData.totalVolume.toLocaleString()}</p>
-            <p className="text-[11px] text-gray-7 mt-0.5">{t("trainingKg")}</p>
+          <div className="rounded-2xl border border-gray-5/30 bg-gray-2/70 p-3 text-center">
+            <Dumbbell size={15} className="text-gray-7 mx-auto mb-1" />
+            <p className="text-[15px] font-bold text-gray-12 tabular-nums">{result.totalVolume.toLocaleString()}</p>
+            <p className="text-[10px] text-gray-7 mt-0.5">{t("trainingKg")}</p>
           </div>
-          <div className="rounded-2xl border border-gray-5/35 bg-gray-2/82 p-4 text-center">
-            <Sparkles size={18} className="text-[#FFD700] mx-auto mb-1.5" />
-            <p className="text-[20px] font-bold text-gray-12 tabular-nums">{completionData.improvedSets}</p>
-            <p className="text-[11px] text-gray-7 mt-0.5">{t("trainingRecordsLabel")}</p>
+          <div className="rounded-2xl border border-gray-5/30 bg-gray-2/70 p-3 text-center">
+            <Sparkles size={15} className="text-[#FFD700] mx-auto mb-1" />
+            <p className="text-[15px] font-bold text-gray-12 tabular-nums">{result.improvedSets}</p>
+            <p className="text-[10px] text-gray-7 mt-0.5">{t("trainingRecordsLabel")}</p>
           </div>
         </motion.div>
 
-        {/* Claim XP Button */}
         <motion.button
-          initial={{ opacity: 0, y: 12 }}
+          initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8 }}
-          onClick={() => onSave(completionData)}
-          className="w-full mt-8 h-14 rounded-2xl optiz-gradient-bg text-white font-bold text-base active:scale-[0.97] transition-transform"
+          transition={{ delay: 0.6 }}
+          onClick={() => onSave(result)}
+          className="w-full mt-7 h-12 rounded-2xl optiz-gradient-bg text-white font-semibold text-[15px] active:scale-[0.97] transition-transform"
         >
           {t("trainingClaimXp", { xp: "100" })}
         </motion.button>
@@ -443,270 +246,136 @@ function WorkoutFunnel({
     );
   }
 
-  // ── Active Exercise Screen ──
+  // ── Exercise screen ──
   return (
-    <div className="pb-[126px]">
-      {/* Top bar: back, timer, sound */}
-      <div className="flex items-center justify-between gap-3 mb-3">
-        <button
-          onClick={onBack}
-          className="w-11 h-11 rounded-full border border-gray-5/35 bg-gray-3/35 text-gray-9 flex items-center justify-center"
-        >
-          <ArrowLeft size={18} />
+    <div className="pb-[100px]">
+      {/* Top bar */}
+      <div className="flex items-center justify-between mb-3">
+        <button onClick={onBack} className="w-10 h-10 rounded-full border border-gray-5/30 bg-gray-3/30 text-gray-9 flex items-center justify-center">
+          <ArrowLeft size={16} />
         </button>
-
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 px-3 h-9 rounded-full bg-gray-3/45 border border-gray-5/30">
-            <Clock size={13} className="text-gray-8" />
-            <span className="text-sm font-semibold text-gray-12 tabular-nums">{formatTimer(elapsedSeconds)}</span>
+        <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1 px-2.5 h-8 rounded-full bg-gray-3/40 border border-gray-5/25">
+            <Clock size={11} className="text-gray-7" />
+            <span className="text-[13px] font-medium text-gray-11 tabular-nums">{fmtTimer(elapsed)}</span>
           </div>
-
           <button
-            onClick={toggleSound}
-            className="w-11 h-11 rounded-full border border-gray-5/35 bg-gray-3/35 text-gray-9 flex items-center justify-center"
-            aria-label={t("sound")}
+            onClick={() => { const n = !soundOn; setSoundOn(n); setSoundEnabled(n); }}
+            className="w-10 h-10 rounded-full border border-gray-5/30 bg-gray-3/30 text-gray-8 flex items-center justify-center"
           >
-            {soundOn ? <Volume2 size={16} /> : <VolumeX size={16} />}
+            {soundOn ? <Volume2 size={14} /> : <VolumeX size={14} />}
           </button>
         </div>
       </div>
 
       {/* Progress dots */}
-      <div className="flex items-center gap-1.5 mb-4 px-1">
-        {session.exercises.map((_, i) => {
-          const exRows = setsState[session.exercises[i].id] || [];
-          const exDone = exRows.every((r) => r.done);
-          return (
-            <div
-              key={i}
-              className={`h-1.5 rounded-full flex-1 transition-all duration-300 ${
-                i < currentExIdx || exDone
-                  ? "bg-[#E80000]"
-                  : i === currentExIdx
-                    ? "bg-[#FF6D6D]"
-                    : "bg-gray-5/40"
-              }`}
-            />
-          );
-        })}
+      <div className="flex items-center gap-1 mb-3">
+        {session.exercises.map((_, i) => (
+          <div key={i} className={`h-[3px] rounded-full flex-1 transition-all duration-300 ${
+            i < exIdx ? "bg-[#E80000]" : i === exIdx ? "bg-[#FF6D6D]" : "bg-gray-5/30"
+          }`} />
+        ))}
       </div>
 
       {/* Exercise counter */}
-      <p className="text-xs text-gray-7 uppercase tracking-[0.16em] font-semibold mb-1 px-1">
-        {t("trainingExerciseOf", { current: String(currentExIdx + 1), total: String(session.exercises.length) })}
+      <p className="text-[11px] text-gray-7 uppercase tracking-widest mb-2">
+        {t("trainingExerciseOf", { current: String(exIdx + 1), total: String(session.exercises.length) })}
       </p>
 
-      {/* Rest timer overlay */}
-      <AnimatePresence>
-        {restLeft !== null && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="rounded-3xl border-2 border-[#E80000]/40 bg-[#E80000]/8 p-6 mb-4 flex flex-col items-center"
-          >
-            <p className="text-xs uppercase tracking-[0.18em] text-[#FF6D6D] font-semibold mb-2">{t("trainingRest")}</p>
-            <p className="text-[56px] font-bold text-[#FF6D6D] tabular-nums leading-none">{restLeft}s</p>
-            <button
-              type="button"
-              onClick={() => setRestLeft(null)}
-              className="mt-4 h-11 px-8 rounded-xl border border-[#E80000]/35 bg-[#E80000]/12 text-[#FF6D6D] text-sm font-semibold active:scale-[0.97]"
-            >
-              {t("trainingSkipRestAria")}
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Flash (PR beaten) */}
-      <AnimatePresence>
-        {flash ? (
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            className="rounded-xl border border-[#FFD700]/35 bg-[#FFD700]/10 text-[#FFD700] text-sm font-semibold px-3 py-2 mb-3 inline-flex items-center gap-1.5"
-          >
-            <Sparkles size={14} /> {flash}
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
-
-      {exercise && (
-        <motion.div
-          key={exercise.id}
-          initial={{ opacity: 0, x: 30 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ type: "spring", stiffness: 300, damping: 28 }}
-        >
-          {/* Exercise header card */}
-          <div className="rounded-3xl border border-gray-5/35 bg-gray-2/82 p-4 mb-3">
-            <div className="flex items-start justify-between gap-2">
+      {ex && (
+        <motion.div key={ex.id} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ type: "spring", stiffness: 400, damping: 30 }}>
+          {/* Exercise info */}
+          <div className="rounded-2xl border border-gray-5/30 bg-gray-2/70 p-3.5 mb-2.5">
+            <div className="flex items-center justify-between gap-2">
               <div className="min-w-0 flex-1">
-                <h3 className="text-[22px] font-bold text-gray-12 leading-tight">{exercise.name}</h3>
-                <p className="text-sm text-gray-8 mt-1">{exercise.muscles}</p>
-                <div className="flex items-center gap-2 mt-2">
-                  <span className="text-xs text-gray-7 bg-gray-4/40 border border-gray-5/30 rounded-full px-2.5 py-1">
-                    {exercise.sets} {t("sets")} x {exercise.reps} {t("reps")}
-                  </span>
-                </div>
+                <h3 className="text-[17px] font-semibold text-gray-12 leading-snug">{ex.name}</h3>
+                <p className="text-[12px] text-gray-8 mt-0.5">{ex.muscles}</p>
               </div>
-
-              <a
-                href={exercise.videoUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-12 h-12 rounded-xl bg-[#E80000]/10 border border-[#E80000]/25 flex items-center justify-center shrink-0"
-                aria-label={t("trainingVideoAria")}
-              >
-                <Play size={20} className="text-[#FF6D6D] ml-0.5" />
+              <a href={ex.videoUrl} target="_blank" rel="noopener noreferrer"
+                className="w-10 h-10 rounded-xl bg-[#E80000]/8 border border-[#E80000]/20 flex items-center justify-center shrink-0">
+                <Play size={16} className="text-[#FF6D6D] ml-0.5" />
               </a>
             </div>
           </div>
 
-          {/* Set table */}
-          <div className="rounded-3xl border border-gray-5/35 bg-gray-2/82 p-4">
-            {/* Column headers */}
-            <div className="grid grid-cols-[2rem_minmax(0,1fr)_5rem_5rem_3rem] gap-1.5 px-1 pb-2 text-xs uppercase tracking-[0.1em] text-gray-7">
-              <span className="text-center">#</span>
-              <span className="text-center">{t("trainingHeaderPrev")}</span>
-              <span className="text-center">{t("trainingHeaderKg")}</span>
-              <span className="text-center">{t("trainingHeaderReps")}</span>
+          {/* Set table — clean Everfit style */}
+          <div className="rounded-2xl border border-gray-5/30 bg-gray-2/70 overflow-hidden">
+            {/* Header */}
+            <div className="grid grid-cols-[2.5rem_1fr_1fr_2.5rem] px-3 py-2 border-b border-gray-5/20">
+              <span className="text-[11px] uppercase tracking-wider text-gray-7 text-center">{t("trainingHeaderSet")}</span>
+              <span className="text-[11px] uppercase tracking-wider text-gray-7 text-center">{t("trainingHeaderKg")}</span>
+              <span className="text-[11px] uppercase tracking-wider text-gray-7 text-center">{t("trainingHeaderReps")}</span>
               <span />
             </div>
 
-            <div className="space-y-2">
-              {rows.map((row, rowIdx) => {
-                const key = `${exercise.id}-${rowIdx}`;
-                const previous = previousRows[rowIdx];
-                const isImproved = improvedKeys.includes(key);
-
+            {/* Rows */}
+            <div className="divide-y divide-gray-5/15">
+              {rows.map((row, i) => {
+                const isPr = prKeys.includes(`${ex.id}-${i}`);
                 return (
-                  <div key={key}>
-                    <div
-                      className={`grid grid-cols-[2rem_minmax(0,1fr)_5rem_5rem_3rem] items-center gap-1.5 p-1.5 rounded-xl border transition-colors ${
-                        row.done
-                          ? "bg-[#E80000]/8 border-[#E80000]/20"
-                          : "bg-gray-3/23 border-gray-5/25"
-                      }`}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => updateSet(exercise.id, rowIdx, { type: nextSetType(row.type) })}
-                        disabled={row.done}
-                        className="flex flex-col items-center justify-center disabled:opacity-50"
-                      >
-                        <span className="text-xs text-gray-8 font-semibold">{rowIdx + 1}</span>
-                        {row.type !== "N" && (
-                          <span
-                            className={`text-[10px] font-bold mt-0.5 px-1 rounded ${
-                              row.type === "W" ? "text-yellow-500 bg-yellow-500/15" : "text-red-400 bg-red-400/15"
-                            }`}
-                          >
-                            {row.type}
-                          </span>
-                        )}
-                      </button>
+                  <div key={i} className={`grid grid-cols-[2.5rem_1fr_1fr_2.5rem] items-center px-3 py-1.5 transition-colors ${row.done ? "bg-[#E80000]/5" : ""}`}>
+                    <div className="flex items-center justify-center">
+                      <span className={`text-[13px] font-medium ${row.done ? "text-[#FF6D6D]" : "text-gray-8"}`}>{i + 1}</span>
+                      {isPr && <Sparkles size={10} className="text-[#FFD700] ml-0.5" />}
+                    </div>
 
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (!previous || row.done) return;
-                          updateSet(exercise.id, rowIdx, {
-                            load: String(previous.load),
-                            reps: String(previous.reps),
-                            rpe: String(previous.rpe),
-                          });
-                        }}
-                        className="text-xs text-gray-7 text-center truncate rounded-lg border border-transparent hover:border-gray-5/20 px-1 h-11"
-                      >
-                        {previous ? `${previous.load}x${previous.reps}` : "-"}
-                      </button>
-
+                    <div className="flex justify-center px-1">
                       <input
                         type="number"
                         value={row.load}
-                        inputMode="numeric"
-                        onChange={(e) => updateSet(exercise.id, rowIdx, { load: e.target.value })}
+                        inputMode="decimal"
+                        onChange={(e) => upd(ex.id, i, { load: e.target.value })}
                         disabled={row.done}
-                        placeholder="0"
-                        className="h-11 rounded-lg bg-gray-2 border border-gray-5/30 text-center text-sm text-gray-12 disabled:opacity-55"
+                        placeholder="-"
+                        className="w-full max-w-[5rem] h-9 rounded-lg bg-transparent text-center text-[14px] text-gray-12 placeholder:text-gray-6 disabled:opacity-50 focus:bg-gray-3/30 transition-colors outline-none"
                       />
+                    </div>
 
+                    <div className="flex justify-center px-1">
                       <input
                         type="number"
                         value={row.reps}
                         inputMode="numeric"
-                        onChange={(e) => updateSet(exercise.id, rowIdx, { reps: e.target.value })}
+                        onChange={(e) => upd(ex.id, i, { reps: e.target.value })}
                         disabled={row.done}
-                        placeholder={String(exercise.reps)}
-                        className="h-11 rounded-lg bg-gray-2 border border-gray-5/30 text-center text-sm text-gray-12 disabled:opacity-55"
+                        placeholder={String(ex.reps)}
+                        className="w-full max-w-[5rem] h-9 rounded-lg bg-transparent text-center text-[14px] text-gray-12 placeholder:text-gray-6 disabled:opacity-50 focus:bg-gray-3/30 transition-colors outline-none"
                       />
-
-                      <button
-                        type="button"
-                        onClick={() => toggleDone(rowIdx)}
-                        className={`w-11 h-11 rounded-lg border flex items-center justify-center transition-colors ${
-                          row.done
-                            ? "border-[#E80000]/35 bg-[#E80000]/16 text-[#FF6D6D]"
-                            : "border-gray-5/35 bg-gray-2 text-gray-8"
-                        }`}
-                      >
-                        {row.done ? <Check size={16} /> : <Check size={16} className="opacity-30" />}
-                      </button>
                     </div>
 
-                    {isImproved && (
-                      <motion.p
-                        initial={{ scale: 0.8, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        className="mt-1 text-xs font-bold text-[#FFD700] text-right inline-flex items-center justify-end gap-1 w-full"
-                      >
-                        <Sparkles size={13} /> PR
-                      </motion.p>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => check(i)}
+                      className={`w-8 h-8 rounded-full flex items-center justify-center transition-all mx-auto ${
+                        row.done
+                          ? "bg-[#E80000] text-white"
+                          : "border border-gray-5/40 text-gray-6"
+                      }`}
+                    >
+                      <Check size={14} strokeWidth={2.5} />
+                    </button>
                   </div>
                 );
               })}
-            </div>
-
-            {/* Quick actions */}
-            <div className="flex items-center gap-2 mt-3">
-              <button
-                type="button"
-                onClick={addSet}
-                className="h-11 px-3 rounded-xl border border-gray-5/30 bg-gray-3/30 text-xs text-gray-9 font-semibold inline-flex items-center gap-1"
-              >
-                <Plus size={12} /> {t("trainingAddSetAria")}
-              </button>
-              {!allCurrentDone && (
-                <button
-                  type="button"
-                  onClick={markAllDone}
-                  className="h-11 px-3 rounded-xl border border-[#E80000]/25 bg-[#E80000]/8 text-xs text-[#FF6D6D] font-semibold"
-                >
-                  {t("trainingMarkAll")}
-                </button>
-              )}
             </div>
           </div>
         </motion.div>
       )}
 
       {/* Bottom CTA */}
-      <div className="fixed inset-x-0 bottom-0 z-20 px-4 sm:px-6 pb-[calc(var(--safe-bottom)+12px)] bg-gradient-to-t from-[var(--gray-1)] via-[var(--gray-1)]/95 to-transparent pointer-events-none">
+      <div className="fixed inset-x-0 bottom-0 z-20 px-4 sm:px-6 pb-[calc(var(--safe-bottom)+10px)] bg-gradient-to-t from-[var(--gray-1)] via-[var(--gray-1)]/95 to-transparent pointer-events-none">
         <div className="mx-auto max-w-4xl pointer-events-auto">
           <button
-            onClick={goToNextExercise}
-            disabled={!allCurrentDone}
-            className={`w-full h-[52px] rounded-2xl font-semibold text-sm flex items-center justify-center gap-2 transition-all ${
-              allCurrentDone
+            onClick={next}
+            disabled={!allDone}
+            className={`w-full h-12 rounded-2xl font-semibold text-[15px] flex items-center justify-center gap-1.5 transition-all ${
+              allDone
                 ? "optiz-gradient-bg text-white active:scale-[0.97]"
-                : "bg-gray-3 border border-gray-5/40 text-gray-7"
+                : "bg-gray-3 border border-gray-5/35 text-gray-7"
             }`}
           >
-            {isLastExercise ? t("trainingValidateSession") : t("trainingNextExercise")}
-            {!isLastExercise && allCurrentDone && <ChevronRight size={18} />}
+            {isLast ? t("trainingValidateSession") : t("trainingNextExercise")}
+            {!isLast && allDone && <ChevronRight size={16} />}
           </button>
         </div>
       </div>
@@ -715,15 +384,11 @@ function WorkoutFunnel({
 }
 
 // ══════════════════════════════════════════
-// ProgramDetailView — shows exercises, description, launch button
+// ProgramDetailView
 // ══════════════════════════════════════════
 
 function ProgramDetailView({
-  program,
-  completed,
-  lastArchive,
-  onBack,
-  onLaunch,
+  program, completed, lastArchive, onBack, onLaunch,
 }: {
   program: ProgramTemplate;
   completed: boolean;
@@ -735,584 +400,356 @@ function ProgramDetailView({
   const session = program.sessions[0];
   const setsCount = session.exercises.reduce((s, ex) => s + ex.sets, 0);
 
-  const equipmentLabel =
-    program.location === "gym"
-      ? t("trainingEquipmentGym")
-      : program.location === "home"
-        ? t("trainingEquipmentHome")
-        : t("trainingEquipmentBodyweight");
-
-  const levelLabel = program.level === "beginner" ? t("trainingLevelBeginner") : t("trainingLevelIntermediate");
-
   return (
     <div className="pb-8">
-      <button
-        onClick={onBack}
-        className="inline-flex items-center gap-1.5 text-sm text-gray-8 hover:text-gray-12 mb-4"
-      >
-        <ArrowLeft size={16} /> {t("back")}
+      <button onClick={onBack} className="inline-flex items-center gap-1 text-[13px] text-gray-8 mb-3">
+        <ArrowLeft size={14} /> {t("back")}
       </button>
 
-      {/* Hero gradient card */}
-      <div className={`rounded-3xl bg-gradient-to-br ${GRADIENTS[MASS_PROGRAMS.indexOf(program) % GRADIENTS.length]} border border-gray-5/35 p-6 mb-4`}>
-        <p className="text-xs uppercase tracking-[0.16em] text-[#FF6D6D] font-semibold mb-1">{program.subtitle}</p>
-        <h2 className="text-[28px] font-bold text-gray-12 leading-tight">{program.title}</h2>
-        <p className="text-sm text-gray-8 mt-2">{session.focus}</p>
-
-        <div className="flex flex-wrap gap-2 mt-4">
-          <span className="rounded-full px-3 py-1.5 bg-gray-4/50 border border-gray-5/30 text-xs text-gray-9">
-            {session.exercises.length} {t("exercises")}
-          </span>
-          <span className="rounded-full px-3 py-1.5 bg-gray-4/50 border border-gray-5/30 text-xs text-gray-9">
-            {setsCount} {t("sets")}
-          </span>
-          <span className="rounded-full px-3 py-1.5 bg-gray-4/50 border border-gray-5/30 text-xs text-gray-9">
-            ~{session.durationMin} {t("minutesShort")}
-          </span>
-          <span className="rounded-full px-3 py-1.5 bg-[#E80000]/12 border border-[#E80000]/25 text-xs text-[#FF6D6D] font-semibold">
-            +100 XP
-          </span>
+      {/* Hero image */}
+      <div className="relative rounded-2xl overflow-hidden mb-4 aspect-[2/1]">
+        <Image src={program.image} alt={program.title} fill className="object-cover" sizes="(max-width: 768px) 100vw, 600px" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 p-4">
+          <p className="text-[11px] uppercase tracking-widest text-[#FF6D6D] font-semibold mb-0.5">
+            {program.level === "beginner" ? t("trainingLevelBeginner") : t("trainingLevelIntermediate")}
+          </p>
+          <h2 className="text-[22px] font-bold text-white leading-tight">{program.title}</h2>
+          <p className="text-[13px] text-white/70 mt-0.5">{program.subtitle}</p>
         </div>
       </div>
 
-      {/* Tags */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        <span className="rounded-full px-3 py-1.5 bg-gray-3/45 border border-gray-5/30 text-xs text-gray-9 inline-flex items-center gap-1">
-          <Dumbbell size={12} /> {equipmentLabel}
-        </span>
-        <span className="rounded-full px-3 py-1.5 bg-gray-3/45 border border-gray-5/30 text-xs text-gray-9 inline-flex items-center gap-1">
-          <Zap size={12} /> {levelLabel}
-        </span>
+      {/* Stats row */}
+      <div className="flex gap-2 mb-4">
+        <div className="flex-1 rounded-xl border border-gray-5/25 bg-gray-2/60 py-2 text-center">
+          <p className="text-[14px] font-semibold text-gray-12">{session.exercises.length}</p>
+          <p className="text-[10px] text-gray-7">{t("exercises")}</p>
+        </div>
+        <div className="flex-1 rounded-xl border border-gray-5/25 bg-gray-2/60 py-2 text-center">
+          <p className="text-[14px] font-semibold text-gray-12">{setsCount}</p>
+          <p className="text-[10px] text-gray-7">{t("sets")}</p>
+        </div>
+        <div className="flex-1 rounded-xl border border-gray-5/25 bg-gray-2/60 py-2 text-center">
+          <p className="text-[14px] font-semibold text-gray-12">~{session.durationMin}</p>
+          <p className="text-[10px] text-gray-7">{t("minutesShort")}</p>
+        </div>
+        <div className="flex-1 rounded-xl border border-[#E80000]/20 bg-[#E80000]/6 py-2 text-center">
+          <p className="text-[14px] font-semibold text-[#FF6D6D]">+100</p>
+          <p className="text-[10px] text-gray-7">XP</p>
+        </div>
       </div>
 
-      {/* Last performance */}
+      {/* Last session */}
       {lastArchive && (
-        <div className="rounded-2xl border border-gray-5/30 bg-gray-3/18 p-3 mb-4">
-          <p className="text-xs text-gray-7">
-            {t("trainingLastPerf")} {formatDate(lastArchive.completedAt, locale)} &middot; {t("trainingVolumeLabel")} {lastArchive.totalVolume.toFixed(0)}
-            {lastArchive.improvedSets > 0 && (
-              <> &middot; {lastArchive.improvedSets} {t("trainingRecordsLabel")}</>
-            )}
+        <div className="rounded-xl border border-gray-5/20 bg-gray-3/15 px-3 py-2 mb-4">
+          <p className="text-[11px] text-gray-7">
+            {t("trainingLastPerf")} {fmtDate(lastArchive.completedAt, locale)} · {t("trainingVolumeLabel")} {lastArchive.totalVolume.toFixed(0)}
           </p>
         </div>
       )}
 
-      {/* Exercise preview list — only names and muscles, no spoiler of weights */}
-      <div className="rounded-3xl border border-gray-5/35 bg-gray-2/82 p-4 mb-6">
-        <h3 className="text-sm font-semibold text-gray-12 mb-3">{t("trainingExerciseList")}</h3>
-        <div className="space-y-2.5">
+      {/* Exercise list */}
+      <div className="rounded-2xl border border-gray-5/25 bg-gray-2/60 overflow-hidden mb-6">
+        <div className="px-3 py-2 border-b border-gray-5/15">
+          <p className="text-[12px] font-semibold text-gray-10 uppercase tracking-wider">{t("trainingExerciseList")}</p>
+        </div>
+        <div className="divide-y divide-gray-5/12">
           {session.exercises.map((ex, i) => (
-            <div key={ex.id} className="flex items-center gap-3">
-              <div className="w-7 h-7 rounded-lg bg-gray-4/50 border border-gray-5/30 flex items-center justify-center shrink-0">
-                <span className="text-xs font-semibold text-gray-8">{i + 1}</span>
-              </div>
+            <div key={ex.id} className="flex items-center gap-2.5 px-3 py-2.5">
+              <span className="w-5 h-5 rounded-md bg-gray-4/40 flex items-center justify-center shrink-0 text-[11px] font-medium text-gray-8">{i + 1}</span>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-gray-12 truncate">{ex.name}</p>
-                <p className="text-xs text-gray-7 truncate">{ex.muscles} &middot; {ex.sets}x{ex.reps}</p>
+                <p className="text-[13px] font-medium text-gray-12 truncate">{ex.name}</p>
+                <p className="text-[11px] text-gray-7">{ex.muscles} · {ex.sets}x{ex.reps}</p>
               </div>
-              <a
-                href={ex.videoUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-9 h-9 rounded-lg border border-gray-5/25 bg-gray-3/30 flex items-center justify-center shrink-0 text-gray-8"
-              >
-                <ExternalLink size={14} />
+              <a href={ex.videoUrl} target="_blank" rel="noopener noreferrer" className="text-gray-7 shrink-0">
+                <ExternalLink size={13} />
               </a>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Launch button */}
+      {/* Launch */}
       <button
         onClick={onLaunch}
         disabled={completed}
-        className={`w-full h-14 rounded-2xl font-bold text-base flex items-center justify-center gap-2 transition-all ${
-          completed
-            ? "bg-gray-3 border border-gray-5/40 text-gray-7 cursor-not-allowed"
-            : "optiz-gradient-bg text-white active:scale-[0.97]"
+        className={`w-full h-12 rounded-2xl font-semibold text-[15px] flex items-center justify-center gap-1.5 transition-all ${
+          completed ? "bg-gray-3 border border-gray-5/35 text-gray-7" : "optiz-gradient-bg text-white active:scale-[0.97]"
         }`}
       >
-        {completed ? t("trainingDoneReopens") : (
-          <>
-            <Play size={18} /> {t("trainingStartSession")}
-          </>
-        )}
+        {completed ? t("trainingDoneReopens") : <><Play size={16} /> {t("trainingStartSession")}</>}
       </button>
     </div>
   );
 }
 
 // ══════════════════════════════════════════
-// TrainingHubScreen — Main component
+// TrainingHubScreen
 // ══════════════════════════════════════════
 
 export function TrainingHubScreen({ userId, onAwardXpEvent, initialCompletionsToday }: TrainingHubScreenProps) {
   const { t, locale } = useI18n();
-  const [mainView, setMainView] = useState<MainView>({ mode: "library" });
-  const [activeTracker, setActiveTracker] = useState<{
-    programId: string;
-    programTitle: string;
-    session: ProgramSessionTemplate;
-  } | null>(null);
-
+  const [view, setView] = useState<MainView>({ mode: "library" });
+  const [tracker, setTracker] = useState<{ programId: string; programTitle: string; session: ProgramSessionTemplate } | null>(null);
   const [archives, setArchives] = useState<SessionArchive[]>([]);
-  const [freestyleTemplates, setFreestyleTemplates] = useState<FreestyleTemplate[]>([]);
+  const [freestyle, setFreestyle] = useState<FreestyleTemplate[]>([]);
   const [completions, setCompletions] = useState<Set<string>>(() => {
-    const set = new Set<string>();
-    (initialCompletionsToday || []).forEach((c) => set.add(sessionKey(c.programId, c.sessionId)));
-    return set;
+    const s = new Set<string>();
+    (initialCompletionsToday || []).forEach((c) => s.add(sessionKey(c.programId, c.sessionId)));
+    return s;
   });
   const [flash, setFlash] = useState("");
-  const [historyExpanded, setHistoryExpanded] = useState(false);
-
-  const [builderName, setBuilderName] = useState(() => t("trainingFreestyleDefaultName"));
-  const [builderRows, setBuilderRows] = useState<Array<{ exerciseId: string; sets: number; reps: number }>>([
+  const [histExp, setHistExp] = useState(false);
+  const [bName, setBName] = useState(() => t("trainingFreestyleDefaultName"));
+  const [bRows, setBRows] = useState<Array<{ exerciseId: string; sets: number; reps: number }>>([
     { exerciseId: EXERCISE_LIBRARY[0].id, sets: 3, reps: 10 },
   ]);
 
-  // Load history and freestyle templates from server
   useEffect(() => {
-    let canceled = false;
-
-    async function load() {
+    let off = false;
+    (async () => {
       try {
-        const [historyData, templatesData] = await Promise.all([
-          getWorkoutHistory(userId, 160),
-          getFreestyleTemplates(userId),
-        ]);
-
-        if (canceled) return;
-
-        const serverArchives: SessionArchive[] = (historyData || []).map((w: Record<string, unknown>) => ({
-          id: w.id as string,
-          programId: w.program_id as string,
-          programTitle: w.program_title as string,
-          sessionId: w.session_id as string,
-          sessionName: w.session_name as string,
-          completedAt: w.completed_at as string,
-          totalVolume: Number(w.total_volume ?? 0),
-          improvedSets: (w.improved_sets as number) ?? 0,
-          xpEarned: (w.xp_earned as number) ?? 0,
+        const [h, f] = await Promise.all([getWorkoutHistory(userId, 160), getFreestyleTemplates(userId)]);
+        if (off) return;
+        setArchives((h || []).map((w: Record<string, unknown>) => ({
+          id: w.id as string, programId: w.program_id as string, programTitle: w.program_title as string,
+          sessionId: w.session_id as string, sessionName: w.session_name as string, completedAt: w.completed_at as string,
+          totalVolume: Number(w.total_volume ?? 0), improvedSets: (w.improved_sets as number) ?? 0, xpEarned: (w.xp_earned as number) ?? 0,
           exercises: ((w.workout_set_logs as Record<string, unknown>[]) || []).reduce<ExerciseLog[]>((acc, s) => {
-            const exId = s.exercise_id as string;
-            let existing = acc.find((e) => e.exerciseId === exId);
-            if (!existing) {
-              existing = { exerciseId: exId, exerciseName: s.exercise_name as string, sets: [] };
-              acc.push(existing);
-            }
-            existing.sets.push({
-              load: Number(s.load ?? 0),
-              reps: Number(s.reps ?? 0),
-              rpe: Number(s.rpe ?? 8),
-            });
+            const eid = s.exercise_id as string;
+            let e = acc.find((x) => x.exerciseId === eid);
+            if (!e) { e = { exerciseId: eid, exerciseName: s.exercise_name as string, sets: [] }; acc.push(e); }
+            e.sets.push({ load: Number(s.load ?? 0), reps: Number(s.reps ?? 0), rpe: Number(s.rpe ?? 8) });
             return acc;
           }, []),
-        }));
-
-        setArchives(serverArchives);
-        setFreestyleTemplates(templatesData || []);
-      } catch (err) {
-        console.error("[OPTIZ] Failed to load training data", err);
-      }
-    }
-
-    load();
-    return () => { canceled = true; };
+        })));
+        setFreestyle(f || []);
+      } catch (err) { console.error("[OPTIZ] Load training data", err); }
+    })();
+    return () => { off = true; };
   }, [userId]);
 
-  const getLastArchive = (programId: string, sid: string) => {
-    return archives.find((a) => a.programId === programId && a.sessionId === sid) || null;
+  const lastArchive = (pid: string, sid: string) => archives.find((a) => a.programId === pid && a.sessionId === sid) || null;
+  const isDone = (pid: string, sid: string) => completions.has(sessionKey(pid, sid));
+
+  const launch = (p: ProgramTemplate) => {
+    const s = p.sessions[0];
+    if (!s || isDone(p.id, s.id)) return;
+    setTracker({ programId: p.id, programTitle: p.title, session: s });
+    setView({ mode: "library" });
   };
 
-  const isCompletedToday = (programId: string, sid: string) => {
-    return completions.has(sessionKey(programId, sid));
+  const launchFS = (tid: string) => {
+    const tpl = freestyle.find((x) => x.id === tid);
+    if (!tpl) return;
+    const exs: ProgramExerciseTemplate[] = tpl.rows.map((r) => {
+      const b = EXERCISE_LIBRARY.find((x) => x.id === r.exerciseId);
+      if (!b) return null;
+      return { id: `${b.id}-${r.sets}x${r.reps}`, name: b.name, sets: r.sets, reps: r.reps, muscles: b.muscles, videoUrl: b.videoUrl };
+    }).filter((x): x is ProgramExerciseTemplate => x !== null);
+    if (!exs.length) return;
+    setTracker({ programId: `freestyle-${tpl.id}`, programTitle: t("trainingBuilderTitle"), session: { id: `fs-${tpl.id}`, name: tpl.name, focus: t("trainingFreestyleSession"), durationMin: Math.max(20, exs.length * 8), exercises: exs } });
   };
 
-  const launchProgram = (program: ProgramTemplate) => {
-    const session = program.sessions[0];
-    if (!session || isCompletedToday(program.id, session.id)) return;
-
-    setActiveTracker({
-      programId: program.id,
-      programTitle: program.title,
-      session,
-    });
-    setMainView({ mode: "library" });
-  };
-
-  const launchFreestyleTemplate = (templateId: string) => {
-    const template = freestyleTemplates.find((item) => item.id === templateId);
-    if (!template) return;
-
-    const exercises: ProgramExerciseTemplate[] = template.rows
-      .map((row) => {
-        const base = EXERCISE_LIBRARY.find((item) => item.id === row.exerciseId);
-        if (!base) return null;
-        return {
-          id: `${base.id}-${row.sets}x${row.reps}`,
-          name: base.name,
-          sets: row.sets,
-          reps: row.reps,
-          muscles: base.muscles,
-          videoUrl: base.videoUrl,
-        };
-      })
-      .filter((item): item is ProgramExerciseTemplate => item !== null);
-
-    if (!exercises.length) return;
-
-    setActiveTracker({
-      programId: `freestyle-${template.id}`,
-      programTitle: t("trainingBuilderTitle"),
-      session: {
-        id: `freestyle-session-${template.id}`,
-        name: template.name,
-        focus: t("trainingFreestyleSession"),
-        durationMin: Math.max(20, exercises.length * 8),
-        exercises,
-      },
-    });
-  };
-
-  const handleSaveFreestyle = async () => {
-    const rows = builderRows
-      .map((row) => ({
-        exerciseId: row.exerciseId,
-        sets: Math.max(1, row.sets),
-        reps: Math.max(1, row.reps),
-      }))
-      .filter((row) => !!EXERCISE_LIBRARY.find((item) => item.id === row.exerciseId));
-
+  const saveFS = async () => {
+    const rows = bRows.filter((r) => EXERCISE_LIBRARY.some((x) => x.id === r.exerciseId)).map((r) => ({ ...r, sets: Math.max(1, r.sets), reps: Math.max(1, r.reps) }));
     if (!rows.length) return;
-
     try {
-      const result = await serverSaveFreestyleTemplate(userId, builderName.trim() || t("trainingFreestyleDefaultName"), rows);
-      setFreestyleTemplates((prev) => [
-        { id: result.id, name: builderName.trim() || t("trainingFreestyleDefaultName"), createdAt: new Date().toISOString(), rows },
-        ...prev,
-      ]);
-      setFlash(t("trainingFreestyleSaved"));
-      setTimeout(() => setFlash(""), 1800);
-
-      setBuilderName(t("trainingFreestyleDefaultName"));
-      setBuilderRows([{ exerciseId: EXERCISE_LIBRARY[0].id, sets: 3, reps: 10 }]);
-      setMainView({ mode: "library" });
-    } catch (err) {
-      console.error("[OPTIZ] Failed to save freestyle template", err);
-      setFlash(t("trainingErrorSaving"));
-      setTimeout(() => setFlash(""), 1800);
-    }
+      const res = await serverSaveFreestyleTemplate(userId, bName.trim() || t("trainingFreestyleDefaultName"), rows);
+      setFreestyle((p) => [{ id: res.id, name: bName.trim() || t("trainingFreestyleDefaultName"), createdAt: new Date().toISOString(), rows }, ...p]);
+      setBName(t("trainingFreestyleDefaultName")); setBRows([{ exerciseId: EXERCISE_LIBRARY[0].id, sets: 3, reps: 10 }]); setView({ mode: "library" });
+    } catch (err) { console.error("[OPTIZ] Save freestyle", err); }
   };
 
-  const handleDeleteFreestyle = async (templateId: string) => {
-    setFreestyleTemplates((prev) => prev.filter((item) => item.id !== templateId));
-    try {
-      await deleteFreestyleTemplateAction(userId, templateId);
-    } catch (err) {
-      console.error("[OPTIZ] Failed to delete freestyle template", err);
-    }
+  const delFS = async (id: string) => {
+    setFreestyle((p) => p.filter((x) => x.id !== id));
+    try { await deleteFreestyleTemplateAction(userId, id); } catch {}
   };
 
-  const handleSessionSaved = async (archive: SessionArchive) => {
-    setArchives((prev) => [archive, ...prev].slice(0, 160));
-
-    if (!archive.programId.startsWith("freestyle-")) {
-      setCompletions((prev) => new Set([...prev, sessionKey(archive.programId, archive.sessionId)]));
-    }
-
+  const onSaved = async (a: SessionArchive) => {
+    setArchives((p) => [a, ...p].slice(0, 160));
+    if (!a.programId.startsWith("freestyle-")) setCompletions((p) => new Set([...p, sessionKey(a.programId, a.sessionId)]));
     try {
       const payload: WorkoutLogPayload = {
-        programId: archive.programId,
-        programTitle: archive.programTitle,
-        sessionId: archive.sessionId,
-        sessionName: archive.sessionName,
-        totalVolume: archive.totalVolume,
-        improvedSets: archive.improvedSets,
-        xpEarned: archive.xpEarned,
-        exercises: archive.exercises.map((ex) => ({
-          exerciseId: ex.exerciseId,
-          exerciseName: ex.exerciseName,
-          sets: ex.sets.map((s) => ({ load: s.load, reps: s.reps, rpe: s.rpe })),
-        })),
+        programId: a.programId, programTitle: a.programTitle, sessionId: a.sessionId, sessionName: a.sessionName,
+        totalVolume: a.totalVolume, improvedSets: a.improvedSets, xpEarned: a.xpEarned,
+        exercises: a.exercises.map((e) => ({ exerciseId: e.exerciseId, exerciseName: e.exerciseName, sets: e.sets.map((s) => ({ load: s.load, reps: s.reps, rpe: s.rpe })) })),
       };
-
       await saveWorkoutLog(userId, payload);
-    } catch (err) {
-      console.error("[OPTIZ] Failed to save workout log", err);
-    }
-
+    } catch (err) { console.error("[OPTIZ] Save workout", err); }
     const today = new Date().toISOString().split("T")[0];
-    await onAwardXpEvent(
-      "workout_complete",
-      `workout-${archive.programId}-${archive.sessionId}-${today}`,
-      archive.xpEarned,
-    );
-
-    setFlash(
-      archive.improvedSets > 0
-        ? t("trainingSessionValidatedRecords", { xp: String(archive.xpEarned), records: String(archive.improvedSets) })
-        : t("trainingSessionValidated", { xp: String(archive.xpEarned) }),
-    );
+    await onAwardXpEvent("workout_complete", `workout-${a.programId}-${a.sessionId}-${today}`, a.xpEarned);
+    setFlash(a.improvedSets > 0 ? t("trainingSessionValidatedRecords", { xp: String(a.xpEarned), records: String(a.improvedSets) }) : t("trainingSessionValidated", { xp: String(a.xpEarned) }));
     setTimeout(() => setFlash(""), 2600);
-
-    setActiveTracker(null);
-    if (archive.programId.startsWith("freestyle-")) {
-      setMainView({ mode: "library" });
-    }
+    setTracker(null);
   };
 
-  // ── Active workout funnel ──
-  if (activeTracker) {
+  // ── Workout funnel ──
+  if (tracker) {
     return (
       <WorkoutFunnel
-        key={`${activeTracker.programId}:${activeTracker.session.id}`}
-        programId={activeTracker.programId}
-        programTitle={activeTracker.programTitle}
-        session={activeTracker.session}
-        previousArchive={getLastArchive(activeTracker.programId, activeTracker.session.id)}
-        onBack={() => {
-          setActiveTracker(null);
-          if (activeTracker.programId.startsWith("freestyle-")) {
-            setMainView({ mode: "library" });
-          }
-        }}
-        onSave={handleSessionSaved}
+        key={`${tracker.programId}:${tracker.session.id}`}
+        programId={tracker.programId} programTitle={tracker.programTitle}
+        session={tracker.session} previousArchive={lastArchive(tracker.programId, tracker.session.id)}
+        onBack={() => { setTracker(null); }}
+        onSave={onSaved}
       />
     );
   }
 
-  // ── Program detail view ──
-  if (mainView.mode === "program-detail") {
-    const program = mainView.program;
-    const session = program.sessions[0];
-    const completed = isCompletedToday(program.id, session.id);
-
+  // ── Program detail ──
+  if (view.mode === "program-detail") {
+    const p = view.program; const s = p.sessions[0];
     return (
       <ProgramDetailView
-        program={program}
-        completed={completed}
-        lastArchive={getLastArchive(program.id, session.id)}
-        onBack={() => setMainView({ mode: "library" })}
-        onLaunch={() => launchProgram(program)}
+        program={p} completed={isDone(p.id, s.id)} lastArchive={lastArchive(p.id, s.id)}
+        onBack={() => setView({ mode: "library" })} onLaunch={() => launch(p)}
       />
     );
   }
 
   // ── Freestyle builder ──
-  if (mainView.mode === "freestyle-builder") {
+  if (view.mode === "freestyle-builder") {
     return (
       <div className="pb-8">
-        <button
-          onClick={() => setMainView({ mode: "library" })}
-          className="inline-flex items-center gap-1.5 text-sm text-gray-8 hover:text-gray-12 mb-4"
-        >
-          <ArrowLeft size={16} /> {t("back")}
+        <button onClick={() => setView({ mode: "library" })} className="inline-flex items-center gap-1 text-[13px] text-gray-8 mb-3">
+          <ArrowLeft size={14} /> {t("back")}
         </button>
 
-        <div className="rounded-3xl border border-gray-5/42 bg-gray-2/82 p-4 mb-4">
-          <h3 className="text-lg font-semibold text-gray-12">{t("trainingBuilderTitle")}</h3>
-          <p className="text-sm text-gray-8 mt-1">{t("trainingFreestyleDesc")}</p>
-          <input
-            value={builderName}
-            onChange={(e) => setBuilderName(e.target.value)}
-            className="mt-3 w-full h-12 rounded-xl bg-gray-3/45 border border-gray-5/35 px-3 text-sm text-gray-12"
-            placeholder={t("trainingSessionName")}
-          />
+        <div className="rounded-2xl border border-gray-5/30 bg-gray-2/70 p-3.5 mb-4">
+          <h3 className="text-[15px] font-semibold text-gray-12 mb-0.5">{t("trainingBuilderTitle")}</h3>
+          <p className="text-[12px] text-gray-8 mb-3">{t("trainingFreestyleDesc")}</p>
+          <input value={bName} onChange={(e) => setBName(e.target.value)} className="w-full h-10 rounded-xl bg-gray-3/40 border border-gray-5/30 px-3 text-[13px] text-gray-12" placeholder={t("trainingSessionName")} />
         </div>
 
-        <div className="space-y-2.5 mb-4">
-          {builderRows.map((row, index) => (
-            <div key={`builder-${index}`} className="rounded-2xl border border-gray-5/34 bg-gray-3/20 p-3">
-              <div className="grid grid-cols-[minmax(0,1fr)_4.6rem_4.6rem_3rem] gap-2 items-center">
+        <div className="space-y-2 mb-3">
+          {bRows.map((row, i) => (
+            <div key={i} className="rounded-xl border border-gray-5/25 bg-gray-3/15 p-2.5">
+              <div className="grid grid-cols-[minmax(0,1fr)_3.5rem_3.5rem_2.5rem] gap-1.5 items-center">
                 <div className="relative">
-                  <select
-                    value={row.exerciseId}
-                    onChange={(e) => {
-                      const next = e.target.value;
-                      setBuilderRows((prev) => prev.map((item, idx) => (idx === index ? { ...item, exerciseId: next } : item)));
-                    }}
-                    className="w-full h-12 rounded-xl bg-gray-2 border border-gray-5/35 px-3 text-sm text-gray-12 appearance-none"
-                  >
-                    {EXERCISE_LIBRARY.map((ex) => (
-                      <option key={ex.id} value={ex.id}>{ex.name}</option>
-                    ))}
+                  <select value={row.exerciseId} onChange={(e) => setBRows((p) => p.map((x, idx) => idx === i ? { ...x, exerciseId: e.target.value } : x))} className="w-full h-10 rounded-lg bg-gray-2 border border-gray-5/30 px-2 text-[12px] text-gray-12 appearance-none">
+                    {EXERCISE_LIBRARY.map((ex) => <option key={ex.id} value={ex.id}>{ex.name}</option>)}
                   </select>
-                  <ChevronDown size={14} className="absolute right-2.5 top-4 text-gray-7 pointer-events-none" />
+                  <ChevronDown size={12} className="absolute right-2 top-3.5 text-gray-7 pointer-events-none" />
                 </div>
-
-                <input
-                  type="number"
-                  min={1}
-                  value={row.sets}
-                  onChange={(e) => {
-                    const value = Math.max(1, Number(e.target.value || "1"));
-                    setBuilderRows((prev) => prev.map((item, idx) => (idx === index ? { ...item, sets: value } : item)));
-                  }}
-                  className="h-12 rounded-xl bg-gray-2 border border-gray-5/35 text-center text-sm text-gray-12"
-                  aria-label={t("trainingAriaSets")}
-                />
-
-                <input
-                  type="number"
-                  min={1}
-                  value={row.reps}
-                  onChange={(e) => {
-                    const value = Math.max(1, Number(e.target.value || "1"));
-                    setBuilderRows((prev) => prev.map((item, idx) => (idx === index ? { ...item, reps: value } : item)));
-                  }}
-                  className="h-12 rounded-xl bg-gray-2 border border-gray-5/35 text-center text-sm text-gray-12"
-                  aria-label={t("trainingAriaReps")}
-                />
-
-                <button
-                  onClick={() => setBuilderRows((prev) => prev.filter((_, idx) => idx !== index))}
-                  className="h-12 w-12 rounded-xl border border-gray-5/35 bg-gray-2 text-gray-8 flex items-center justify-center active:scale-[0.98]"
-                  aria-label={t("trainingAriaDelete")}
-                >
-                  <X size={14} />
+                <input type="number" min={1} value={row.sets} onChange={(e) => setBRows((p) => p.map((x, idx) => idx === i ? { ...x, sets: Math.max(1, Number(e.target.value || 1)) } : x))} className="h-10 rounded-lg bg-gray-2 border border-gray-5/30 text-center text-[12px] text-gray-12" />
+                <input type="number" min={1} value={row.reps} onChange={(e) => setBRows((p) => p.map((x, idx) => idx === i ? { ...x, reps: Math.max(1, Number(e.target.value || 1)) } : x))} className="h-10 rounded-lg bg-gray-2 border border-gray-5/30 text-center text-[12px] text-gray-12" />
+                <button onClick={() => setBRows((p) => p.filter((_, idx) => idx !== i))} className="h-10 w-10 rounded-lg border border-gray-5/30 bg-gray-2 text-gray-7 flex items-center justify-center">
+                  <X size={12} />
                 </button>
               </div>
             </div>
           ))}
         </div>
 
-        <button
-          onClick={() => setBuilderRows((prev) => [...prev, { exerciseId: EXERCISE_LIBRARY[0].id, sets: 3, reps: 10 }])}
-          className="w-full h-12 rounded-xl border border-gray-5/35 bg-gray-3/25 text-sm text-gray-11 font-semibold inline-flex items-center justify-center gap-1.5 mb-3 active:scale-[0.98]"
-        >
-          <Plus size={14} /> {t("trainingAddExercise")}
+        <button onClick={() => setBRows((p) => [...p, { exerciseId: EXERCISE_LIBRARY[0].id, sets: 3, reps: 10 }])} className="w-full h-10 rounded-xl border border-gray-5/30 bg-gray-3/20 text-[12px] text-gray-10 font-medium inline-flex items-center justify-center gap-1 mb-3">
+          <Plus size={12} /> {t("trainingAddExercise")}
         </button>
 
-        <button onClick={handleSaveFreestyle} className="w-full h-14 rounded-2xl optiz-gradient-bg text-white font-semibold active:scale-[0.98]">
+        <button onClick={saveFS} className="w-full h-12 rounded-2xl optiz-gradient-bg text-white font-semibold text-[14px] active:scale-[0.97]">
           {t("trainingSaveFreestyle")}
         </button>
       </div>
     );
   }
 
-  // ── Library view ──
-  const historyLimit = historyExpanded ? 20 : 5;
+  // ── Library ──
+  const hLim = histExp ? 20 : 5;
 
   return (
     <div className="pb-8">
-      <div className="mb-5">
-        <h2 className="text-[26px] leading-tight font-semibold text-gray-12 mb-1.5">{t("trainingTitle")}</h2>
-        <p className="text-sm text-gray-8 leading-relaxed">{t("trainingSubtitle")}</p>
+      <div className="mb-4">
+        <h2 className="text-xl font-semibold text-gray-12">{t("trainingTitle")}</h2>
+        <p className="text-[13px] text-gray-8 mt-0.5">{t("trainingSubtitle")}</p>
       </div>
 
       <AnimatePresence>
-        {flash ? (
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            className="rounded-xl border border-[#E80000]/35 bg-[#E80000]/10 text-[#FF6D6D] text-sm px-3 py-2 mb-4"
-          >
+        {flash && (
+          <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
+            className="rounded-xl border border-[#E80000]/30 bg-[#E80000]/8 text-[#FF6D6D] text-[13px] px-3 py-2 mb-3">
             {flash}
           </motion.div>
-        ) : null}
+        )}
       </AnimatePresence>
 
-      {/* Program cards */}
+      {/* Program cards with images */}
       <div className="space-y-3 mb-5">
-        {MASS_PROGRAMS.map((program, index) => {
-          const session = program.sessions[0];
-          const completed = isCompletedToday(program.id, session.id);
-          const setsCount = session.exercises.reduce((sum, ex) => sum + ex.sets, 0);
+        {MASS_PROGRAMS.map((prog, i) => {
+          const s = prog.sessions[0];
+          const comp = isDone(prog.id, s.id);
 
           return (
             <motion.button
-              key={program.id}
+              key={prog.id}
               type="button"
-              onClick={() => setMainView({ mode: "program-detail", program })}
-              initial={{ opacity: 0, y: 8 }}
+              onClick={() => setView({ mode: "program-detail", program: prog })}
+              initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.04 }}
-              className={`w-full text-left rounded-3xl border p-5 transition-all active:scale-[0.98] ${
-                completed
-                  ? "bg-gray-3/20 border-gray-5/15 opacity-50"
-                  : `bg-gradient-to-br ${GRADIENTS[index % GRADIENTS.length]} border-gray-5/35 hover:border-[#E80000]/35`
+              transition={{ delay: i * 0.05 }}
+              className={`w-full text-left rounded-2xl overflow-hidden border transition-all active:scale-[0.98] ${
+                comp ? "border-gray-5/15 opacity-45" : "border-gray-5/30"
               }`}
             >
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0 flex-1">
-                  <p className={`text-[20px] font-bold leading-tight ${completed ? "text-gray-10" : "text-gray-12"}`}>
-                    {program.title}
-                  </p>
-                  <p className="text-sm text-gray-8 mt-0.5">{session.focus}</p>
+              {/* Image */}
+              <div className="relative h-36">
+                <Image src={prog.image} alt={prog.title} fill className="object-cover" sizes="(max-width: 768px) 100vw, 600px" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-3.5">
+                  <div className="flex items-end justify-between gap-2">
+                    <div>
+                      <p className="text-[18px] font-bold text-white leading-tight">{prog.title}</p>
+                      <p className="text-[12px] text-white/65 mt-0.5">{prog.subtitle}</p>
+                    </div>
+                    <span className="text-[14px] font-bold text-[#FF6D6D] shrink-0">+100 XP</span>
+                  </div>
+                  <div className="flex gap-1.5 mt-2">
+                    <span className="rounded-full px-2 py-0.5 bg-white/10 backdrop-blur-sm text-[10px] text-white/80">
+                      {s.exercises.length} {t("exercises")}
+                    </span>
+                    <span className="rounded-full px-2 py-0.5 bg-white/10 backdrop-blur-sm text-[10px] text-white/80">
+                      ~{s.durationMin} {t("minutesShort")}
+                    </span>
+                    <span className="rounded-full px-2 py-0.5 bg-white/10 backdrop-blur-sm text-[10px] text-white/80">
+                      {prog.level === "beginner" ? t("trainingLevelBeginner") : t("trainingLevelIntermediate")}
+                    </span>
+                  </div>
                 </div>
-                <span className={`text-[18px] font-bold ${completed ? "text-gray-8" : "text-[#FF5C5C]"}`}>
-                  +100 XP
-                </span>
               </div>
 
-              <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                <span className="rounded-full px-3 py-1.5 bg-gray-4/50 border border-gray-5/30 text-gray-9">
-                  {session.exercises.length} {t("exercises")}
-                </span>
-                <span className="rounded-full px-3 py-1.5 bg-gray-4/50 border border-gray-5/30 text-gray-9">
-                  {setsCount} {t("sets")}
-                </span>
-                <span className="rounded-full px-3 py-1.5 bg-gray-4/50 border border-gray-5/30 text-gray-9">
-                  ~{session.durationMin} {t("minutesShort")}
-                </span>
+              {/* Bottom bar */}
+              <div className={`px-3.5 py-2 flex items-center justify-between ${comp ? "bg-gray-3/30" : "bg-gray-2/70"}`}>
+                {comp ? (
+                  <p className="text-[11px] text-gray-7 inline-flex items-center gap-1"><Check size={12} /> {t("trainingDoneReopens")}</p>
+                ) : (
+                  <p className="text-[12px] font-medium text-gray-11 inline-flex items-center gap-0.5">{t("trainingLaunch")} <ChevronRight size={14} /></p>
+                )}
               </div>
-
-              {completed ? (
-                <p className="mt-3 text-xs text-gray-7 inline-flex items-center gap-1">
-                  <Check size={13} /> {t("trainingDoneReopens")}
-                </p>
-              ) : (
-                <p className="mt-3 text-sm font-semibold text-gray-11 inline-flex items-center gap-1">
-                  {t("trainingLaunch")} <ChevronRight size={16} />
-                </p>
-              )}
             </motion.button>
           );
         })}
       </div>
 
-      {/* Freestyle templates */}
-      <div className="rounded-2xl border border-gray-5/34 bg-gray-2/75 p-4 mb-4">
-        <div className="flex items-center justify-between gap-3 mb-3">
-          <h3 className="text-sm font-semibold text-gray-12">{t("trainingFreestyleSaved")}</h3>
-          <button
-            onClick={() => setMainView({ mode: "freestyle-builder" })}
-            className="h-11 px-4 rounded-lg border border-[#E80000]/35 bg-[#E80000]/10 text-[#FF5C5C] text-xs font-semibold inline-flex items-center gap-1.5"
-          >
-            <Plus size={14} /> {t("trainingNew")}
+      {/* Freestyle */}
+      <div className="rounded-2xl border border-gray-5/25 bg-gray-2/60 p-3.5 mb-3">
+        <div className="flex items-center justify-between gap-2 mb-2.5">
+          <h3 className="text-[13px] font-semibold text-gray-12">{t("trainingFreestyleSaved")}</h3>
+          <button onClick={() => setView({ mode: "freestyle-builder" })} className="h-9 px-3 rounded-lg border border-[#E80000]/25 bg-[#E80000]/8 text-[#FF6D6D] text-[11px] font-semibold inline-flex items-center gap-1">
+            <Plus size={12} /> {t("trainingNew")}
           </button>
         </div>
-
-        {freestyleTemplates.length === 0 ? (
-          <p className="text-xs text-gray-8">{t("trainingNoFreestyle")}</p>
+        {freestyle.length === 0 ? (
+          <p className="text-[11px] text-gray-7">{t("trainingNoFreestyle")}</p>
         ) : (
-          <div className="space-y-2">
-            {freestyleTemplates.map((template) => (
-              <div key={template.id} className="rounded-xl border border-gray-5/25 bg-gray-3/20 px-4 py-3">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <p className="text-sm font-semibold text-gray-12">{template.name}</p>
-                    <p className="text-xs text-gray-8 mt-0.5">
-                      {template.rows.length} {t("exercises")} &middot; {t("trainingCreatedOn")} {formatDate(template.createdAt, locale)}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      onClick={() => launchFreestyleTemplate(template.id)}
-                      className="h-11 px-4 rounded-md border border-gray-5/35 bg-gray-2 text-gray-11 text-xs font-semibold active:scale-[0.98]"
-                    >
-                      {t("trainingLaunch")}
-                    </button>
-                    <button
-                      onClick={() => handleDeleteFreestyle(template.id)}
-                      className="w-11 h-11 rounded-md border border-gray-5/35 bg-gray-2 text-gray-8 flex items-center justify-center active:scale-[0.98]"
-                      aria-label={t("trainingAriaDelete")}
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
+          <div className="space-y-1.5">
+            {freestyle.map((tpl) => (
+              <div key={tpl.id} className="rounded-xl border border-gray-5/20 bg-gray-3/15 px-3 py-2.5 flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-[13px] font-medium text-gray-12 truncate">{tpl.name}</p>
+                  <p className="text-[10px] text-gray-7">{tpl.rows.length} {t("exercises")} · {fmtDate(tpl.createdAt, locale)}</p>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => launchFS(tpl.id)} className="h-9 px-3 rounded-lg border border-gray-5/30 bg-gray-2 text-[11px] text-gray-11 font-medium">{t("trainingLaunch")}</button>
+                  <button onClick={() => delFS(tpl.id)} className="w-9 h-9 rounded-lg border border-gray-5/30 bg-gray-2 text-gray-7 flex items-center justify-center"><X size={12} /></button>
                 </div>
               </div>
             ))}
@@ -1321,39 +758,28 @@ export function TrainingHubScreen({ userId, onAwardXpEvent, initialCompletionsTo
       </div>
 
       {/* History */}
-      <div className="rounded-2xl border border-gray-5/34 bg-gray-3/18 p-4">
-        <h3 className="text-sm font-semibold text-gray-12 mb-2">{t("trainingHistory")}</h3>
+      <div className="rounded-2xl border border-gray-5/25 bg-gray-3/12 p-3.5">
+        <h3 className="text-[13px] font-semibold text-gray-12 mb-2">{t("trainingHistory")}</h3>
         {archives.length === 0 ? (
-          <p className="text-xs text-gray-8">{t("trainingNoArchive")}</p>
+          <p className="text-[11px] text-gray-7">{t("trainingNoArchive")}</p>
         ) : (
-          <div className="space-y-2">
-            {archives.slice(0, historyLimit).map((archive) => (
-              <div key={archive.id} className="rounded-xl border border-gray-5/25 bg-gray-2/55 px-4 py-3">
+          <div className="space-y-1.5">
+            {archives.slice(0, hLim).map((a) => (
+              <div key={a.id} className="rounded-xl border border-gray-5/20 bg-gray-2/50 px-3 py-2">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-sm font-semibold text-gray-12 truncate">{archive.programTitle}</p>
-                  <span className="text-xs text-[#FF5C5C] font-semibold">+{archive.xpEarned} XP</span>
+                  <p className="text-[13px] font-medium text-gray-12 truncate">{a.programTitle}</p>
+                  <span className="text-[11px] text-[#FF6D6D] font-semibold">+{a.xpEarned} XP</span>
                 </div>
-                <p className="text-xs text-gray-8 mt-1">
-                  {formatDate(archive.completedAt, locale)} &middot; {t("trainingVolumeLabel")} {archive.totalVolume.toFixed(0)}
+                <p className="text-[10px] text-gray-7 mt-0.5">
+                  {fmtDate(a.completedAt, locale)} · {t("trainingVolumeLabel")} {a.totalVolume.toFixed(0)}
+                  {a.improvedSets > 0 && <> · <Sparkles size={9} className="inline" /> {a.improvedSets}</>}
                 </p>
-                {archive.improvedSets > 0 && (
-                  <p className="text-xs text-gray-7 mt-1 inline-flex items-center gap-1">
-                    <Sparkles size={12} /> {archive.improvedSets} {t("trainingRecordsLabel")}
-                  </p>
-                )}
               </div>
             ))}
             {archives.length > 5 && (
-              <button
-                type="button"
-                onClick={() => setHistoryExpanded((prev) => !prev)}
-                className="w-full h-11 rounded-lg border border-gray-5/25 bg-gray-3/15 text-xs text-gray-8 font-semibold flex items-center justify-center gap-1"
-              >
-                {historyExpanded ? t("homeShowLess") : t("homeShowMore")}
-                <ChevronDown
-                  size={14}
-                  className={`transition-transform ${historyExpanded ? "rotate-180" : ""}`}
-                />
+              <button onClick={() => setHistExp((p) => !p)} className="w-full h-9 rounded-lg border border-gray-5/20 bg-gray-3/10 text-[11px] text-gray-7 font-medium flex items-center justify-center gap-1">
+                {histExp ? t("homeShowLess") : t("homeShowMore")}
+                <ChevronDown size={12} className={`transition-transform ${histExp ? "rotate-180" : ""}`} />
               </button>
             )}
           </div>
