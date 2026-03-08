@@ -700,7 +700,7 @@ export function TrainingHubScreen({ userId, onAwardXpEvent, initialCompletionsTo
                       <p className="text-[18px] font-bold text-white leading-tight">{prog.title}</p>
                       <p className="text-[12px] text-white/65 mt-0.5">{prog.subtitle}</p>
                     </div>
-                    <span className="text-[14px] font-bold text-[#FF6D6D] shrink-0">+100 XP</span>
+
                   </div>
                   <div className="flex gap-1.5 mt-2">
                     <span className="rounded-full px-2 py-0.5 bg-white/10 backdrop-blur-sm text-[10px] text-white/80">

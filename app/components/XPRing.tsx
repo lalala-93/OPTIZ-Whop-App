@@ -9,6 +9,7 @@ interface XPRingProps {
     progressPercent: number;
     currentXp: number;
     xpForNextLevel: number;
+    totalXp: number;
     tier: RankTier;
     rankColors: [string, string];
     size?: number;
@@ -19,6 +20,7 @@ export function XPRing({
     progressPercent,
     currentXp,
     xpForNextLevel,
+    totalXp,
     tier,
     rankColors,
     size = 200,
@@ -134,7 +136,7 @@ export function XPRing({
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.6 }}
                 >
-                    {currentXp}/{xpForNextLevel}
+                    {totalXp}
                     <span className="ml-0.5 text-[9px] opacity-60">XP</span>
                 </motion.p>
             </div>

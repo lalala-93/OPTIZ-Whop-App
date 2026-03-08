@@ -180,21 +180,25 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
       if (xpAmount <= 0) return;
       const isWorkout = source.startsWith("workout");
 
-      const previousLevel = getLevelProgress(totalXp).level;
-      const optimisticTotalXp = totalXp + xpAmount;
-      const optimisticLevel = getLevelProgress(optimisticTotalXp).level;
+      // Use functional update to avoid stale closure
+      setTotalXp((prev) => {
+        const previousLevel = getLevelProgress(prev).level;
+        const optimistic = prev + xpAmount;
+        const optimisticLevel = getLevelProgress(optimistic).level;
 
-      setTotalXp(optimisticTotalXp);
+        if (optimisticLevel > previousLevel) {
+          setTimeout(
+            () => setLevelUpAnim({ visible: true, newLevel: optimisticLevel }),
+            isWorkout ? 1100 : 700,
+          );
+        }
+
+        return optimistic;
+      });
+
       if (isWorkout) {
         setWorkoutsDone((prev) => prev + 1);
         setTaskCompleteAnim({ visible: true, xp: xpAmount });
-      }
-
-      if (optimisticLevel > previousLevel) {
-        setTimeout(
-          () => setLevelUpAnim({ visible: true, newLevel: optimisticLevel }),
-          isWorkout ? 1100 : 700,
-        );
       }
 
       startTransition(async () => {
@@ -202,12 +206,13 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
           const today = new Date().toISOString().split("T")[0];
           const result = await serverAwardXpEvent(userId, source, referenceId, today, xpAmount);
           if (!result.awarded) {
-            // Duplicate — revert optimistic update
+            // Duplicate — sync to server truth
             setTotalXp(result.totalXp);
             if (isWorkout) {
               setWorkoutsDone((prev) => Math.max(0, prev - 1));
             }
           } else {
+            // Server is the source of truth
             setTotalXp(result.totalXp);
             setStreakDays(result.streakDays);
             if (result.streakEarned) setStreakAnim(true);
@@ -221,12 +226,12 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
         }
       });
     },
-    [totalXp, userId, startTransition],
+    [userId, startTransition],
   );
 
   return (
     <div className="min-h-screen bg-gray-1 text-gray-12 flex flex-col w-full relative">
-      <header className="px-4 sm:px-6 pt-4 pb-3 sticky top-0 bg-gray-1/90 backdrop-blur-2xl z-30 border-b border-[var(--optiz-border)]">
+      <header className="px-4 sm:px-6 pt-4 pb-3 sticky top-0 bg-gray-1 z-30 border-b border-[var(--optiz-border)]">
         <div className="flex items-center justify-between mb-2.5">
           <div className="flex items-center gap-2.5 h-10">
             <motion.div whileTap={{ scale: 0.95 }} className="flex items-center">

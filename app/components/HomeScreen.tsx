@@ -413,6 +413,7 @@ export function HomeScreen({
             progressPercent={progressPercent}
             currentXp={currentLevelXp}
             xpForNextLevel={xpForNextLevel}
+            totalXp={totalXp}
             tier={tier}
             rankColors={rankColors}
             size={182}
