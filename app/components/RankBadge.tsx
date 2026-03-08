@@ -15,11 +15,8 @@ export function RankBadge({ colors, glowColor, tierName, size = 80, className = 
     const id = `rb-${(tierName || "def").slice(0, 4)}-${size}`;
     const t = (tierName || "Recruit").toLowerCase();
 
-    // Global breathing animation to make badges feel alive
-    const breathing = {
-        scale: [1, 1.02, 1],
-        transition: { duration: 4, repeat: Infinity, ease: "easeInOut" as const }
-    };
+    // Subtle breathing — CSS only, no JS animation loop
+    const breathing = {};
 
     return (
         <motion.div
@@ -37,15 +34,13 @@ export function RankBadge({ colors, glowColor, tierName, size = 80, className = 
         >
             {/* Ambient Background Glow for higher tiers */}
             {(t === "veteran" || t === "prestige") && (
-                <motion.div
+                <div
                     className="absolute inset-0 rounded-full"
                     style={{
                         background: `radial-gradient(circle, ${glowColor} 0%, transparent 65%)`,
                         filter: `blur(${size * 0.15}px)`,
-                        opacity: t === "prestige" ? 0.8 : 0.5
+                        opacity: t === "prestige" ? 0.7 : 0.4
                     }}
-                    animate={{ opacity: t === "prestige" ? [0.6, 1, 0.6] : [0.3, 0.6, 0.3], scale: [0.95, 1.05, 0.95] }}
-                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
                 />
             )}
 
@@ -128,12 +123,7 @@ function InitiateBadge({ id }: { id: string }) {
             <path d="M50 18 L76 30 L76 70 L50 82 L24 70 L24 30 Z" fill="#111827" stroke="#374151" strokeWidth="1" />
 
             {/* Center Monolith */}
-            <motion.path
-                d="M45 35 L55 35 L50 65 Z"
-                fill="#9CA3AF"
-                animate={{ fill: ["#9CA3AF", "#D1D5DB", "#9CA3AF"] }}
-                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-            />
+            <path d="M45 35 L55 35 L50 65 Z" fill="#9CA3AF" />
         </g>
     );
 }
@@ -149,10 +139,10 @@ function GrinderBadge({ id }: { id: string }) {
             <path d="M50 14 L84 30 L76 74 L50 86 L24 74 L16 30 Z" fill="#18181B" stroke="#78350F" strokeWidth="1.5" />
 
             {/* Center Geometry */}
-            <motion.g animate={{ scale: [1, 1.05, 1] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}>
+            <g>
                 <path d="M50 25 L65 50 L50 75 L35 50 Z" fill={`url(#${id}-bronze)`} />
                 <path d="M50 35 L58 50 L50 65 L42 50 Z" fill="#FBBF24" opacity="0.8" />
-            </motion.g>
+            </g>
         </g>
     );
 }
@@ -167,23 +157,11 @@ function EliteBadge({ id }: { id: string }) {
             {/* Inner Obsidian Core */}
             <path d="M50 14 L82 26 L70 55 L82 62 L50 85 L18 62 L30 55 L18 26 Z" fill="#000000" />
 
-            {/* Red Pulsing Core Light */}
-            <motion.circle
-                cx="50" cy="50" r="15"
-                fill="#DC2626"
-                filter={`url(#${id}-glow-red)`}
-                animate={{ opacity: [0.4, 0.8, 0.4] }}
-                transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-            />
+            {/* Red Core Light */}
+            <circle cx="50" cy="50" r="15" fill="#DC2626" filter={`url(#${id}-glow-red)`} opacity="0.6" />
 
             {/* The "Optiz" Spark/Bolt */}
-            <motion.path
-                d="M45 25 L65 25 L55 50 L70 50 L35 80 L45 55 L30 55 Z"
-                fill="#FF5252"
-                filter={`url(#${id}-glow-red)`}
-                animate={{ opacity: [0.8, 1, 0.8] }}
-                transition={{ duration: 0.8, repeat: Infinity }}
-            />
+            <path d="M45 25 L65 25 L55 50 L70 50 L35 80 L45 55 L30 55 Z" fill="#FF5252" filter={`url(#${id}-glow-red)`} opacity="0.9" />
         </g>
     );
 }
@@ -192,17 +170,8 @@ function EliteBadge({ id }: { id: string }) {
 function ApexBadge({ id }: { id: string }) {
     return (
         <g>
-            {/* Floating Gold Back-Arc */}
-            <motion.path
-                d="M20 30 Q50 0 80 30"
-                fill="none"
-                stroke={`url(#${id}-gold)`}
-                strokeWidth="4"
-                strokeLinecap="round"
-                filter={`url(#${id}-glow-gold)`}
-                animate={{ y: [0, -4, 0] }}
-                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-            />
+            {/* Gold Back-Arc */}
+            <path d="M20 30 Q50 0 80 30" fill="none" stroke={`url(#${id}-gold)`} strokeWidth="4" strokeLinecap="round" filter={`url(#${id}-glow-gold)`} />
 
             {/* Main Obsidian Shield with Gold Border */}
             <g filter={`url(#${id}-drop)`}>
@@ -211,27 +180,21 @@ function ApexBadge({ id }: { id: string }) {
                 {/* Gold Inner Carvings */}
                 <path d="M50 20 L80 40 L68 80 L50 91 L32 80 L20 40 Z" fill="none" stroke="#F5A623" strokeWidth="1" opacity="0.5" />
 
-                {/* Center Core Floating Gem */}
-                <motion.g animate={{ y: [0, 5, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}>
-                    {/* Glow behind gem */}
+                {/* Center Core Gem */}
+                <g>
                     <circle cx="50" cy="55" r="18" fill="#FBBF24" filter={`url(#${id}-glow-gold)`} opacity="0.6" />
-                    {/* Gem */}
                     <path d="M50 35 L65 55 L50 75 L35 55 Z" fill={`url(#${id}-gold)`} />
                     <path d="M50 42 L58 55 L50 68 L42 55 Z" fill="#FEF08A" />
-                </motion.g>
+                </g>
             </g>
 
-            {/* Orbiting Halo Particles */}
-            <motion.g
-                animate={{ rotate: 360 }}
-                transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-                style={{ originX: "50px", originY: "50px" }}
-            >
-                <circle cx="20" cy="50" r="2.5" fill="#FFF7B0" filter={`url(#${id}-glow-gold)`} />
-                <circle cx="80" cy="50" r="2.5" fill="#FFF7B0" filter={`url(#${id}-glow-gold)`} />
-                <circle cx="50" cy="20" r="2.5" fill="#FFF7B0" filter={`url(#${id}-glow-gold)`} />
-                <circle cx="50" cy="80" r="2.5" fill="#FFF7B0" filter={`url(#${id}-glow-gold)`} />
-            </motion.g>
+            {/* Static Halo Particles */}
+            <g>
+                <circle cx="20" cy="50" r="2.5" fill="#FFF7B0" opacity="0.7" />
+                <circle cx="80" cy="50" r="2.5" fill="#FFF7B0" opacity="0.7" />
+                <circle cx="50" cy="20" r="2.5" fill="#FFF7B0" opacity="0.7" />
+                <circle cx="50" cy="80" r="2.5" fill="#FFF7B0" opacity="0.7" />
+            </g>
         </g>
     );
 }

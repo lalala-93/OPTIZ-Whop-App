@@ -68,13 +68,11 @@ export function StreakDisplay({ streakDays, weeklyProgress }: StreakDisplayProps
                                         : "bg-gray-4/60 text-gray-6 border border-gray-5/40"
                                     }`}
                                 initial={isDone ? { scale: 0.6, opacity: 0 } : {}}
-                                animate={isDone ? { scale: 1, opacity: 1 } : isToday ? { scale: [1, 1.04, 1] } : {}}
+                                animate={isDone ? { scale: 1, opacity: 1 } : {}}
                                 transition={
                                     isDone
                                         ? { type: "spring", stiffness: 400, damping: 18, delay: i * 0.04 }
-                                        : isToday
-                                            ? { duration: 2.5, repeat: Infinity, ease: "easeInOut" }
-                                            : {}
+                                        : {}
                                 }
                                 whileTap={isDone ? { scale: 0.9 } : {}}
                             >

@@ -408,10 +408,7 @@ export function HomeScreen({
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
       >
-        <motion.div
-          animate={{ y: [0, -3, 0] }}
-          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-        >
+        <div>
           <XPRing
             progressPercent={progressPercent}
             currentXp={currentLevelXp}
@@ -421,7 +418,7 @@ export function HomeScreen({
             size={182}
             onClick={onXpRingClick}
           />
-        </motion.div>
+        </div>
 
         <div className="text-center mt-2">
           <h2 className="text-[28px] font-semibold text-gray-12 tracking-tight leading-tight">

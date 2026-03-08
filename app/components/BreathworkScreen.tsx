@@ -102,43 +102,19 @@ function BreathingOrb({
 
   return (
     <div className="relative mx-auto w-[220px] h-[220px] flex items-center justify-center">
-      {/* Outer glow */}
-      <motion.div
-        className="absolute inset-0 rounded-full pointer-events-none"
-        style={{ background: "rgba(232,0,0,0.12)", filter: "blur(80px)" }}
-        animate={getAnimation(
-          1.05, 0.2,
-          [orbScale + 0.06, orbScale + 0.12, orbScale + 0.06], 0.55,
-          orbScale + 0.1, 0.65, 0.3,
-        )}
-        transition={transition}
-      />
-
-      {/* Mid glow */}
-      <motion.div
-        className="absolute rounded-full pointer-events-none"
-        style={{ width: 180, height: 180, background: "rgba(255,80,80,0.25)", filter: "blur(50px)" }}
-        animate={getAnimation(
-          1, 0.15,
-          [orbScale - 0.02, orbScale + 0.02, orbScale - 0.02], 0.6,
-          orbScale, 0.7, 0.3,
-        )}
-        transition={transition}
-      />
-
-      {/* Core orb */}
+      {/* Single combined glow orb — replaces 3 stacked blurs */}
       <motion.div
         className="absolute rounded-full pointer-events-none"
         style={{
-          width: 140,
-          height: 140,
-          background: "radial-gradient(circle, #E80000 0%, rgba(232,0,0,0.6) 50%, rgba(232,0,0,0.1) 100%)",
-          filter: "blur(30px)",
+          width: 160,
+          height: 160,
+          background: "radial-gradient(circle, #E80000 0%, rgba(232,0,0,0.5) 40%, rgba(232,0,0,0.08) 80%, transparent 100%)",
+          filter: "blur(20px)",
         }}
         animate={getAnimation(
-          1, 0.35,
-          [orbScale - 0.01, orbScale + 0.01, orbScale - 0.01], 0.8,
-          orbScale, 0.85, 0.45,
+          1, 0.3,
+          [orbScale - 0.01, orbScale + 0.04, orbScale - 0.01], 0.7,
+          orbScale, 0.75, 0.4,
         )}
         transition={transition}
       />

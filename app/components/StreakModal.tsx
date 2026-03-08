@@ -65,17 +65,11 @@ export function StreakModal({ isOpen, onClose, streakDays, weeklyProgress }: Str
                             <div className="flex flex-col items-center mb-5">
                                 <motion.div
                                     className="mb-2"
-                                    animate={{
-                                        scale: [1, 1.12, 1.05, 1.15, 1],
-                                        rotate: [0, -3, 2, -2, 0],
-                                    }}
-                                    transition={{
-                                        duration: 2,
-                                        repeat: Infinity,
-                                        ease: "easeInOut",
-                                    }}
+                                    initial={{ scale: 0.8 }}
+                                    animate={{ scale: 1 }}
+                                    transition={{ type: "spring", stiffness: 200, damping: 15 }}
                                     style={{
-                                        filter: "drop-shadow(0 0 20px rgba(255, 100, 0, 0.5)) drop-shadow(0 0 40px rgba(255, 60, 0, 0.25))",
+                                        filter: "drop-shadow(0 0 16px rgba(255, 100, 0, 0.4))",
                                     }}
                                 >
                                     <AnimatedFireIcon size={64} />

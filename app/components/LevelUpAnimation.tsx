@@ -50,7 +50,7 @@ export function LevelUpAnimation({
                 >
                     {/* Backdrop */}
                     <motion.div
-                        className="absolute inset-0 bg-black/75 backdrop-blur-lg"
+                        className="absolute inset-0 bg-black/85"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}

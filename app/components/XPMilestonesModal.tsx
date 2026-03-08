@@ -162,11 +162,7 @@ export function XPMilestonesModal({ isOpen, onClose, currentLevel, totalXp }: XP
                                                         </svg>
                                                     </div>
                                                 ) : item.isCurrent ? (
-                                                    <motion.div
-                                                        className="w-4 h-4 rounded-full border-2 border-[#E80000]"
-                                                        animate={{ scale: [1, 1.2, 1] }}
-                                                        transition={{ duration: 1.5, repeat: Infinity }}
-                                                    />
+                                                    <div className="w-4 h-4 rounded-full border-2 border-[#E80000]" />
                                                 ) : (
                                                     <div className="w-3.5 h-3.5 rounded-full border-[1.5px] border-gray-6 opacity-40" />
                                                 )}

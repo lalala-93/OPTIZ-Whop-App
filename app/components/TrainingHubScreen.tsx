@@ -509,7 +509,7 @@ export function TrainingHubScreen({ userId, onAwardXpEvent, initialCompletionsTo
     let off = false;
     (async () => {
       try {
-        const [h, f] = await Promise.all([getWorkoutHistory(userId, 160), getFreestyleTemplates(userId)]);
+        const [h, f] = await Promise.all([getWorkoutHistory(userId, 20), getFreestyleTemplates(userId)]);
         if (off) return;
         setArchives((h || []).map((w: Record<string, unknown>) => ({
           id: w.id as string, programId: w.program_id as string, programTitle: w.program_title as string,

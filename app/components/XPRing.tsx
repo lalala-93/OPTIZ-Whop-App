@@ -108,14 +108,12 @@ export function XPRing({
 
                 {/* Glow dot at progress tip */}
                 {progressPercent > 3 && (
-                    <motion.circle
+                    <circle
                         cx={100 + radius * Math.cos(((progressPercent / 100) * 2 * Math.PI) - Math.PI / 2)}
                         cy={100 + radius * Math.sin(((progressPercent / 100) * 2 * Math.PI) - Math.PI / 2)}
                         r="3.5"
                         fill={rankColors[1]}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: [0.5, 1, 0.5] }}
-                        transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+                        opacity="0.8"
                     />
                 )}
             </svg>
