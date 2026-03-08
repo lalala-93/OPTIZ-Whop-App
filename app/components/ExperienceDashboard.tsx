@@ -287,6 +287,18 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
               <span className="text-[10px] font-extrabold text-[#E80000]">{t("xpLabel")}</span>
             </motion.button>
 
+            <motion.a
+              href="https://docs.google.com/forms/d/e/1FAIpQLSclDqS1cdg0S_bFSyOf_0xP5MDVYAt2LBmvgKHhQP2BqJXYbw/viewform?usp=dialog"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-10 h-10 rounded-full bg-gray-3/80 border border-gray-5/50 flex items-center justify-center text-gray-7 hover:text-gray-11 hover:bg-gray-4 transition-all shrink-0"
+              whileTap={{ scale: 0.9 }}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+            </motion.a>
+
             <motion.button
               onClick={() => setIsSettingsOpen(true)}
               className="w-10 h-10 rounded-full overflow-hidden bg-gray-3/80 border border-gray-5/50 flex items-center justify-center text-gray-9 hover:brightness-125 transition-all shrink-0"
