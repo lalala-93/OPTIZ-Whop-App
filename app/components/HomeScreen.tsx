@@ -157,13 +157,9 @@ function StreakCalendar({
         className="w-full flex items-center justify-between px-4 pt-4 pb-3"
       >
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#E80000]/15 to-[#FF2D2D]/5 border border-[#E80000]/15 flex items-center justify-center">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" fill="#E80000" fillOpacity="0.15" />
-              <path d="M12 6v6l4.5 2.5" stroke="#FF6666" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              <circle cx="12" cy="12" r="9" stroke="#FF6666" strokeWidth="1.5" fill="none" />
-            </svg>
-          </div>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FF6666" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="#E80000" fillOpacity="0.15" />
+          </svg>
           <span className="text-[15px] font-semibold text-gray-12">{t("homeActivity")}</span>
           <span className="text-[13px] font-bold text-[#FF6D6D] tabular-nums">{streakDays}d</span>
         </div>
@@ -175,15 +171,9 @@ function StreakCalendar({
       {/* ── Compact: last 7 days ── */}
       {!expanded && (
         <div className="px-4 pb-4">
-          <div className="relative flex items-center justify-between">
-            {/* Connector line behind circles */}
-            <div className="absolute top-[30px] left-[18px] right-[18px] h-[2px] bg-gray-4/30 rounded-full" />
-            <div
-              className="absolute top-[30px] left-[18px] h-[2px] rounded-full bg-gradient-to-r from-[#E80000] to-[#FF2D2D] transition-all"
-              style={{ width: `${Math.max(0, (compactDays.filter((d) => d.active).length - 1)) / 6 * 100}%` }}
-            />
+          <div className="flex items-center justify-between">
             {compactDays.map((day, i) => (
-              <div key={day.date.toISOString()} className="flex flex-col items-center gap-1.5 flex-1 relative z-10">
+              <div key={day.date.toISOString()} className="flex flex-col items-center gap-1.5 flex-1">
                 <span className={`text-[10px] font-semibold uppercase tracking-wide ${day.isToday ? "text-gray-12" : "text-gray-7"}`}>
                   {day.label}
                 </span>
@@ -296,186 +286,29 @@ function StreakCalendar({
    Section 3 — Leaderboard
    ══════════════════════════════════════════════════ */
 
-const PODIUM_THEMES = {
-  1: {
-    accent: "#FFD700",
-    accentLight: "#FFF1B8",
-    gradientFrom: "rgba(255,215,0,0.12)",
-    gradientTo: "rgba(255,215,0,0.02)",
-    border: "rgba(255,215,0,0.35)",
-    glow: "0 0 20px rgba(255,215,0,0.08), inset 0 1px 0 rgba(255,215,0,0.1)",
-    badgeBg: "linear-gradient(135deg, #D4A017 0%, #FFD700 50%, #D4A017 100%)",
-    badgeShadow: "0 2px 8px rgba(255,215,0,0.3)",
-    wingColor: "#D4A017",
-    wingHighlight: "#FFD700",
-  },
-  2: {
-    accent: "#B0B0B0",
-    accentLight: "#E0E0E0",
-    gradientFrom: "rgba(176,176,176,0.08)",
-    gradientTo: "rgba(176,176,176,0.01)",
-    border: "rgba(176,176,176,0.25)",
-    glow: "0 0 16px rgba(176,176,176,0.05), inset 0 1px 0 rgba(255,255,255,0.05)",
-    badgeBg: "linear-gradient(135deg, #7A7A7A 0%, #B0B0B0 50%, #8A8A8A 100%)",
-    badgeShadow: "0 2px 6px rgba(176,176,176,0.2)",
-    wingColor: "#8A8A8A",
-    wingHighlight: "#C0C0C0",
-  },
-  3: {
-    accent: "#CD7F32",
-    accentLight: "#E8B87A",
-    gradientFrom: "rgba(205,127,50,0.08)",
-    gradientTo: "rgba(205,127,50,0.01)",
-    border: "rgba(205,127,50,0.25)",
-    glow: "0 0 16px rgba(205,127,50,0.05), inset 0 1px 0 rgba(205,127,50,0.08)",
-    badgeBg: "linear-gradient(135deg, #8B5E3C 0%, #CD7F32 50%, #8B5E3C 100%)",
-    badgeShadow: "0 2px 6px rgba(205,127,50,0.2)",
-    wingColor: "#8B5E3C",
-    wingHighlight: "#CD7F32",
-  },
+const PODIUM_COLORS = {
+  1: { accent: "#FFD700", bg: "rgba(255,215,0,0.06)", border: "rgba(255,215,0,0.15)" },
+  2: { accent: "#B0B0B0", bg: "rgba(176,176,176,0.04)", border: "rgba(176,176,176,0.12)" },
+  3: { accent: "#CD7F32", bg: "rgba(205,127,50,0.04)", border: "rgba(205,127,50,0.12)" },
 } as const;
 
-/* Multi-feather wing SVG — detailed and elegant */
-function PodiumWing({ color, highlight, side }: { color: string; highlight: string; side: "left" | "right" }) {
-  const flip = side === "right";
-  return (
-    <div
-      className={`absolute top-1/2 -translate-y-1/2 pointer-events-none ${side === "left" ? "-left-2.5" : "-right-2.5"}`}
-      style={{ transform: `translateY(-50%) ${flip ? "scaleX(-1)" : ""}` }}
-    >
-      <svg width="28" height="48" viewBox="0 0 28 48" fill="none">
-        {/* Outer feather */}
-        <path
-          d="M28 24C28 24 24 10 14 3C14 3 18 14 8 24C18 34 14 45 14 45C24 38 28 24 28 24Z"
-          fill={color}
-          opacity="0.35"
-        />
-        {/* Inner feather */}
-        <path
-          d="M28 24C28 24 25 14 18 8C18 8 20 16 14 24C20 32 18 40 18 40C25 34 28 24 28 24Z"
-          fill={highlight}
-          opacity="0.25"
-        />
-        {/* Center vein */}
-        <path
-          d="M28 24C26 18 22 12 18 8"
-          stroke={highlight}
-          strokeWidth="0.6"
-          opacity="0.4"
-          strokeLinecap="round"
-        />
-        <path
-          d="M28 24C26 30 22 36 18 40"
-          stroke={highlight}
-          strokeWidth="0.6"
-          opacity="0.4"
-          strokeLinecap="round"
-        />
-        {/* Feather detail lines */}
-        <path d="M22 14L16 20" stroke={highlight} strokeWidth="0.3" opacity="0.3" />
-        <path d="M22 34L16 28" stroke={highlight} strokeWidth="0.3" opacity="0.3" />
-      </svg>
-    </div>
-  );
-}
-
-/* Position number badge with metallic gradient */
+/* Position number badge — clean and simple */
 function PositionBadge({ position }: { position: number }) {
-  const theme = PODIUM_THEMES[position as 1 | 2 | 3];
+  const theme = PODIUM_COLORS[position as 1 | 2 | 3];
   if (theme) {
     return (
       <span
-        className="w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-extrabold shrink-0"
-        style={{
-          background: theme.badgeBg,
-          boxShadow: theme.badgeShadow,
-          color: position === 1 ? "#1A1000" : "#FFF",
-          border: `1px solid ${theme.accent}40`,
-        }}
+        className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0"
+        style={{ background: theme.accent, color: position === 1 ? "#1A1000" : "#FFF" }}
       >
         {position}
       </span>
     );
   }
   return (
-    <span className="w-7 h-7 rounded-full bg-gray-4/40 border border-gray-5/30 flex items-center justify-center text-[11px] font-semibold text-gray-8 shrink-0 tabular-nums">
+    <span className="w-6 h-6 rounded-full bg-gray-4/50 flex items-center justify-center text-[11px] font-semibold text-gray-8 shrink-0 tabular-nums">
       {position}
     </span>
-  );
-}
-
-/* Podium card wrapper — handles gradient border, glow, shimmer for top 3 */
-function PodiumCard({
-  position,
-  isMe,
-  children,
-}: {
-  position: number;
-  isMe: boolean;
-  children: React.ReactNode;
-}) {
-  const theme = PODIUM_THEMES[position as 1 | 2 | 3];
-  if (!theme) {
-    return (
-      <div className={`rounded-xl px-3 py-2.5 flex items-center gap-2.5 ${
-        isMe ? "bg-gray-3/50 border border-gray-5/40" : "border border-transparent hover:bg-gray-3/20"
-      }`}>
-        {children}
-      </div>
-    );
-  }
-
-  const isMePodium = isMe && position <= 3;
-
-  return (
-    <div className="relative">
-      {/* Wings */}
-      <PodiumWing color={theme.wingColor} highlight={theme.wingHighlight} side="left" />
-      <PodiumWing color={theme.wingColor} highlight={theme.wingHighlight} side="right" />
-
-      {/* Card with gradient border via wrapper technique */}
-      <div
-        className="relative rounded-xl overflow-hidden"
-        style={{
-          padding: "1px",
-          background: isMePodium
-            ? `linear-gradient(135deg, ${theme.accent}90, ${theme.accent}30, ${theme.accent}60)`
-            : `linear-gradient(135deg, ${theme.border}, transparent, ${theme.border})`,
-        }}
-      >
-        {/* Inner card */}
-        <div
-          className="relative rounded-[11px] px-3.5 py-3 flex items-center gap-3 overflow-hidden"
-          style={{
-            background: isMePodium
-              ? `linear-gradient(135deg, ${theme.gradientFrom.replace(/[\d.]+\)$/, "0.18)")}, rgba(20,20,20,0.95))`
-              : `linear-gradient(135deg, ${theme.gradientFrom}, rgba(20,20,20,0.95))`,
-            boxShadow: theme.glow,
-          }}
-        >
-          {/* Top edge highlight — simulates metallic rim light */}
-          <div
-            className="absolute inset-x-0 top-0 h-px pointer-events-none"
-            style={{ background: `linear-gradient(90deg, transparent, ${theme.accent}30, transparent)` }}
-          />
-
-          {/* Shimmer sweep for #1 only */}
-          {position === 1 && (
-            <motion.div
-              className="absolute inset-0 pointer-events-none"
-              style={{
-                background: "linear-gradient(105deg, transparent 40%, rgba(255,215,0,0.06) 45%, rgba(255,215,0,0.1) 50%, rgba(255,215,0,0.06) 55%, transparent 60%)",
-                backgroundSize: "200% 100%",
-              }}
-              animate={{ backgroundPosition: ["200% 0%", "-200% 0%"] }}
-              transition={{ duration: 3, repeat: Infinity, repeatDelay: 5, ease: "easeInOut" }}
-            />
-          )}
-
-          {children}
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -611,10 +444,8 @@ export function HomeScreen({
         transition={{ delay: 0.12 }}
       >
         <div className="flex items-center justify-between mb-2.5">
-          <p className="text-[15px] text-gray-12 font-semibold inline-flex items-center gap-2">
-            <span className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500/12 to-amber-600/5 border border-amber-500/15 flex items-center justify-center shrink-0">
-              <Quote size={14} className="text-amber-400" />
-            </span>
+          <p className="text-[15px] text-gray-12 font-semibold inline-flex items-center gap-1.5">
+            <Quote size={15} className="text-gray-8" />
             {t("homeQuote")}
           </p>
           <motion.button
@@ -637,10 +468,8 @@ export function HomeScreen({
         transition={{ delay: 0.06 }}
       >
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-[15px] font-semibold text-gray-12 inline-flex items-center gap-2">
-            <span className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#FFD700]/12 to-[#FFD700]/4 border border-[#FFD700]/15 flex items-center justify-center shrink-0">
-              <TrophyIcon />
-            </span>
+          <h3 className="text-[15px] font-semibold text-gray-12 inline-flex items-center gap-1.5">
+            <TrophyIcon />
             {t("homeLeaderboard")}
           </h3>
           <span className="text-[11px] text-gray-7">{t("homeGlobalRanking")}</span>
@@ -660,41 +489,7 @@ export function HomeScreen({
               const isTop3 = entry.position <= 3;
               const showSeparator = entry.position === 4 && entries.some((e) => e.position <= 3);
 
-              const cardContent = (
-                <>
-                  <PositionBadge position={entry.position} />
-
-                  <div
-                    className={`${isTop3 ? "w-10 h-10 border-2" : "w-9 h-9 border border-gray-5/30 bg-gray-4/40"} rounded-full overflow-hidden flex items-center justify-center shrink-0`}
-                    style={isTop3 ? {
-                      borderColor: PODIUM_THEMES[entry.position as 1 | 2 | 3]?.accent + "40",
-                      background: `${PODIUM_THEMES[entry.position as 1 | 2 | 3]?.gradientFrom}`,
-                    } : undefined}
-                  >
-                    {entry.avatar_url ? (
-                      <img src={entry.avatar_url} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill={isTop3 ? PODIUM_THEMES[entry.position as 1 | 2 | 3]?.accent : "currentColor"} className={isTop3 ? undefined : "text-gray-7"}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
-                    )}
-                  </div>
-
-                  <div className="flex-1 min-w-0 flex items-center gap-1.5">
-                    <p className={`text-[13px] font-semibold truncate ${
-                      entry.isMe && isTop3 ? "text-[#FF8A8A]" : entry.isMe ? "text-gray-12" : "text-gray-12"
-                    }`}>
-                      {entry.display_name || t("anonymousUser")}
-                    </p>
-                    <InlineRankIcon level={entryLevel} size={18} />
-                  </div>
-
-                  <div className="flex items-baseline gap-0.5 shrink-0">
-                    <p className={`text-[13px] font-bold tabular-nums ${isTop3 ? "text-gray-12" : "text-gray-10"}`}>
-                      {formatNumber(xp)}
-                    </p>
-                    <span className="text-[9px] font-extrabold text-[#E80000]">XP</span>
-                  </div>
-                </>
-              );
+              const podiumColor = PODIUM_COLORS[entry.position as 1 | 2 | 3];
 
               return (
                 <motion.div
@@ -704,9 +499,36 @@ export function HomeScreen({
                   transition={{ delay: entry.position * 0.035 }}
                 >
                   {showSeparator && <div className="h-px bg-gray-5/20 my-2" />}
-                  <PodiumCard position={entry.position} isMe={!!entry.isMe}>
-                    {cardContent}
-                  </PodiumCard>
+                  <div
+                    className={`rounded-xl px-3 py-2.5 flex items-center gap-2.5 transition-colors ${
+                      entry.isMe ? "bg-gray-3/60 border border-gray-5/40" : isTop3 ? "border border-transparent" : "border border-transparent"
+                    }`}
+                    style={isTop3 && !entry.isMe ? { background: podiumColor?.bg } : undefined}
+                  >
+                    <PositionBadge position={entry.position} />
+
+                    <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center shrink-0 bg-gray-4/40 border border-gray-5/20">
+                      {entry.avatar_url ? (
+                        <img src={entry.avatar_url} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="text-gray-7"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+                      )}
+                    </div>
+
+                    <div className="flex-1 min-w-0 flex items-center gap-1.5">
+                      <p className={`text-[13px] font-semibold truncate ${entry.isMe ? "text-gray-12" : "text-gray-11"}`}>
+                        {entry.display_name || t("anonymousUser")}
+                      </p>
+                      <InlineRankIcon level={entryLevel} size={16} />
+                    </div>
+
+                    <div className="flex items-baseline gap-0.5 shrink-0">
+                      <p className="text-[13px] font-bold tabular-nums text-gray-11">
+                        {formatNumber(xp)}
+                      </p>
+                      <span className="text-[9px] font-extrabold text-[#E80000]">XP</span>
+                    </div>
+                  </div>
                 </motion.div>
               );
             })}

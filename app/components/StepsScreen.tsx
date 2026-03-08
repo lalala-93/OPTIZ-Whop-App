@@ -137,7 +137,6 @@ export function StepsScreen({ userId, onAwardXpEvent, initialData }: StepsScreen
   const [deltaBubble, setDeltaBubble] = useState(0);
   const [milestonesAwarded, setMilestonesAwarded] = useState<number[]>(initialData?.milestonesAwarded ?? []);
   const [goalHit, setGoalHit] = useState(initialData?.goalHit ?? false);
-  const [historyView, setHistoryView] = useState<"daily" | "weekly">("daily");
   const [historyData, setHistoryData] = useState<{ log_date: string; done: number; goal: number }[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
 
@@ -246,28 +245,13 @@ export function StepsScreen({ userId, onAwardXpEvent, initialData }: StepsScreen
   useEffect(() => {
     let cancelled = false;
     setLoadingHistory(true);
-    const days = historyView === "daily" ? 7 : 28;
-    getStepsHistory(userId, days).then((data) => {
+    getStepsHistory(userId, 7).then((data) => {
       if (cancelled) return;
       setHistoryData(data.map((d) => ({ log_date: d.log_date, done: d.done ?? 0, goal: d.goal ?? 0 })));
       setLoadingHistory(false);
     }).catch(() => { if (!cancelled) setLoadingHistory(false); });
     return () => { cancelled = true; };
-  }, [userId, historyView]);
-
-  const weeklyAggregated = useMemo(() => {
-    if (historyView !== "weekly" || historyData.length === 0) return [];
-    const weeks: { label: string; done: number; goal: number }[] = [];
-    for (let i = 0; i < historyData.length; i += 7) {
-      const chunk = historyData.slice(i, i + 7);
-      const totalDone = chunk.reduce((s, d) => s + (d.done || 0), 0);
-      const avgGoal = Math.round(chunk.reduce((s, d) => s + (d.goal || 0), 0) / chunk.length);
-      const startDate = new Date(chunk[0].log_date);
-      const label = `${startDate.getDate()}/${startDate.getMonth() + 1}`;
-      weeks.push({ label, done: totalDone, goal: avgGoal * chunk.length });
-    }
-    return weeks;
-  }, [historyView, historyData]);
+  }, [userId]);
 
   const updateState = (next: StepsState) => {
     setState(next);
@@ -396,88 +380,85 @@ export function StepsScreen({ userId, onAwardXpEvent, initialData }: StepsScreen
         </div>
       </section>
 
-      {/* History */}
+      {/* Weekly History — matching nutrition screen design */}
       <motion.section
-        className="rounded-3xl border border-gray-5/35 bg-gray-2/82 p-5"
+        className="rounded-3xl border border-white/[0.06] bg-white/[0.02] p-5"
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
       >
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-[14px] font-semibold text-gray-12 inline-flex items-center gap-1.5">
-            <BarChart3 size={15} /> {t("stepsHistory")}
-          </h3>
-          <div className="flex items-center bg-gray-4/30 rounded-lg p-0.5">
-            {(["daily", "weekly"] as const).map((view) => (
-              <button
-                key={view}
-                type="button"
-                onClick={() => setHistoryView(view)}
-                className={`px-3 py-1 rounded-md text-[11px] font-medium transition-all ${
-                  historyView === view ? "bg-[#E80000]/15 text-[#FF6D6D]" : "text-gray-8"
-                }`}
-              >
-                {view === "daily" ? t("stepsDaily") : t("stepsWeeklyView")}
-              </button>
-            ))}
-          </div>
-        </div>
+        <h3 className="text-[14px] font-semibold text-gray-12 mb-5">{t("stepsWeeklyView")}</h3>
 
         {loadingHistory ? (
           <div className="h-[180px] flex items-center justify-center">
             <div className="w-5 h-5 border-2 border-gray-6 border-t-[#E80000] rounded-full animate-spin" />
           </div>
         ) : (() => {
-          const items = historyView === "daily"
-            ? historyData.map((d) => ({
-                label: new Date(d.log_date + "T12:00:00").toLocaleDateString(undefined, { weekday: "short" }).slice(0, 2),
-                done: d.done || 0,
-                goal: d.goal || 0,
-              }))
-            : weeklyAggregated;
+          const todayISO = new Date().toISOString().split("T")[0];
+          // Build 7 days (Mon-Sun of current week)
+          const today = new Date();
+          const dayOfWeek = today.getDay() === 0 ? 6 : today.getDay() - 1;
+          const monday = new Date(today);
+          monday.setDate(today.getDate() - dayOfWeek);
 
-          if (items.length === 0) {
-            return (
-              <div className="h-[180px] flex items-center justify-center text-[13px] text-gray-7">
-                {t("stepsNoData")}
-              </div>
-            );
-          }
+          const dayLabelsShort = [
+            t("dayShortMon"), t("dayShortTue"), t("dayShortWed"), t("dayShortThu"),
+            t("dayShortFri"), t("dayShortSat"), t("dayShortSun"),
+          ];
 
-          const maxVal = Math.max(...items.map((d) => Math.max(d.done, d.goal)), 1);
+          const weekBars = Array.from({ length: 7 }, (_, i) => {
+            const d = new Date(monday);
+            d.setDate(monday.getDate() + i);
+            const dateStr = d.toISOString().split("T")[0];
+            const entry = historyData.find((h) => h.log_date === dateStr);
+            return { date: dateStr, done: entry?.done ?? 0, goal: entry?.goal ?? state.goal };
+          });
+
+          const maxVal = Math.max(...weekBars.map((b) => Math.max(b.done, b.goal)), 1);
+          const goalPct = Math.min(100, (state.goal / maxVal) * 100);
 
           return (
-            <div className="relative h-[180px]">
-              <div className="flex items-end gap-2 h-full">
-                {items.map((item, i) => {
-                  const barH = Math.max(4, (item.done / maxVal) * 160);
-                  const goalH = (item.goal / maxVal) * 160;
-                  const hit = item.done >= item.goal && item.goal > 0;
+            <div className="relative h-[180px] mb-2">
+              {/* Goal reference line */}
+              <div className="absolute left-0 right-0 flex items-center" style={{ bottom: `${goalPct}%` }}>
+                <div className="flex-1 border-t border-dashed border-[#E80000]/25" />
+                <span className="text-[9px] text-[#FF6666]/60 tabular-nums ml-1 shrink-0">{state.goal.toLocaleString()}</span>
+              </div>
+
+              {/* Bars */}
+              <div className="flex items-end justify-between gap-2 h-full">
+                {weekBars.map((bar, i) => {
+                  const pct = maxVal > 0 ? Math.max(2, (bar.done / maxVal) * 100) : 2;
+                  const isToday = bar.date === todayISO;
+                  const isFuture = bar.date > todayISO;
+                  const hasDone = bar.done > 0;
+                  const aboveGoal = bar.done > bar.goal;
                   return (
-                    <div key={`${item.label}-${i}`} className="flex-1 flex flex-col items-center justify-end h-full gap-1">
-                      <span className="text-[9px] font-medium text-gray-8 tabular-nums">
-                        {item.done > 0 ? (item.done >= 1000 ? `${(item.done / 1000).toFixed(1)}k` : item.done) : ""}
+                    <div key={bar.date} className="flex-1 flex flex-col items-center h-full justify-end">
+                      {hasDone && !isFuture && (
+                        <span className="text-[10px] font-medium tabular-nums mb-1 text-gray-9">
+                          {bar.done >= 1000 ? `${(bar.done / 1000).toFixed(1)}k` : bar.done}
+                        </span>
+                      )}
+                      <motion.div
+                        className={`w-full rounded-lg min-h-[4px] ${
+                          isFuture
+                            ? "bg-white/[0.03]"
+                            : isToday
+                            ? aboveGoal
+                              ? "bg-gradient-to-t from-[#FF4D4D] to-[#FF8C8C]"
+                              : "bg-gradient-to-t from-[#E80000] to-[#FF4D4D]"
+                            : hasDone
+                            ? "bg-gradient-to-t from-white/[0.08] to-white/[0.15]"
+                            : "bg-white/[0.03]"
+                        }`}
+                        initial={{ height: 0 }}
+                        animate={{ height: isFuture ? 4 : `${pct}%` }}
+                        transition={{ duration: 0.5, delay: i * 0.06, ease: [0.25, 0.1, 0.25, 1] as const }}
+                      />
+                      <span className={`text-[11px] font-medium mt-2 ${isToday ? "text-[#FF6666]" : "text-gray-8"}`}>
+                        {dayLabelsShort[i]}
                       </span>
-                      <div className="relative w-full flex justify-center">
-                        <motion.div
-                          className="rounded-md w-full max-w-[32px]"
-                          style={{
-                            background: hit
-                              ? "linear-gradient(to top, #E80000, #FF2D2D)"
-                              : "linear-gradient(to top, rgba(232,0,0,0.3), rgba(255,45,45,0.15))",
-                          }}
-                          initial={{ height: 0 }}
-                          animate={{ height: barH }}
-                          transition={{ delay: i * 0.04, type: "spring", stiffness: 120, damping: 14 }}
-                        />
-                        {item.goal > 0 && (
-                          <div
-                            className="absolute left-0 right-0 border-t border-dashed border-gray-6/50"
-                            style={{ bottom: goalH }}
-                          />
-                        )}
-                      </div>
-                      <span className="text-[9px] font-medium text-gray-7">{item.label}</span>
                     </div>
                   );
                 })}
@@ -487,14 +468,14 @@ export function StepsScreen({ userId, onAwardXpEvent, initialData }: StepsScreen
         })()}
 
         {/* Legend */}
-        <div className="mt-3 flex items-center justify-center gap-4 text-[10px] text-gray-7">
+        <div className="flex items-center justify-center gap-4 mt-3 pt-3 border-t border-white/[0.04]">
           <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-sm bg-[#E80000]" />
-            <span>{t("stepsTitle")}</span>
+            <div className="w-2.5 h-2.5 rounded-sm bg-gradient-to-t from-[#E80000] to-[#FF4D4D]" />
+            <span className="text-[10px] text-gray-8">{t("stepsTitle")}</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-4 h-0 border-t border-dashed border-gray-6" />
-            <span>{t("stepsGoal")}</span>
+            <div className="w-6 border-t border-dashed border-[#E80000]/40" />
+            <span className="text-[10px] text-gray-8">{t("stepsGoal")} {state.goal.toLocaleString()}</span>
           </div>
         </div>
       </motion.section>
