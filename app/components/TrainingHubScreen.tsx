@@ -408,7 +408,7 @@ function ProgramDetailView({
 
       {/* Hero image */}
       <div className="relative rounded-2xl overflow-hidden mb-4 aspect-[2/1]">
-        <Image src={program.image} alt={program.title} fill className="object-cover object-[center_30%]" sizes="(max-width: 768px) 100vw, 600px" />
+        <Image src={program.image} alt={program.title} fill className="object-cover object-[center_70%]" sizes="(max-width: 768px) 100vw, 600px" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 p-4">
           <p className="text-[11px] uppercase tracking-widest text-[#FF6D6D] font-semibold mb-0.5">
@@ -692,7 +692,7 @@ export function TrainingHubScreen({ userId, onAwardXpEvent, initialCompletionsTo
             >
               {/* Image */}
               <div className="relative h-36">
-                <Image src={prog.image} alt={prog.title} fill className="object-cover object-[center_30%]" sizes="(max-width: 768px) 100vw, 600px" />
+                <Image src={prog.image} alt={prog.title} fill className="object-cover object-[center_70%]" sizes="(max-width: 768px) 100vw, 600px" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-3.5">
                   <div className="flex items-end justify-between gap-2">

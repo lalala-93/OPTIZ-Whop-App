@@ -157,12 +157,11 @@ function StreakCalendar({
         className="w-full flex items-center justify-between px-4 pt-4 pb-3"
       >
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-full bg-[#E80000]/10 flex items-center justify-center">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FF6666" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="4" width="18" height="18" rx="2" />
-              <path d="M16 2v4" />
-              <path d="M8 2v4" />
-              <path d="M3 10h18" />
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#E80000]/15 to-[#FF2D2D]/5 border border-[#E80000]/15 flex items-center justify-center">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" fill="#E80000" fillOpacity="0.15" />
+              <path d="M12 6v6l4.5 2.5" stroke="#FF6666" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              <circle cx="12" cy="12" r="9" stroke="#FF6666" strokeWidth="1.5" fill="none" />
             </svg>
           </div>
           <span className="text-[15px] font-semibold text-gray-12">{t("homeActivity")}</span>
@@ -175,27 +174,33 @@ function StreakCalendar({
 
       {/* ── Compact: last 7 days ── */}
       {!expanded && (
-        <div className="px-3 pb-4">
-          <div className="flex items-center justify-between">
+        <div className="px-4 pb-4">
+          <div className="relative flex items-center justify-between">
+            {/* Connector line behind circles */}
+            <div className="absolute top-[30px] left-[18px] right-[18px] h-[2px] bg-gray-4/30 rounded-full" />
+            <div
+              className="absolute top-[30px] left-[18px] h-[2px] rounded-full bg-gradient-to-r from-[#E80000] to-[#FF2D2D] transition-all"
+              style={{ width: `${Math.max(0, (compactDays.filter((d) => d.active).length - 1)) / 6 * 100}%` }}
+            />
             {compactDays.map((day, i) => (
-              <div key={day.date.toISOString()} className="flex flex-col items-center gap-1.5 flex-1">
-                <span className={`text-[9px] font-semibold uppercase tracking-wide ${day.isToday ? "text-gray-12" : "text-gray-7"}`}>
+              <div key={day.date.toISOString()} className="flex flex-col items-center gap-1.5 flex-1 relative z-10">
+                <span className={`text-[10px] font-semibold uppercase tracking-wide ${day.isToday ? "text-gray-12" : "text-gray-7"}`}>
                   {day.label}
                 </span>
                 <motion.div
-                  className={`w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-bold transition-all ${
+                  className={`w-10 h-10 rounded-full flex items-center justify-center text-[11px] font-bold transition-all ${
                     day.active
-                      ? "bg-[#E80000] text-white"
+                      ? "bg-[#E80000] text-white shadow-[0_0_12px_rgba(232,0,0,0.3)]"
                       : day.isToday
                         ? "ring-2 ring-[#E80000]/40 bg-[#E80000]/8 text-gray-11"
-                        : "bg-gray-4/40 text-gray-7"
+                        : "bg-gray-3 border border-gray-5/30 text-gray-7"
                   }`}
                   initial={{ scale: 0.85, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ delay: i * 0.03, type: "spring", stiffness: 400, damping: 20 }}
                 >
                   {day.active ? (
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                       <polyline points="20 6 9 17 4 12" />
                     </svg>
                   ) : (
@@ -380,7 +385,7 @@ function PositionBadge({ position }: { position: number }) {
   if (theme) {
     return (
       <span
-        className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-extrabold shrink-0"
+        className="w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-extrabold shrink-0"
         style={{
           background: theme.badgeBg,
           boxShadow: theme.badgeShadow,
@@ -440,7 +445,7 @@ function PodiumCard({
       >
         {/* Inner card */}
         <div
-          className="relative rounded-[11px] px-3 py-2.5 flex items-center gap-2.5 overflow-hidden"
+          className="relative rounded-[11px] px-3.5 py-3 flex items-center gap-3 overflow-hidden"
           style={{
             background: isMePodium
               ? `linear-gradient(135deg, ${theme.gradientFrom.replace(/[\d.]+\)$/, "0.18)")}, rgba(20,20,20,0.95))`
@@ -606,8 +611,11 @@ export function HomeScreen({
         transition={{ delay: 0.12 }}
       >
         <div className="flex items-center justify-between mb-2.5">
-          <p className="text-[15px] text-gray-12 font-semibold inline-flex items-center gap-1.5">
-            <Quote size={14} className="text-gray-8" /> {t("homeQuote")}
+          <p className="text-[15px] text-gray-12 font-semibold inline-flex items-center gap-2">
+            <span className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500/12 to-amber-600/5 border border-amber-500/15 flex items-center justify-center shrink-0">
+              <Quote size={14} className="text-amber-400" />
+            </span>
+            {t("homeQuote")}
           </p>
           <motion.button
             onClick={() => setQuoteIndex((prev) => (prev + 1) % MOTIVATIONAL_QUOTES.length)}
@@ -630,7 +638,10 @@ export function HomeScreen({
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-[15px] font-semibold text-gray-12 inline-flex items-center gap-2">
-            <TrophyIcon /> {t("homeLeaderboard")}
+            <span className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#FFD700]/12 to-[#FFD700]/4 border border-[#FFD700]/15 flex items-center justify-center shrink-0">
+              <TrophyIcon />
+            </span>
+            {t("homeLeaderboard")}
           </h3>
           <span className="text-[11px] text-gray-7">{t("homeGlobalRanking")}</span>
         </div>
@@ -643,19 +654,18 @@ export function HomeScreen({
           </div>
         ) : (
           <div className="space-y-1.5">
-            {entries.map((entry) => {
+            {entries.map((entry, idx) => {
               const xp = entry.total_xp ?? 0;
               const entryLevel = getLevelProgress(xp).level;
               const isTop3 = entry.position <= 3;
+              const showSeparator = entry.position === 4 && entries.some((e) => e.position <= 3);
 
               const cardContent = (
                 <>
                   <PositionBadge position={entry.position} />
 
                   <div
-                    className={`w-9 h-9 rounded-full overflow-hidden flex items-center justify-center shrink-0 ${
-                      isTop3 ? "border-2" : "border border-gray-5/30 bg-gray-4/40"
-                    }`}
+                    className={`${isTop3 ? "w-10 h-10 border-2" : "w-9 h-9 border border-gray-5/30 bg-gray-4/40"} rounded-full overflow-hidden flex items-center justify-center shrink-0`}
                     style={isTop3 ? {
                       borderColor: PODIUM_THEMES[entry.position as 1 | 2 | 3]?.accent + "40",
                       background: `${PODIUM_THEMES[entry.position as 1 | 2 | 3]?.gradientFrom}`,
@@ -693,6 +703,7 @@ export function HomeScreen({
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: entry.position * 0.035 }}
                 >
+                  {showSeparator && <div className="h-px bg-gray-5/20 my-2" />}
                   <PodiumCard position={entry.position} isMe={!!entry.isMe}>
                     {cardContent}
                   </PodiumCard>

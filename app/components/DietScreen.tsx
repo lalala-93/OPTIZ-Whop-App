@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, ChevronDown, ChevronUp, Droplets, Flame, Minus, Plus, Trash2, Zap } from "lucide-react";
+import { Check, ChevronDown, ChevronUp, Droplets, Flame, Minus, Plus, Trash2, X, Zap } from "lucide-react";
 import { XPToast, type XPToastData } from "./XPToast";
 import { useI18n } from "./i18n";
 import {
@@ -679,9 +679,23 @@ export function DietScreen({ userId, onAwardXpEvent, initialData }: DietScreenPr
 
                         {/* Custom toggle */}
                         <button type="button" onClick={() => setShowCustom(!showCustom)}
-                          className="w-full mt-3 h-9 rounded-xl border border-dashed border-white/[0.08] text-[11px] font-medium text-gray-10 flex items-center justify-center gap-1 active:scale-[0.98] transition-transform hover:bg-white/[0.02]"
+                          className={`w-full mt-3 h-9 rounded-xl text-[11px] font-medium flex items-center justify-center gap-1 active:scale-[0.98] transition-all ${
+                            showCustom
+                              ? "border border-gray-5/40 bg-gray-4/30 text-gray-10"
+                              : "border border-dashed border-white/[0.08] text-gray-10 hover:bg-white/[0.02]"
+                          }`}
                         >
-                          <Plus size={11} /> {t("dietCustom")}
+                          <AnimatePresence mode="wait">
+                            {showCustom ? (
+                              <motion.span key="close" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.15 }}>
+                                <X size={11} className="inline mr-1" />{t("dietClose") as string}
+                              </motion.span>
+                            ) : (
+                              <motion.span key="open" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.15 }}>
+                                <Plus size={11} className="inline mr-1" />{t("dietCustom")}
+                              </motion.span>
+                            )}
+                          </AnimatePresence>
                         </button>
 
                         <AnimatePresence>
@@ -689,7 +703,10 @@ export function DietScreen({ userId, onAwardXpEvent, initialData }: DietScreenPr
                             <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
                               <div className="pt-3 space-y-2">
                                 <input value={customName} onChange={(e) => setCustomName(e.target.value)} placeholder={t("dietMealNamePlaceholder")} className="h-10 w-full rounded-xl bg-white/[0.03] border border-white/[0.06] px-3 text-sm text-gray-12 placeholder:text-gray-7 outline-none focus:border-[#E80000]/30 transition-colors" />
-                                <input type="number" min={0} value={customCal} onChange={(e) => setCustomCal(Math.max(0, Number(e.target.value || "0")))} placeholder="kcal" className="h-10 w-full rounded-xl bg-white/[0.03] border border-white/[0.06] px-3 text-[14px] font-semibold text-gray-12 text-center tabular-nums outline-none focus:border-[#E80000]/30 transition-colors" />
+                                <div className="relative">
+                                  <input type="number" min={0} value={customCal} onChange={(e) => setCustomCal(Math.max(0, Number(e.target.value || "0")))} placeholder="0" className="h-10 w-full rounded-xl bg-white/[0.03] border border-white/[0.06] px-3 pr-12 text-[14px] font-semibold text-gray-12 text-center tabular-nums outline-none focus:border-[#E80000]/30 transition-colors" />
+                                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-bold text-gray-7 pointer-events-none">kcal</span>
+                                </div>
                                 <div className="grid grid-cols-3 gap-2">
                                   <div>
                                     <span className="text-[10px] font-medium text-[#FF6B6B] mb-1 block">{ml.p} (g)</span>

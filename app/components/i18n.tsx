@@ -180,6 +180,10 @@ const translations = {
     stepsGoalTitle: "Steps goal reached",
     stepsGoalSubtitle: "Good work today",
     stepsCoachTip: "Tip: set your goal +500 to +1500 above your base.",
+    stepsHistory: "History",
+    stepsDaily: "Daily",
+    stepsWeeklyView: "Weekly",
+    stepsNoData: "No data yet",
 
     // Diet V2
     dietTitle: "Nutrition",
@@ -198,6 +202,7 @@ const translations = {
     dietQuickAdd: "Quick and simple",
     dietAll: "All",
     dietCustom: "Custom",
+    dietClose: "Close",
     dietMatin: "Morning",
     dietMidi: "Noon",
     dietSoir: "Evening",
@@ -517,6 +522,10 @@ const translations = {
     stepsGoalTitle: "Objectif de pas atteint",
     stepsGoalSubtitle: "Bien joué aujourd'hui",
     stepsCoachTip: "Astuce : objectif +500 à +1500 au-dessus de ta base.",
+    stepsHistory: "Historique",
+    stepsDaily: "Quotidien",
+    stepsWeeklyView: "Hebdomadaire",
+    stepsNoData: "Pas encore de données",
 
     // Diet V2
     dietTitle: "Nutrition",
@@ -535,6 +544,7 @@ const translations = {
     dietQuickAdd: "Rapide et simple",
     dietAll: "Tout",
     dietCustom: "Personnalisé",
+    dietClose: "Fermer",
     dietMatin: "Matin",
     dietMidi: "Midi",
     dietSoir: "Soir",

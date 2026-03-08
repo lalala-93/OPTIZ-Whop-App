@@ -632,6 +632,23 @@ export async function getDailySteps(userId: string, date: string) {
     return data;
 }
 
+/** Get steps history for last N days */
+export async function getStepsHistory(userId: string, days: number = 7) {
+    const db = createServerSupabase();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - (days - 1));
+    const startStr = startDate.toISOString().split("T")[0];
+
+    const { data } = await db
+        .from("steps_daily_logs")
+        .select("log_date, done, goal")
+        .eq("user_id", userId)
+        .gte("log_date", startStr)
+        .order("log_date", { ascending: true });
+
+    return data ?? [];
+}
+
 // ══════════════════════════════════════
 // V2: Nutrition Actions
 // ══════════════════════════════════════
