@@ -146,7 +146,7 @@ function StreakCalendar({
 
   return (
     <motion.section
-      className="rounded-2xl border border-gray-5/35 bg-gray-3/20 overflow-hidden"
+      className="rounded-2xl border border-gray-5/50 bg-gray-2/80 overflow-hidden"
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
     >
@@ -600,7 +600,7 @@ export function HomeScreen({
 
       {/* ── Section 4: Quote ── */}
       <motion.section
-        className="rounded-2xl border border-gray-5/35 bg-gray-3/20 p-4"
+        className="rounded-2xl border border-gray-5/50 bg-gray-2/80 p-4"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.12 }}
@@ -623,7 +623,7 @@ export function HomeScreen({
 
       {/* ── Section 3: Leaderboard ── */}
       <motion.section
-        className="rounded-2xl border border-gray-5/35 bg-gray-3/20 p-4"
+        className="rounded-2xl border border-gray-5/50 bg-gray-2/80 p-4"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.06 }}

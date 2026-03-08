@@ -57,9 +57,9 @@ export function XPMilestonesModal({ isOpen, onClose, currentLevel, totalXp }: XP
                         onClick={onClose}
                     />
                     <motion.div
-                        initial={{ opacity: 0, y: 60 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 60 }}
-                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                        className="relative w-full max-w-md bg-gray-2 border border-gray-4 rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl max-h-[85vh] flex flex-col"
+                        initial={{ opacity: 0, y: 40, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 40, scale: 0.97 }}
+                        transition={{ type: "spring", stiffness: 350, damping: 28 }}
+                        className="relative w-full max-w-md bg-gray-2 border border-gray-4/60 rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl max-h-[85vh] flex flex-col"
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="flex justify-center pt-3 pb-1 sm:hidden">
@@ -102,7 +102,7 @@ export function XPMilestonesModal({ isOpen, onClose, currentLevel, totalXp }: XP
                                         style={{ background: `linear-gradient(to right, ${currentRank.tier.gradient[0]}, ${currentRank.tier.gradient[1]})` }}
                                         initial={{ width: 0 }}
                                         animate={{ width: `${overallProgress}%` }}
-                                        transition={{ duration: 0.8, ease: "easeOut", delay: 0.3 }}
+                                        transition={{ duration: 1, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
                                     />
                                 </div>
                                 <div className="flex justify-between mt-1.5">
