@@ -267,7 +267,7 @@ export function SettingsSheet({
 
             {/* Delete confirmation dialog */}
             <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-                <DialogContent className="bg-gray-2 border-gray-5/40 max-w-xs rounded-2xl">
+                <DialogContent className="bg-gray-2 border-gray-5/40 max-w-xs rounded-2xl [&>button]:hidden">
                     <DialogHeader>
                         <DialogTitle className="text-sm font-semibold text-gray-12">{t("deleteDataTitle")}</DialogTitle>
                         <DialogDescription className="text-xs text-gray-8 leading-relaxed">{t("deleteDataBody")}</DialogDescription>

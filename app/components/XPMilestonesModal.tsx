@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useRef, useEffect, useMemo } from "react";
+import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
@@ -57,8 +58,14 @@ export function XPMilestonesModal({ isOpen, onClose, currentLevel, totalXp }: XP
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
             <DialogContent className={cn(
                 "bg-gray-2 border-gray-4 text-gray-12 max-w-md rounded-3xl p-0 gap-0 max-h-[85vh] flex flex-col overflow-hidden",
-                "[&>button]:bg-gray-4 [&>button]:border [&>button]:border-gray-5 [&>button]:rounded-full [&>button]:w-8 [&>button]:h-8 [&>button]:text-gray-9 [&>button]:hover:text-gray-12 [&>button]:opacity-100"
+                "[&>button]:hidden"
             )}>
+                <button
+                    onClick={onClose}
+                    className="absolute right-4 top-4 w-7 h-7 rounded-full bg-gray-4/80 border border-gray-5/50 flex items-center justify-center text-gray-8 hover:text-gray-12 hover:bg-gray-5 transition-all z-10"
+                >
+                    <X className="h-3.5 w-3.5" />
+                </button>
                 {/* Header with current rank badge and overall progress */}
                 <div className="px-5 pt-5 pb-4 border-b border-gray-4/40 shrink-0">
                     <DialogHeader className="flex-row items-center gap-3 space-y-0 mb-3">
