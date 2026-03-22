@@ -42,6 +42,21 @@ import {
 } from "@/lib/actions";
 import { useI18n } from "./i18n";
 
+import { cn } from "@/lib/utils";
+import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
+import { Progress } from "@/components/ui/progress";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
 // ── Types ──
 
 interface TrainingHubScreenProps {
@@ -216,65 +231,91 @@ function WorkoutFunnel({
         </motion.p>
 
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }} className="w-full mt-6 grid grid-cols-3 gap-2.5">
-          <div className="rounded-2xl border border-gray-5/30 bg-gray-2/70 p-3 text-center">
-            <Clock size={15} className="text-gray-7 mx-auto mb-1" />
-            <p className="text-[15px] font-bold text-gray-12 tabular-nums">{fmtTimer(elapsed)}</p>
-            <p className="text-[10px] text-gray-7 mt-0.5">{t("trainingDuration")}</p>
-          </div>
-          <div className="rounded-2xl border border-gray-5/30 bg-gray-2/70 p-3 text-center">
-            <Dumbbell size={15} className="text-gray-7 mx-auto mb-1" />
-            <p className="text-[15px] font-bold text-gray-12 tabular-nums">{result.totalVolume.toLocaleString()}</p>
-            <p className="text-[10px] text-gray-7 mt-0.5">{t("trainingKg")}</p>
-          </div>
-          <div className="rounded-2xl border border-gray-5/30 bg-gray-2/70 p-3 text-center">
-            <Sparkles size={15} className="text-[#FFD700] mx-auto mb-1" />
-            <p className="text-[15px] font-bold text-gray-12 tabular-nums">{result.improvedSets}</p>
-            <p className="text-[10px] text-gray-7 mt-0.5">{t("trainingRecordsLabel")}</p>
-          </div>
+          <Card className="border-gray-5/30 bg-gray-2/70">
+            <CardContent className="p-3 text-center">
+              <Clock size={15} className="text-gray-7 mx-auto mb-1" />
+              <p className="text-[15px] font-bold text-gray-12 tabular-nums">{fmtTimer(elapsed)}</p>
+              <p className="text-[10px] text-gray-7 mt-0.5">{t("trainingDuration")}</p>
+            </CardContent>
+          </Card>
+          <Card className="border-gray-5/30 bg-gray-2/70">
+            <CardContent className="p-3 text-center">
+              <Dumbbell size={15} className="text-gray-7 mx-auto mb-1" />
+              <p className="text-[15px] font-bold text-gray-12 tabular-nums">{result.totalVolume.toLocaleString()}</p>
+              <p className="text-[10px] text-gray-7 mt-0.5">{t("trainingKg")}</p>
+            </CardContent>
+          </Card>
+          <Card className="border-gray-5/30 bg-gray-2/70">
+            <CardContent className="p-3 text-center">
+              <Sparkles size={15} className="text-[#FFD700] mx-auto mb-1" />
+              <p className="text-[15px] font-bold text-gray-12 tabular-nums">{result.improvedSets}</p>
+              <p className="text-[10px] text-gray-7 mt-0.5">{t("trainingRecordsLabel")}</p>
+            </CardContent>
+          </Card>
         </motion.div>
 
-        <motion.button
+        <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
-          onClick={() => onSave(result)}
-          className="w-full mt-7 h-12 rounded-2xl optiz-gradient-bg text-white font-semibold text-[15px] active:scale-[0.97] transition-transform"
+          className="w-full mt-7"
         >
-          {t("trainingClaimXp", { xp: "100" })}
-        </motion.button>
+          <Button
+            onClick={() => onSave(result)}
+            className="w-full h-12 rounded-2xl optiz-gradient-bg text-white font-semibold text-[15px] active:scale-[0.97] transition-transform border-0 hover:opacity-90"
+          >
+            {t("trainingClaimXp", { xp: "100" })}
+          </Button>
+        </motion.div>
       </motion.div>
     );
   }
 
   // ── Exercise screen ──
+  const progressPercent = session.exercises.length > 0 ? ((exIdx) / session.exercises.length) * 100 : 0;
+
   return (
     <div className="pb-[100px]">
       {/* Top bar */}
       <div className="flex items-center justify-between mb-3">
-        <button onClick={onBack} className="w-10 h-10 rounded-full border border-gray-5/30 bg-gray-3/30 text-gray-9 flex items-center justify-center">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={onBack}
+          className="w-10 h-10 rounded-full border-gray-5/30 bg-gray-3/30 text-gray-9"
+        >
           <ArrowLeft size={16} />
-        </button>
+        </Button>
         <div className="flex items-center gap-1.5">
           <div className="flex items-center gap-1 px-2.5 h-8 rounded-full bg-gray-3/40 border border-gray-5/25">
             <Clock size={11} className="text-gray-7" />
             <span className="text-[13px] font-medium text-gray-11 tabular-nums">{fmtTimer(elapsed)}</span>
           </div>
-          <button
+          <Button
+            variant="outline"
+            size="icon"
             onClick={() => { const n = !soundOn; setSoundOn(n); setSoundEnabled(n); }}
-            className="w-10 h-10 rounded-full border border-gray-5/30 bg-gray-3/30 text-gray-8 flex items-center justify-center"
+            className="w-10 h-10 rounded-full border-gray-5/30 bg-gray-3/30 text-gray-8"
           >
             {soundOn ? <Volume2 size={14} /> : <VolumeX size={14} />}
-          </button>
+          </Button>
         </div>
       </div>
 
-      {/* Progress dots */}
-      <div className="flex items-center gap-1 mb-3">
-        {session.exercises.map((_, i) => (
-          <div key={i} className={`h-[3px] rounded-full flex-1 transition-all duration-300 ${
-            i < exIdx ? "bg-[#E80000]" : i === exIdx ? "bg-[#FF6D6D]" : "bg-gray-5/30"
-          }`} />
-        ))}
+      {/* Progress bar */}
+      <div className="mb-3">
+        <Progress
+          value={progressPercent}
+          className="h-[3px] bg-gray-5/30"
+        />
+        <div className="flex items-center gap-1 mt-1">
+          {session.exercises.map((_, i) => (
+            <div key={i} className={cn(
+              "h-[3px] rounded-full flex-1 transition-all duration-300",
+              i < exIdx ? "bg-[#E80000]" : i === exIdx ? "bg-[#FF6D6D]" : "bg-gray-5/30"
+            )} />
+          ))}
+        </div>
       </div>
 
       {/* Exercise counter */}
@@ -285,98 +326,125 @@ function WorkoutFunnel({
       {ex && (
         <motion.div key={ex.id} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ type: "spring", stiffness: 400, damping: 30 }}>
           {/* Exercise info */}
-          <div className="rounded-2xl border border-gray-5/30 bg-gray-2/70 p-3.5 mb-2.5">
-            <div className="flex items-center justify-between gap-2">
-              <div className="min-w-0 flex-1">
-                <h3 className="text-[17px] font-semibold text-gray-12 leading-snug">{ex.name}</h3>
-                <p className="text-[12px] text-gray-8 mt-0.5">{ex.muscles}</p>
-              </div>
-              <a href={ex.videoUrl} target="_blank" rel="noopener noreferrer"
-                className="w-10 h-10 rounded-xl bg-[#E80000]/8 border border-[#E80000]/20 flex items-center justify-center shrink-0">
-                <Play size={16} className="text-[#FF6D6D] ml-0.5" />
-              </a>
-            </div>
-          </div>
-
-          {/* Set table — clean Everfit style */}
-          <div className="rounded-2xl border border-gray-5/30 bg-gray-2/70 overflow-hidden">
-            {/* Header */}
-            <div className="grid grid-cols-[2.5rem_1fr_1fr_2.5rem] px-3 py-2 border-b border-gray-5/20">
-              <span className="text-[11px] uppercase tracking-wider text-gray-7 text-center">{t("trainingHeaderSet")}</span>
-              <span className="text-[11px] uppercase tracking-wider text-gray-7 text-center">{t("trainingHeaderKg")}</span>
-              <span className="text-[11px] uppercase tracking-wider text-gray-7 text-center">{t("trainingHeaderReps")}</span>
-              <span />
-            </div>
-
-            {/* Rows */}
-            <div className="divide-y divide-gray-5/15">
-              {rows.map((row, i) => {
-                const isPr = prKeys.includes(`${ex.id}-${i}`);
-                return (
-                  <div key={i} className={`grid grid-cols-[2.5rem_1fr_1fr_2.5rem] items-center px-3 py-1.5 transition-colors ${row.done ? "bg-[#E80000]/5" : ""}`}>
-                    <div className="flex items-center justify-center">
-                      <span className={`text-[13px] font-medium ${row.done ? "text-[#FF6D6D]" : "text-gray-8"}`}>{i + 1}</span>
-                      {isPr && <Sparkles size={10} className="text-[#FFD700] ml-0.5" />}
-                    </div>
-
-                    <div className="flex justify-center px-1">
-                      <input
-                        type="number"
-                        value={row.load}
-                        inputMode="decimal"
-                        onChange={(e) => upd(ex.id, i, { load: e.target.value })}
-                        disabled={row.done}
-                        placeholder="-"
-                        className="w-full max-w-[5rem] h-9 rounded-lg bg-transparent text-center text-[14px] text-gray-12 placeholder:text-gray-6 disabled:opacity-50 focus:bg-gray-3/30 transition-colors outline-none"
-                      />
-                    </div>
-
-                    <div className="flex justify-center px-1">
-                      <input
-                        type="number"
-                        value={row.reps}
-                        inputMode="numeric"
-                        onChange={(e) => upd(ex.id, i, { reps: e.target.value })}
-                        disabled={row.done}
-                        placeholder={String(ex.reps)}
-                        className="w-full max-w-[5rem] h-9 rounded-lg bg-transparent text-center text-[14px] text-gray-12 placeholder:text-gray-6 disabled:opacity-50 focus:bg-gray-3/30 transition-colors outline-none"
-                      />
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => check(i)}
-                      className={`w-8 h-8 rounded-full flex items-center justify-center transition-all mx-auto ${
-                        row.done
-                          ? "bg-[#E80000] text-white"
-                          : "border border-gray-5/40 text-gray-6"
-                      }`}
-                    >
-                      <Check size={14} strokeWidth={2.5} />
-                    </button>
+          <Card className="border-gray-5/30 bg-gray-2/70 mb-2.5">
+            <CardContent className="p-3.5">
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-[17px] font-semibold text-gray-12 leading-snug">{ex.name}</h3>
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <Badge variant="secondary" className="text-[10px] bg-gray-4/40 text-gray-8 border-0 px-1.5 py-0">
+                      {ex.muscles}
+                    </Badge>
                   </div>
-                );
-              })}
-            </div>
-          </div>
+                </div>
+                <a href={ex.videoUrl} target="_blank" rel="noopener noreferrer"
+                  className="w-10 h-10 rounded-xl bg-[#E80000]/8 border border-[#E80000]/20 flex items-center justify-center shrink-0">
+                  <Play size={16} className="text-[#FF6D6D] ml-0.5" />
+                </a>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Set table */}
+          <Card className="border-gray-5/30 bg-gray-2/70 overflow-hidden">
+            <CardContent className="p-0">
+              {/* Header */}
+              <div className="grid grid-cols-[2.5rem_1fr_1fr_2.5rem] px-3 py-2 border-b border-gray-5/20">
+                <span className="text-[11px] uppercase tracking-wider text-gray-7 text-center">{t("trainingHeaderSet")}</span>
+                <span className="text-[11px] uppercase tracking-wider text-gray-7 text-center">{t("trainingHeaderKg")}</span>
+                <span className="text-[11px] uppercase tracking-wider text-gray-7 text-center">{t("trainingHeaderReps")}</span>
+                <span />
+              </div>
+
+              {/* Rows */}
+              <div className="divide-y divide-gray-5/15">
+                {rows.map((row, i) => {
+                  const isPr = prKeys.includes(`${ex.id}-${i}`);
+                  return (
+                    <div key={i} className={cn(
+                      "grid grid-cols-[2.5rem_1fr_1fr_2.5rem] items-center px-3 py-1.5 transition-colors",
+                      row.done && "bg-[#E80000]/5"
+                    )}>
+                      <div className="flex items-center justify-center gap-0.5">
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "h-5 w-5 p-0 flex items-center justify-center rounded-md text-[11px] font-medium border-0",
+                            row.done ? "bg-[#E80000]/10 text-[#FF6D6D]" : "bg-gray-4/30 text-gray-8"
+                          )}
+                        >
+                          {i + 1}
+                        </Badge>
+                        {isPr && (
+                          <Badge className="h-4 px-1 bg-[#FFD700]/15 text-[#FFD700] border-[#FFD700]/30 text-[8px]">
+                            <Sparkles size={8} className="mr-0.5" />PR
+                          </Badge>
+                        )}
+                      </div>
+
+                      <div className="flex justify-center px-1">
+                        <Input
+                          type="number"
+                          value={row.load}
+                          inputMode="decimal"
+                          onChange={(e) => upd(ex.id, i, { load: e.target.value })}
+                          disabled={row.done}
+                          placeholder="-"
+                          className="w-full max-w-[5rem] h-9 rounded-lg bg-transparent text-center text-[14px] text-gray-12 placeholder:text-gray-6 disabled:opacity-50 border-0 focus:bg-gray-3/30 transition-colors"
+                        />
+                      </div>
+
+                      <div className="flex justify-center px-1">
+                        <Input
+                          type="number"
+                          value={row.reps}
+                          inputMode="numeric"
+                          onChange={(e) => upd(ex.id, i, { reps: e.target.value })}
+                          disabled={row.done}
+                          placeholder={String(ex.reps)}
+                          className="w-full max-w-[5rem] h-9 rounded-lg bg-transparent text-center text-[14px] text-gray-12 placeholder:text-gray-6 disabled:opacity-50 border-0 focus:bg-gray-3/30 transition-colors"
+                        />
+                      </div>
+
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => check(i)}
+                        className={cn(
+                          "w-8 h-8 rounded-full mx-auto transition-all",
+                          row.done
+                            ? "bg-[#E80000] text-white hover:bg-[#E80000]/90"
+                            : "border border-gray-5/40 text-gray-6 hover:bg-gray-3/30"
+                        )}
+                      >
+                        <Check size={14} strokeWidth={2.5} />
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
         </motion.div>
       )}
 
       {/* Bottom CTA */}
       <div className="fixed inset-x-0 bottom-0 z-20 px-4 sm:px-6 pb-[calc(var(--safe-bottom)+10px)] bg-gradient-to-t from-[var(--gray-1)] via-[var(--gray-1)]/95 to-transparent pointer-events-none">
         <div className="mx-auto max-w-4xl pointer-events-auto">
-          <button
+          <Button
             onClick={next}
             disabled={!allDone}
-            className={`w-full h-12 rounded-2xl font-semibold text-[15px] flex items-center justify-center gap-1.5 transition-all ${
+            className={cn(
+              "w-full h-12 rounded-2xl font-semibold text-[15px] flex items-center justify-center gap-1.5 transition-all",
               allDone
-                ? "optiz-gradient-bg text-white active:scale-[0.97]"
-                : "bg-gray-3 border border-gray-5/35 text-gray-7"
-            }`}
+                ? "optiz-gradient-bg text-white active:scale-[0.97] border-0 hover:opacity-90"
+                : "bg-gray-3 border border-gray-5/35 text-gray-7 hover:bg-gray-3"
+            )}
           >
             {isLast ? t("trainingValidateSession") : t("trainingNextExercise")}
             {!isLast && allDone && <ChevronRight size={16} />}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -402,18 +470,23 @@ function ProgramDetailView({
 
   return (
     <div className="pb-8">
-      <button onClick={onBack} className="inline-flex items-center gap-1 text-[13px] text-gray-8 mb-3">
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={onBack}
+        className="inline-flex items-center gap-1 text-[13px] text-gray-8 mb-3 px-2 hover:bg-gray-3/30"
+      >
         <ArrowLeft size={14} /> {t("back")}
-      </button>
+      </Button>
 
       {/* Hero image */}
       <div className="relative rounded-2xl overflow-hidden mb-4 aspect-[2/1]">
         <Image src={program.image} alt={program.title} fill className={`object-cover ${program.id === "optiz-start" ? "object-[center_25%]" : "object-[center_70%]"}`} sizes="(max-width: 768px) 100vw, 600px" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 p-4">
-          <p className="text-[11px] uppercase tracking-widest text-[#FF6D6D] font-semibold mb-0.5">
+          <Badge className="bg-[#E80000]/20 text-[#FF6D6D] border-[#E80000]/30 mb-1.5 text-[10px] uppercase tracking-widest font-semibold">
             {program.level === "beginner" ? t("trainingLevelBeginner") : t("trainingLevelIntermediate")}
-          </p>
+          </Badge>
           <h2 className="text-[22px] font-bold text-white leading-tight">{program.title}</h2>
           <p className="text-[13px] text-white/70 mt-0.5">{program.subtitle}</p>
         </div>
@@ -421,64 +494,81 @@ function ProgramDetailView({
 
       {/* Stats row */}
       <div className="flex gap-2 mb-4">
-        <div className="flex-1 rounded-xl border border-gray-5/25 bg-gray-2/60 py-2 text-center">
-          <p className="text-[14px] font-semibold text-gray-12">{session.exercises.length}</p>
-          <p className="text-[10px] text-gray-7">{t("exercises")}</p>
-        </div>
-        <div className="flex-1 rounded-xl border border-gray-5/25 bg-gray-2/60 py-2 text-center">
-          <p className="text-[14px] font-semibold text-gray-12">{setsCount}</p>
-          <p className="text-[10px] text-gray-7">{t("sets")}</p>
-        </div>
-        <div className="flex-1 rounded-xl border border-gray-5/25 bg-gray-2/60 py-2 text-center">
-          <p className="text-[14px] font-semibold text-gray-12">~{session.durationMin}</p>
-          <p className="text-[10px] text-gray-7">{t("minutesShort")}</p>
-        </div>
-        <div className="flex-1 rounded-xl border border-[#E80000]/20 bg-[#E80000]/6 py-2 text-center">
-          <p className="text-[14px] font-semibold text-[#FF6D6D]">+100</p>
-          <p className="text-[10px] text-gray-7">XP</p>
-        </div>
+        <Card className="flex-1 border-gray-5/25 bg-gray-2/60">
+          <CardContent className="py-2 px-0 text-center">
+            <p className="text-[14px] font-semibold text-gray-12">{session.exercises.length}</p>
+            <p className="text-[10px] text-gray-7">{t("exercises")}</p>
+          </CardContent>
+        </Card>
+        <Card className="flex-1 border-gray-5/25 bg-gray-2/60">
+          <CardContent className="py-2 px-0 text-center">
+            <p className="text-[14px] font-semibold text-gray-12">{setsCount}</p>
+            <p className="text-[10px] text-gray-7">{t("sets")}</p>
+          </CardContent>
+        </Card>
+        <Card className="flex-1 border-gray-5/25 bg-gray-2/60">
+          <CardContent className="py-2 px-0 text-center">
+            <p className="text-[14px] font-semibold text-gray-12">~{session.durationMin}</p>
+            <p className="text-[10px] text-gray-7">{t("minutesShort")}</p>
+          </CardContent>
+        </Card>
+        <Card className="flex-1 border-[#E80000]/20 bg-[#E80000]/6">
+          <CardContent className="py-2 px-0 text-center">
+            <p className="text-[14px] font-semibold text-[#FF6D6D]">+100</p>
+            <p className="text-[10px] text-gray-7">XP</p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Last session */}
       {lastArchive && (
-        <div className="rounded-xl border border-gray-5/20 bg-gray-3/15 px-3 py-2 mb-4">
-          <p className="text-[11px] text-gray-7">
-            {t("trainingLastPerf")} {fmtDate(lastArchive.completedAt, locale)} · {t("trainingVolumeLabel")} {lastArchive.totalVolume.toFixed(0)}
-          </p>
-        </div>
+        <Card className="border-gray-5/20 bg-gray-3/15 mb-4">
+          <CardContent className="px-3 py-2">
+            <p className="text-[11px] text-gray-7">
+              {t("trainingLastPerf")} {fmtDate(lastArchive.completedAt, locale)} · {t("trainingVolumeLabel")} {lastArchive.totalVolume.toFixed(0)}
+            </p>
+          </CardContent>
+        </Card>
       )}
 
       {/* Exercise list */}
-      <div className="rounded-2xl border border-gray-5/25 bg-gray-2/60 overflow-hidden mb-6">
-        <div className="px-3 py-2 border-b border-gray-5/15">
+      <Card className="border-gray-5/25 bg-gray-2/60 overflow-hidden mb-6">
+        <CardHeader className="px-3 py-2 border-b border-gray-5/15">
           <p className="text-[12px] font-semibold text-gray-10 uppercase tracking-wider">{t("trainingExerciseList")}</p>
-        </div>
-        <div className="divide-y divide-gray-5/12">
-          {session.exercises.map((ex, i) => (
-            <div key={ex.id} className="flex items-center gap-2.5 px-3 py-2.5">
-              <span className="w-5 h-5 rounded-md bg-gray-4/40 flex items-center justify-center shrink-0 text-[11px] font-medium text-gray-8">{i + 1}</span>
-              <div className="min-w-0 flex-1">
-                <p className="text-[13px] font-medium text-gray-12 truncate">{ex.name}</p>
-                <p className="text-[11px] text-gray-7">{ex.muscles} · {ex.sets}x{ex.reps}</p>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="divide-y divide-gray-5/12">
+            {session.exercises.map((ex, i) => (
+              <div key={ex.id} className="flex items-center gap-2.5 px-3 py-2.5">
+                <Badge variant="secondary" className="w-5 h-5 rounded-md p-0 flex items-center justify-center shrink-0 text-[11px] font-medium text-gray-8 bg-gray-4/40 border-0">
+                  {i + 1}
+                </Badge>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[13px] font-medium text-gray-12 truncate">{ex.name}</p>
+                  <p className="text-[11px] text-gray-7">{ex.muscles} · {ex.sets}x{ex.reps}</p>
+                </div>
+                <a href={ex.videoUrl} target="_blank" rel="noopener noreferrer" className="text-gray-7 shrink-0">
+                  <ExternalLink size={13} />
+                </a>
               </div>
-              <a href={ex.videoUrl} target="_blank" rel="noopener noreferrer" className="text-gray-7 shrink-0">
-                <ExternalLink size={13} />
-              </a>
-            </div>
-          ))}
-        </div>
-      </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Launch */}
-      <button
+      <Button
         onClick={onLaunch}
         disabled={completed}
-        className={`w-full h-12 rounded-2xl font-semibold text-[15px] flex items-center justify-center gap-1.5 transition-all ${
-          completed ? "bg-gray-3 border border-gray-5/35 text-gray-7" : "optiz-gradient-bg text-white active:scale-[0.97]"
-        }`}
+        className={cn(
+          "w-full h-12 rounded-2xl font-semibold text-[15px] flex items-center justify-center gap-1.5 transition-all",
+          completed
+            ? "bg-gray-3 border border-gray-5/35 text-gray-7 hover:bg-gray-3"
+            : "optiz-gradient-bg text-white active:scale-[0.97] border-0 hover:opacity-90"
+        )}
       >
         {completed ? t("trainingDoneReopens") : <><Play size={16} /> {t("trainingStartSession")}</>}
-      </button>
+      </Button>
     </div>
   );
 }
@@ -612,43 +702,69 @@ export function TrainingHubScreen({ userId, onAwardXpEvent, initialCompletionsTo
   if (view.mode === "freestyle-builder") {
     return (
       <div className="pb-8">
-        <button onClick={() => setView({ mode: "library" })} className="inline-flex items-center gap-1 text-[13px] text-gray-8 mb-3">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setView({ mode: "library" })}
+          className="inline-flex items-center gap-1 text-[13px] text-gray-8 mb-3 px-2 hover:bg-gray-3/30"
+        >
           <ArrowLeft size={14} /> {t("back")}
-        </button>
+        </Button>
 
-        <div className="rounded-2xl border border-gray-5/30 bg-gray-2/70 p-3.5 mb-4">
-          <h3 className="text-[15px] font-semibold text-gray-12 mb-0.5">{t("trainingBuilderTitle")}</h3>
-          <p className="text-[12px] text-gray-8 mb-3">{t("trainingFreestyleDesc")}</p>
-          <input value={bName} onChange={(e) => setBName(e.target.value)} className="w-full h-10 rounded-xl bg-gray-3/40 border border-gray-5/30 px-3 text-[13px] text-gray-12" placeholder={t("trainingSessionName")} />
-        </div>
+        <Card className="border-gray-5/30 bg-gray-2/70 mb-4">
+          <CardContent className="p-3.5">
+            <h3 className="text-[15px] font-semibold text-gray-12 mb-0.5">{t("trainingBuilderTitle")}</h3>
+            <p className="text-[12px] text-gray-8 mb-3">{t("trainingFreestyleDesc")}</p>
+            <Input
+              value={bName}
+              onChange={(e) => setBName(e.target.value)}
+              className="w-full h-10 rounded-xl bg-gray-3/40 border-gray-5/30 px-3 text-[13px] text-gray-12"
+              placeholder={t("trainingSessionName")}
+            />
+          </CardContent>
+        </Card>
 
         <div className="space-y-2 mb-3">
           {bRows.map((row, i) => (
-            <div key={i} className="rounded-xl border border-gray-5/25 bg-gray-3/15 p-2.5">
-              <div className="grid grid-cols-[minmax(0,1fr)_3.5rem_3.5rem_2.5rem] gap-1.5 items-center">
-                <div className="relative">
-                  <select value={row.exerciseId} onChange={(e) => setBRows((p) => p.map((x, idx) => idx === i ? { ...x, exerciseId: e.target.value } : x))} className="w-full h-10 rounded-lg bg-gray-2 border border-gray-5/30 px-2 text-[12px] text-gray-12 appearance-none">
-                    {EXERCISE_LIBRARY.map((ex) => <option key={ex.id} value={ex.id}>{ex.name}</option>)}
-                  </select>
-                  <ChevronDown size={12} className="absolute right-2 top-3.5 text-gray-7 pointer-events-none" />
+            <Card key={i} className="border-gray-5/25 bg-gray-3/15">
+              <CardContent className="p-2.5">
+                <div className="grid grid-cols-[minmax(0,1fr)_3.5rem_3.5rem_2.5rem] gap-1.5 items-center">
+                  <div className="relative">
+                    <select value={row.exerciseId} onChange={(e) => setBRows((p) => p.map((x, idx) => idx === i ? { ...x, exerciseId: e.target.value } : x))} className="w-full h-10 rounded-lg bg-gray-2 border border-gray-5/30 px-2 text-[12px] text-gray-12 appearance-none">
+                      {EXERCISE_LIBRARY.map((ex) => <option key={ex.id} value={ex.id}>{ex.name}</option>)}
+                    </select>
+                    <ChevronDown size={12} className="absolute right-2 top-3.5 text-gray-7 pointer-events-none" />
+                  </div>
+                  <Input type="number" min={1} value={row.sets} onChange={(e) => setBRows((p) => p.map((x, idx) => idx === i ? { ...x, sets: Math.max(1, Number(e.target.value || 1)) } : x))} className="h-10 rounded-lg bg-gray-2 border-gray-5/30 text-center text-[12px] text-gray-12" />
+                  <Input type="number" min={1} value={row.reps} onChange={(e) => setBRows((p) => p.map((x, idx) => idx === i ? { ...x, reps: Math.max(1, Number(e.target.value || 1)) } : x))} className="h-10 rounded-lg bg-gray-2 border-gray-5/30 text-center text-[12px] text-gray-12" />
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setBRows((p) => p.filter((_, idx) => idx !== i))}
+                    className="h-10 w-10 rounded-lg border-gray-5/30 bg-gray-2 text-gray-7"
+                  >
+                    <X size={12} />
+                  </Button>
                 </div>
-                <input type="number" min={1} value={row.sets} onChange={(e) => setBRows((p) => p.map((x, idx) => idx === i ? { ...x, sets: Math.max(1, Number(e.target.value || 1)) } : x))} className="h-10 rounded-lg bg-gray-2 border border-gray-5/30 text-center text-[12px] text-gray-12" />
-                <input type="number" min={1} value={row.reps} onChange={(e) => setBRows((p) => p.map((x, idx) => idx === i ? { ...x, reps: Math.max(1, Number(e.target.value || 1)) } : x))} className="h-10 rounded-lg bg-gray-2 border border-gray-5/30 text-center text-[12px] text-gray-12" />
-                <button onClick={() => setBRows((p) => p.filter((_, idx) => idx !== i))} className="h-10 w-10 rounded-lg border border-gray-5/30 bg-gray-2 text-gray-7 flex items-center justify-center">
-                  <X size={12} />
-                </button>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
 
-        <button onClick={() => setBRows((p) => [...p, { exerciseId: EXERCISE_LIBRARY[0].id, sets: 3, reps: 10 }])} className="w-full h-10 rounded-xl border border-gray-5/30 bg-gray-3/20 text-[12px] text-gray-10 font-medium inline-flex items-center justify-center gap-1 mb-3">
+        <Button
+          variant="outline"
+          onClick={() => setBRows((p) => [...p, { exerciseId: EXERCISE_LIBRARY[0].id, sets: 3, reps: 10 }])}
+          className="w-full h-10 rounded-xl border-gray-5/30 bg-gray-3/20 text-[12px] text-gray-10 font-medium inline-flex items-center justify-center gap-1 mb-3"
+        >
           <Plus size={12} /> {t("trainingAddExercise")}
-        </button>
+        </Button>
 
-        <button onClick={saveFS} className="w-full h-12 rounded-2xl optiz-gradient-bg text-white font-semibold text-[14px] active:scale-[0.97]">
+        <Button
+          onClick={saveFS}
+          className="w-full h-12 rounded-2xl optiz-gradient-bg text-white font-semibold text-[14px] active:scale-[0.97] border-0 hover:opacity-90"
+        >
           {t("trainingSaveFreestyle")}
-        </button>
+        </Button>
       </div>
     );
   }
@@ -686,9 +802,10 @@ export function TrainingHubScreen({ userId, onAwardXpEvent, initialCompletionsTo
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
-              className={`w-full text-left rounded-2xl overflow-hidden border transition-all active:scale-[0.98] ${
+              className={cn(
+                "w-full text-left rounded-2xl overflow-hidden border transition-all active:scale-[0.98] hover:border-gray-5/50",
                 comp ? "border-gray-5/15 opacity-45" : "border-gray-5/30"
-              }`}
+              )}
             >
               {/* Image */}
               <div className="relative h-36">
@@ -700,24 +817,23 @@ export function TrainingHubScreen({ userId, onAwardXpEvent, initialCompletionsTo
                       <p className="text-[18px] font-bold text-white leading-tight">{prog.title}</p>
                       <p className="text-[12px] text-white/65 mt-0.5">{prog.subtitle}</p>
                     </div>
-
                   </div>
                   <div className="flex gap-1.5 mt-2">
-                    <span className="rounded-full px-2 py-0.5 bg-white/10 backdrop-blur-sm text-[10px] text-white/80">
+                    <Badge className="rounded-full bg-white/10 backdrop-blur-sm text-[10px] text-white/80 border-0 hover:bg-white/15">
                       {s.exercises.length} {t("exercises")}
-                    </span>
-                    <span className="rounded-full px-2 py-0.5 bg-white/10 backdrop-blur-sm text-[10px] text-white/80">
+                    </Badge>
+                    <Badge className="rounded-full bg-white/10 backdrop-blur-sm text-[10px] text-white/80 border-0 hover:bg-white/15">
                       ~{s.durationMin} {t("minutesShort")}
-                    </span>
-                    <span className="rounded-full px-2 py-0.5 bg-white/10 backdrop-blur-sm text-[10px] text-white/80">
+                    </Badge>
+                    <Badge className="rounded-full bg-white/10 backdrop-blur-sm text-[10px] text-white/80 border-0 hover:bg-white/15">
                       {prog.level === "beginner" ? t("trainingLevelBeginner") : t("trainingLevelIntermediate")}
-                    </span>
+                    </Badge>
                   </div>
                 </div>
               </div>
 
               {/* Bottom bar */}
-              <div className={`px-3.5 py-2 flex items-center justify-between ${comp ? "bg-gray-3/30" : "bg-gray-2/70"}`}>
+              <div className={cn("px-3.5 py-2 flex items-center justify-between", comp ? "bg-gray-3/30" : "bg-gray-2/70")}>
                 {comp ? (
                   <p className="text-[11px] text-gray-7 inline-flex items-center gap-1"><Check size={12} /> {t("trainingDoneReopens")}</p>
                 ) : (
@@ -729,62 +845,101 @@ export function TrainingHubScreen({ userId, onAwardXpEvent, initialCompletionsTo
         })}
       </div>
 
+      <Separator className="my-5 bg-gray-5/20" />
+
       {/* Freestyle */}
-      <div className="rounded-2xl border border-gray-5/25 bg-gray-2/60 p-3.5 mb-3">
-        <div className="flex items-center justify-between gap-2 mb-2.5">
-          <h3 className="text-[13px] font-semibold text-gray-12">{t("trainingFreestyleSaved")}</h3>
-          <button onClick={() => setView({ mode: "freestyle-builder" })} className="h-9 px-3 rounded-lg border border-[#E80000]/25 bg-[#E80000]/8 text-[#FF6D6D] text-[11px] font-semibold inline-flex items-center gap-1">
-            <Plus size={12} /> {t("trainingNew")}
-          </button>
-        </div>
-        {freestyle.length === 0 ? (
-          <p className="text-[11px] text-gray-7">{t("trainingNoFreestyle")}</p>
-        ) : (
-          <div className="space-y-1.5">
-            {freestyle.map((tpl) => (
-              <div key={tpl.id} className="rounded-xl border border-gray-5/20 bg-gray-3/15 px-3 py-2.5 flex items-center justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="text-[13px] font-medium text-gray-12 truncate">{tpl.name}</p>
-                  <p className="text-[10px] text-gray-7">{tpl.rows.length} {t("exercises")} · {fmtDate(tpl.createdAt, locale)}</p>
-                </div>
-                <div className="flex items-center gap-1">
-                  <button onClick={() => launchFS(tpl.id)} className="h-9 px-3 rounded-lg border border-gray-5/30 bg-gray-2 text-[11px] text-gray-11 font-medium">{t("trainingLaunch")}</button>
-                  <button onClick={() => delFS(tpl.id)} className="w-9 h-9 rounded-lg border border-gray-5/30 bg-gray-2 text-gray-7 flex items-center justify-center"><X size={12} /></button>
-                </div>
-              </div>
-            ))}
+      <Card className="border-gray-5/25 bg-gray-2/60 mb-3">
+        <CardContent className="p-3.5">
+          <div className="flex items-center justify-between gap-2 mb-2.5">
+            <h3 className="text-[13px] font-semibold text-gray-12">{t("trainingFreestyleSaved")}</h3>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setView({ mode: "freestyle-builder" })}
+              className="h-9 px-3 rounded-lg border-[#E80000]/25 bg-[#E80000]/8 text-[#FF6D6D] text-[11px] font-semibold hover:bg-[#E80000]/12"
+            >
+              <Plus size={12} className="mr-1" /> {t("trainingNew")}
+            </Button>
           </div>
-        )}
-      </div>
+          {freestyle.length === 0 ? (
+            <p className="text-[11px] text-gray-7">{t("trainingNoFreestyle")}</p>
+          ) : (
+            <div className="space-y-1.5">
+              {freestyle.map((tpl) => (
+                <Card key={tpl.id} className="border-gray-5/20 bg-gray-3/15">
+                  <CardContent className="px-3 py-2.5 flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-[13px] font-medium text-gray-12 truncate">{tpl.name}</p>
+                      <p className="text-[10px] text-gray-7">{tpl.rows.length} {t("exercises")} · {fmtDate(tpl.createdAt, locale)}</p>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => launchFS(tpl.id)}
+                        className="h-9 px-3 rounded-lg border-gray-5/30 bg-gray-2 text-[11px] text-gray-11 font-medium"
+                      >
+                        {t("trainingLaunch")}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => delFS(tpl.id)}
+                        className="w-9 h-9 rounded-lg border-gray-5/30 bg-gray-2 text-gray-7"
+                      >
+                        <X size={12} />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Separator className="my-5 bg-gray-5/20" />
 
       {/* History */}
-      <div className="rounded-2xl border border-gray-5/25 bg-gray-3/12 p-3.5">
-        <h3 className="text-[13px] font-semibold text-gray-12 mb-2">{t("trainingHistory")}</h3>
-        {archives.length === 0 ? (
-          <p className="text-[11px] text-gray-7">{t("trainingNoArchive")}</p>
-        ) : (
-          <div className="space-y-1.5">
-            {archives.slice(0, hLim).map((a) => (
-              <div key={a.id} className="rounded-xl border border-gray-5/20 bg-gray-2/50 px-3 py-2">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-[13px] font-medium text-gray-12 truncate">{a.programTitle}</p>
-                  <span className="text-[11px] text-[#FF6D6D] font-semibold">+{a.xpEarned} XP</span>
-                </div>
-                <p className="text-[10px] text-gray-7 mt-0.5">
-                  {fmtDate(a.completedAt, locale)} · {t("trainingVolumeLabel")} {a.totalVolume.toFixed(0)}
-                  {a.improvedSets > 0 && <> · <Sparkles size={9} className="inline" /> {a.improvedSets}</>}
-                </p>
+      <Card className="border-gray-5/25 bg-gray-3/12">
+        <CardContent className="p-3.5">
+          <h3 className="text-[13px] font-semibold text-gray-12 mb-2">{t("trainingHistory")}</h3>
+          {archives.length === 0 ? (
+            <p className="text-[11px] text-gray-7">{t("trainingNoArchive")}</p>
+          ) : (
+            <ScrollArea className={cn(histExp && "max-h-[400px]")}>
+              <div className="space-y-1.5">
+                {archives.slice(0, hLim).map((a) => (
+                  <Card key={a.id} className="border-gray-5/20 bg-gray-2/50">
+                    <CardContent className="px-3 py-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-[13px] font-medium text-gray-12 truncate">{a.programTitle}</p>
+                        <Badge className="bg-[#E80000]/10 text-[#FF6D6D] border-[#E80000]/20 text-[11px] font-semibold">
+                          +{a.xpEarned} XP
+                        </Badge>
+                      </div>
+                      <p className="text-[10px] text-gray-7 mt-0.5">
+                        {fmtDate(a.completedAt, locale)} · {t("trainingVolumeLabel")} {a.totalVolume.toFixed(0)}
+                        {a.improvedSets > 0 && <> · <Sparkles size={9} className="inline" /> {a.improvedSets}</>}
+                      </p>
+                    </CardContent>
+                  </Card>
+                ))}
+                {archives.length > 5 && (
+                  <Button
+                    variant="outline"
+                    onClick={() => setHistExp((p) => !p)}
+                    className="w-full h-9 rounded-lg border-gray-5/20 bg-gray-3/10 text-[11px] text-gray-7 font-medium"
+                  >
+                    {histExp ? t("homeShowLess") : t("homeShowMore")}
+                    <ChevronDown size={12} className={cn("ml-1 transition-transform", histExp && "rotate-180")} />
+                  </Button>
+                )}
               </div>
-            ))}
-            {archives.length > 5 && (
-              <button onClick={() => setHistExp((p) => !p)} className="w-full h-9 rounded-lg border border-gray-5/20 bg-gray-3/10 text-[11px] text-gray-7 font-medium flex items-center justify-center gap-1">
-                {histExp ? t("homeShowLess") : t("homeShowMore")}
-                <ChevronDown size={12} className={`transition-transform ${histExp ? "rotate-180" : ""}`} />
-              </button>
-            )}
-          </div>
-        )}
-      </div>
+            </ScrollArea>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

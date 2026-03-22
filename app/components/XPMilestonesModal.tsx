@@ -1,9 +1,15 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
+import { useRef, useEffect, useMemo } from "react";
+import { cn } from "@/lib/utils";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import { RANK_TIERS, getXpForLevel, getRankForLevel, getRankNameKey, formatNumber } from "./rankSystem";
 import { RankBadge } from "./RankBadge";
-import { useRef, useEffect, useMemo } from "react";
 import { useI18n } from "./i18n";
 
 interface XPMilestonesModalProps {
@@ -48,164 +54,142 @@ export function XPMilestonesModal({ isOpen, onClose, currentLevel, totalXp }: XP
     }, [isOpen]);
 
     return (
-        <AnimatePresence>
-            {isOpen && (
-                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-                    <motion.div
-                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                        className="absolute inset-0 bg-black/70 backdrop-blur-md"
-                        onClick={onClose}
-                    />
-                    <motion.div
-                        initial={{ opacity: 0, y: 40, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 40, scale: 0.97 }}
-                        transition={{ type: "spring", stiffness: 350, damping: 28 }}
-                        className="relative w-full max-w-md bg-gray-2 border border-gray-4/60 rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl max-h-[85vh] flex flex-col"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className="flex justify-center pt-3 pb-1 sm:hidden">
-                            <div className="w-10 h-1 rounded-full bg-gray-6" />
+        <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+            <DialogContent className={cn(
+                "bg-gray-2 border-gray-4 text-gray-12 max-w-md rounded-3xl p-0 gap-0 max-h-[85vh] flex flex-col overflow-hidden",
+                "[&>button]:bg-gray-4 [&>button]:border [&>button]:border-gray-5 [&>button]:rounded-full [&>button]:w-8 [&>button]:h-8 [&>button]:text-gray-9 [&>button]:hover:text-gray-12 [&>button]:opacity-100"
+            )}>
+                {/* Header with current rank badge and overall progress */}
+                <div className="px-5 pt-5 pb-4 border-b border-gray-4/40 shrink-0">
+                    <DialogHeader className="flex-row items-center gap-3 space-y-0 mb-3">
+                        <RankBadge
+                            colors={currentRank.tier.gradient}
+                            glowColor={currentRank.tier.glowColor}
+                            tierName={currentRank.tier.name}
+                            size={40}
+                        />
+                        <div className="flex-1">
+                            <DialogTitle className="text-base font-bold text-gray-12">
+                                {t("milestonesHeaderTitle")}
+                            </DialogTitle>
+                            <DialogDescription className="text-[11px] text-gray-8 mt-0.5">
+                                {t("milestonesSummary", { level: currentLevel, rank: t(getRankNameKey(currentRank.tier.name) as Parameters<typeof t>[0]), xp: formatNumber(totalXp) })}
+                            </DialogDescription>
                         </div>
+                    </DialogHeader>
 
-                        {/* Header with current rank badge and overall progress */}
-                        <div className="px-5 pt-4 pb-4 border-b border-gray-4/40 shrink-0">
-                            <div className="flex items-center justify-between mb-3">
-                                <div className="flex items-center gap-3">
-                                    <RankBadge
-                                        colors={currentRank.tier.gradient}
-                                        glowColor={currentRank.tier.glowColor}
-                                        tierName={currentRank.tier.name}
-                                        size={40}
-                                    />
-                                    <div>
-                                        <h2 className="text-base font-bold text-gray-12">{t("milestonesHeaderTitle")}</h2>
-                                        <p className="text-[11px] text-gray-8 mt-0.5">
-                                            {t("milestonesSummary", { level: currentLevel, rank: t(getRankNameKey(currentRank.tier.name) as Parameters<typeof t>[0]), xp: formatNumber(totalXp) })}
-                                        </p>
-                                    </div>
-                                </div>
-                                <motion.button
-                                    onClick={onClose}
-                                    className="w-8 h-8 rounded-full bg-gray-4 border border-gray-5 flex items-center justify-center text-gray-9 hover:text-gray-12 transition-all"
-                                    whileTap={{ scale: 0.85 }}
+                    {/* Overall progress bar */}
+                    <div className="relative">
+                        <Progress
+                            value={overallProgress}
+                            className="h-2 bg-gray-4/50"
+                            style={{
+                                ["--progress-background" as string]: `linear-gradient(to right, ${currentRank.tier.gradient[0]}, ${currentRank.tier.gradient[1]})`,
+                            }}
+                        />
+                        <div className="flex justify-between mt-1.5">
+                            {RANK_TIERS.slice(0, 4).map((tier) => (
+                                <span
+                                    key={tier.name}
+                                    className="text-[8px] font-bold uppercase tracking-wider"
+                                    style={{ color: currentLevel >= tier.minLevel ? tier.color : "var(--gray-6)" }}
                                 >
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                        <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                                    </svg>
-                                </motion.button>
-                            </div>
-
-                            {/* Overall progress bar */}
-                            <div className="relative">
-                                <div className="h-2 w-full bg-gray-4/50 rounded-full overflow-hidden">
-                                    <motion.div
-                                        className="h-full rounded-full"
-                                        style={{ background: `linear-gradient(to right, ${currentRank.tier.gradient[0]}, ${currentRank.tier.gradient[1]})` }}
-                                        initial={{ width: 0 }}
-                                        animate={{ width: `${overallProgress}%` }}
-                                        transition={{ duration: 1, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
-                                    />
-                                </div>
-                                <div className="flex justify-between mt-1.5">
-                                    {RANK_TIERS.slice(0, 4).map((tier) => (
-                                        <span
-                                            key={tier.name}
-                                            className="text-[8px] font-bold uppercase tracking-wider"
-                                            style={{ color: currentLevel >= tier.minLevel ? tier.color : "var(--gray-6)" }}
-                                        >
-                                            {t(getRankNameKey(tier.name) as Parameters<typeof t>[0])}
-                                        </span>
-                                    ))}
-                                </div>
-                            </div>
+                                    {t(getRankNameKey(tier.name) as Parameters<typeof t>[0])}
+                                </span>
+                            ))}
                         </div>
+                    </div>
+                </div>
 
-                        {/* Level list */}
-                        <div className="flex-1 overflow-y-auto px-4 py-3">
-                            <div className="space-y-0.5">
-                                {levels.map((item) => (
-                                    <div key={item.level}>
-                                        {/* Tier separator */}
-                                        {item.isTierStart && (
-                                            <div className="flex items-center gap-3 pt-5 pb-2 px-1">
-                                                <RankBadge
-                                                    colors={item.rank.tier.gradient}
-                                                    glowColor={item.rank.tier.glowColor}
-                                                    tierName={item.rank.tier.name}
-                                                    size={22}
-                                                />
-                                                <span
-                                                    className="text-[10px] font-bold uppercase tracking-widest"
-                                                    style={{ color: item.rank.tier.color }}
-                                                >
-                                                    {t(getRankNameKey(item.rank.tier.name) as Parameters<typeof t>[0])}
-                                                </span>
-                                                <div className="flex-1 h-px" style={{ background: `${item.rank.tier.color}20` }} />
-                                                <span className="text-[8px] text-gray-6 font-medium">
-                                                    LVL {item.rank.tier.minLevel}–{Math.min(item.rank.tier.maxLevel, 20)}
-                                                </span>
-                                            </div>
-                                        )}
-
-                                        <div
-                                            ref={item.isCurrent ? currentRef : undefined}
-                                            className={`flex items-center gap-3 px-3 py-2 rounded-xl transition-all ${item.isCurrent
-                                                ? "bg-gray-3/80 border border-gray-5/60 shadow-sm"
-                                                : ""
-                                                }`}
+                {/* Level list */}
+                <ScrollArea className="flex-1 px-4 py-3">
+                    <div className="space-y-0.5">
+                        {levels.map((item) => (
+                            <div key={item.level}>
+                                {/* Tier separator */}
+                                {item.isTierStart && (
+                                    <div className="flex items-center gap-3 pt-5 pb-2 px-1">
+                                        <RankBadge
+                                            colors={item.rank.tier.gradient}
+                                            glowColor={item.rank.tier.glowColor}
+                                            tierName={item.rank.tier.name}
+                                            size={22}
+                                        />
+                                        <span
+                                            className="text-[10px] font-bold uppercase tracking-widest"
+                                            style={{ color: item.rank.tier.color }}
                                         >
-                                            {/* Check / Lock indicator */}
-                                            <div className="w-5 h-5 flex items-center justify-center shrink-0">
-                                                {item.isReached ? (
-                                                    <div className="w-4 h-4 rounded-full bg-[#E80000] flex items-center justify-center">
-                                                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
-                                                            <polyline points="20 6 9 17 4 12" />
-                                                        </svg>
-                                                    </div>
-                                                ) : item.isCurrent ? (
-                                                    <div className="w-4 h-4 rounded-full border-2 border-[#E80000]" />
-                                                ) : (
-                                                    <div className="w-3.5 h-3.5 rounded-full border-[1.5px] border-gray-6 opacity-40" />
-                                                )}
-                                            </div>
+                                            {t(getRankNameKey(item.rank.tier.name) as Parameters<typeof t>[0])}
+                                        </span>
+                                        <Separator className="flex-1" style={{ background: `${item.rank.tier.color}20` }} />
+                                        <span className="text-[8px] text-gray-6 font-medium">
+                                            LVL {item.rank.tier.minLevel}–{Math.min(item.rank.tier.maxLevel, 20)}
+                                        </span>
+                                    </div>
+                                )}
 
-                                            {/* Info */}
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex items-center gap-2">
-                                                    <span className={`text-[13px] font-bold ${item.isCurrent ? "text-gray-12" : item.isReached ? "text-gray-11" : "text-gray-7"
-                                                        }`}>
-                                                        {t("milestonesLevelLabel", { level: item.level })}
-                                                    </span>
-                                                    {item.isCurrent && (
-                                                        <span className="text-[7px] font-extrabold px-1.5 py-0.5 rounded-full bg-[#E80000]/15 text-[#FF4444] uppercase tracking-wider animate-pulse">
-                                                            {t("milestonesCurrentTag")}
-                                                        </span>
-                                                    )}
-                                                </div>
+                                <div
+                                    ref={item.isCurrent ? currentRef : undefined}
+                                    className={cn(
+                                        "flex items-center gap-3 px-3 py-2 rounded-xl transition-all",
+                                        item.isCurrent && "bg-gray-3/80 border border-gray-5/60 shadow-sm"
+                                    )}
+                                >
+                                    {/* Check / Lock indicator */}
+                                    <div className="w-5 h-5 flex items-center justify-center shrink-0">
+                                        {item.isReached ? (
+                                            <div className="w-4 h-4 rounded-full bg-[#E80000] flex items-center justify-center">
+                                                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                                                    <polyline points="20 6 9 17 4 12" />
+                                                </svg>
                                             </div>
+                                        ) : item.isCurrent ? (
+                                            <div className="w-4 h-4 rounded-full border-2 border-[#E80000]" />
+                                        ) : (
+                                            <div className="w-3.5 h-3.5 rounded-full border-[1.5px] border-gray-6 opacity-40" />
+                                        )}
+                                    </div>
 
-                                            {/* XP */}
-                                            <div className="text-right shrink-0">
-                                                <span className={`text-[11px] tabular-nums font-semibold ${item.isReached ? "text-gray-10" : "text-gray-6"
-                                                    }`}>
-                                                    {formatNumber(item.xpNeeded)}
-                                                </span>
-                                                <span className="text-[8px] text-[#E80000] font-bold ml-0.5">XP</span>
-                                            </div>
+                                    {/* Info */}
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2">
+                                            <span className={cn(
+                                                "text-[13px] font-bold",
+                                                item.isCurrent ? "text-gray-12" : item.isReached ? "text-gray-11" : "text-gray-7"
+                                            )}>
+                                                {t("milestonesLevelLabel", { level: item.level })}
+                                            </span>
+                                            {item.isCurrent && (
+                                                <Badge className="text-[7px] font-extrabold px-1.5 py-0.5 rounded-full bg-[#E80000]/15 text-[#FF4444] border-[#E80000]/30 hover:bg-[#E80000]/15 uppercase tracking-wider animate-pulse">
+                                                    {t("milestonesCurrentTag")}
+                                                </Badge>
+                                            )}
                                         </div>
                                     </div>
-                                ))}
-                            </div>
 
-                            {/* Footer note */}
-                            <div className="text-center mt-4 mb-2">
-                                <p className="text-[10px] text-gray-6">
-                                    {t("milestonesBeyond20")}
-                                </p>
+                                    {/* XP */}
+                                    <div className="text-right shrink-0">
+                                        <span className={cn(
+                                            "text-[11px] tabular-nums font-semibold",
+                                            item.isReached ? "text-gray-10" : "text-gray-6"
+                                        )}>
+                                            {formatNumber(item.xpNeeded)}
+                                        </span>
+                                        <span className="text-[8px] text-[#E80000] font-bold ml-0.5">XP</span>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    </motion.div>
-                </div>
-            )}
-        </AnimatePresence>
+                        ))}
+                    </div>
+
+                    {/* Footer note */}
+                    <div className="text-center mt-4 mb-2">
+                        <p className="text-[10px] text-gray-6">
+                            {t("milestonesBeyond20")}
+                        </p>
+                    </div>
+                </ScrollArea>
+            </DialogContent>
+        </Dialog>
     );
 }

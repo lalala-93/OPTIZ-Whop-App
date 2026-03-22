@@ -1,10 +1,21 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
 import { formatNumber, type RankTier } from "./rankSystem";
 import { useI18n, type Locale } from "./i18n";
 import Image from "next/image";
 import { useState, useRef } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
+import { User, Pencil, Palette, Globe, Trash2, X, Check, ChevronDown } from "lucide-react";
 
 interface SettingsSheetProps {
     isOpen: boolean;
@@ -48,7 +59,6 @@ export function SettingsSheet({
     const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
-        // Compress image to max 256px and JPEG quality 0.7 to keep data URL small
         const img = document.createElement("img");
         img.onload = () => {
             const max = 256;
@@ -73,246 +83,222 @@ export function SettingsSheet({
     const currentLang = LANGUAGE_OPTIONS.find(l => l.code === locale) || LANGUAGE_OPTIONS[0];
 
     return (
-        <AnimatePresence>
-            {isOpen && (
-                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-                    <motion.div
-                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-                        onClick={onClose}
-                    />
-                    <motion.div
-                        initial={{ opacity: 0, y: 60 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 60 }}
-                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                        className="relative w-full max-w-md bg-gray-2 border border-gray-4 rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl max-h-[85vh] overflow-y-auto"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className="flex justify-center pt-3 pb-1 sm:hidden">
-                            <div className="w-10 h-1 rounded-full bg-gray-6" />
+        <>
+            <Drawer open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+                <DrawerContent className="bg-gray-2/95 backdrop-blur-xl border-gray-4 max-h-[85vh] overflow-y-auto">
+                    <DrawerHeader className="relative pb-0">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={onClose}
+                            className="absolute top-2 right-2 h-8 w-8 rounded-full bg-gray-4 border border-gray-5 text-gray-9 hover:bg-gray-5 hover:text-gray-12"
+                        >
+                            <X className="h-4 w-4" />
+                        </Button>
+                        <DrawerTitle className="sr-only">{t("settings")}</DrawerTitle>
+                    </DrawerHeader>
+
+                    <div className="px-6 pb-6">
+                        {/* Profile */}
+                        <div className="flex flex-col items-center mb-5">
+                            <button
+                                onClick={() => fileInputRef.current?.click()}
+                                className="relative mb-3 group"
+                            >
+                                <Avatar className="h-16 w-16 border border-gray-5">
+                                    {userPhoto ? (
+                                        <AvatarImage src={userPhoto} alt={t("profileAlt")} />
+                                    ) : null}
+                                    <AvatarFallback className="bg-gray-3">
+                                        <User className="h-7 w-7 text-gray-8" />
+                                    </AvatarFallback>
+                                </Avatar>
+                                <input ref={fileInputRef} type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" />
+                            </button>
+
+                            {editingName ? (
+                                <div className="flex items-center gap-2">
+                                    <Input
+                                        type="text"
+                                        value={tempName}
+                                        onChange={(e) => setTempName(e.target.value)}
+                                        onKeyDown={(e) => e.key === "Enter" && handleSaveName()}
+                                        autoFocus
+                                        className="bg-gray-3 border-gray-5 text-sm text-gray-12 text-center w-32 h-8 focus-visible:ring-[#E80000]/30"
+                                    />
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={handleSaveName}
+                                        className="text-xs font-semibold text-[#E80000] hover:text-[#E80000] hover:bg-[#E80000]/10 h-8 px-2"
+                                    >
+                                        <Check className="h-3.5 w-3.5 mr-1" />
+                                        {t("save")}
+                                    </Button>
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={() => { setTempName(userName); setEditingName(true); }}
+                                    className="text-base font-bold text-gray-12 hover:text-gray-11 transition-colors flex items-center gap-1.5"
+                                >
+                                    {userName}
+                                    <Pencil className="h-2.5 w-2.5 text-gray-8" />
+                                </button>
+                            )}
+                            <Badge
+                                variant="outline"
+                                className="mt-1 border-transparent text-xs font-medium"
+                                style={{ color: tier.color }}
+                            >
+                                {rankFullName}
+                            </Badge>
                         </div>
 
-                        <div className="p-6">
-                            <motion.button
-                                onClick={onClose}
-                                className="absolute top-4 right-4 w-8 h-8 rounded-full bg-gray-4 border border-gray-5 flex items-center justify-center text-gray-9 hover:bg-gray-5 hover:text-gray-12 transition-all"
-                                whileTap={{ scale: 0.85 }}
-                            >
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                                </svg>
-                            </motion.button>
+                        {/* Stats */}
+                        <div className="grid grid-cols-2 gap-2 mb-5">
+                            {[
+                                { label: t("level"), value: String(level) },
+                                { label: t("totalXP"), value: formatNumber(totalXp) },
+                                { label: t("streak"), value: `${streakDays} ${streakDays === 1 ? t("day") : t("days")}` },
+                                { label: t("workoutsDone"), value: String(challengesJoined) },
+                            ].map((s) => (
+                                <Card key={s.label} className="bg-gray-3/60 border-gray-5/40 p-3 text-center">
+                                    <p className="text-base font-bold text-gray-12">{s.value}</p>
+                                    <p className="text-[9px] text-gray-8 font-medium uppercase tracking-wider">{s.label}</p>
+                                </Card>
+                            ))}
+                        </div>
 
-                            {/* Profile */}
-                            <div className="flex flex-col items-center mb-5">
-                                <button
-                                    onClick={() => fileInputRef.current?.click()}
-                                    className="relative w-16 h-16 rounded-full bg-gray-3 border border-gray-5 flex items-center justify-center overflow-hidden mb-3 group"
-                                >
-                                    {userPhoto ? (
-                                        <img src={userPhoto} alt={t("profileAlt")} className="w-full h-full object-cover rounded-full block" />
-                                    ) : (
-                                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-8">
-                                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
-                                        </svg>
-                                    )}
-                                    <input ref={fileInputRef} type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" />
-                                </button>
+                        <Separator className="bg-gray-5/30 mb-4" />
 
-                                {editingName ? (
-                                    <div className="flex items-center gap-2">
-                                        <input
-                                            type="text" value={tempName} onChange={(e) => setTempName(e.target.value)}
-                                            onKeyDown={(e) => e.key === "Enter" && handleSaveName()} autoFocus
-                                            className="bg-gray-3 border border-gray-5 rounded-lg px-3 py-1.5 text-sm text-gray-12 text-center focus:outline-none focus:border-gray-6 w-32"
-                                        />
-                                        <button onClick={handleSaveName} className="text-xs font-semibold text-[#E80000]">{t("save")}</button>
-                                    </div>
-                                ) : (
-                                    <button
-                                        onClick={() => { setTempName(userName); setEditingName(true); }}
-                                        className="text-base font-bold text-gray-12 hover:text-gray-11 transition-colors flex items-center gap-1.5"
-                                    >
-                                        {userName}
-                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-8">
-                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                                        </svg>
-                                    </button>
-                                )}
-                                <p className="text-xs font-medium mt-1" style={{ color: tier.color }}>{rankFullName}</p>
-                            </div>
+                        {/* Settings */}
+                        <div className="space-y-1 mb-4">
+                            <h3 className="text-[10px] font-bold text-gray-7 uppercase tracking-wider mb-2 px-1">{t("settings")}</h3>
 
-                            {/* Stats */}
-                            <div className="grid grid-cols-2 gap-2 mb-5">
-                                {[
-                                    { label: t("level"), value: String(level) },
-                                    { label: t("totalXP"), value: formatNumber(totalXp) },
-                                    { label: t("streak"), value: `${streakDays} ${streakDays === 1 ? t("day") : t("days")}` },
-                                    { label: t("workoutsDone"), value: String(challengesJoined) },
-                                ].map((s) => (
-                                    <div key={s.label} className="bg-gray-3/60 rounded-xl p-3 text-center border border-gray-5/40">
-                                        <p className="text-base font-bold text-gray-12">{s.value}</p>
-                                        <p className="text-[9px] text-gray-8 font-medium uppercase tracking-wider">{s.label}</p>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* Settings */}
-                            <div className="space-y-1 mb-4">
-                                <h3 className="text-[10px] font-bold text-gray-7 uppercase tracking-wider mb-2 px-1">{t("settings")}</h3>
-
-                                {/* Theme */}
-                                <div className="flex items-center justify-between p-3 rounded-xl bg-gray-3/40 border border-gray-5/30">
-                                    <div className="flex items-center gap-2.5">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-8">
-                                            <circle cx="13.5" cy="6.5" r="2.5" />
-                                            <circle cx="19" cy="11" r="2" />
-                                            <circle cx="16.5" cy="17.5" r="2.5" />
-                                            <circle cx="8" cy="18" r="2" />
-                                            <path d="M6 10.5a6.5 6.5 0 1 1 0 0Z" />
-                                        </svg>
-                                        <span className="text-sm text-gray-12 font-medium">{t("theme")}</span>
-                                    </div>
-                                    <span className="text-xs text-gray-8">{t("dark")}</span>
+                            {/* Theme */}
+                            <div className="flex items-center justify-between p-3 rounded-xl bg-gray-3/40 border border-gray-5/30">
+                                <div className="flex items-center gap-2.5">
+                                    <Palette className="h-3.5 w-3.5 text-gray-8" />
+                                    <span className="text-sm text-gray-12 font-medium">{t("theme")}</span>
                                 </div>
+                                <span className="text-xs text-gray-8">{t("dark")}</span>
+                            </div>
 
-                                {/* Language — interactive picker */}
-                                <div className="relative">
-                                    <motion.button
-                                        onClick={() => setShowLanguagePicker(!showLanguagePicker)}
-                                        className="flex items-center justify-between p-3 rounded-xl bg-gray-3/40 border border-gray-5/30 w-full cursor-pointer hover:bg-gray-3/60 transition-all"
-                                        whileTap={{ scale: 0.98 }}
-                                    >
-                                        <div className="flex items-center gap-2.5">
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-8">
-                                                <circle cx="12" cy="12" r="10" />
-                                                <path d="M2 12h20" />
-                                                <path d="M12 2a15 15 0 0 1 4 10 15 15 0 0 1-4 10 15 15 0 0 1-4-10 15 15 0 0 1 4-10Z" />
-                                            </svg>
-                                            <span className="text-sm text-gray-12 font-medium">{t("language")}</span>
-                                        </div>
-                                        <div className="flex items-center gap-1.5">
-                                            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md border border-gray-5/45 bg-gray-4/40 text-gray-8">
-                                                {currentLang.shortLabel}
-                                            </span>
-                                            <span className="text-xs text-gray-8 font-medium">{currentLang.label}</span>
-                                            <svg
-                                                width="10" height="10" viewBox="0 0 24 24" fill="none"
-                                                stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                                                className={`text-gray-7 transition-transform duration-200 ${showLanguagePicker ? "rotate-180" : ""}`}
-                                            >
-                                                <polyline points="6 9 12 15 18 9" />
-                                            </svg>
-                                        </div>
-                                    </motion.button>
+                            {/* Language */}
+                            <div className="relative">
+                                <Button
+                                    variant="ghost"
+                                    onClick={() => setShowLanguagePicker(!showLanguagePicker)}
+                                    className="flex items-center justify-between p-3 rounded-xl bg-gray-3/40 border border-gray-5/30 w-full h-auto hover:bg-gray-3/60"
+                                >
+                                    <div className="flex items-center gap-2.5">
+                                        <Globe className="h-3.5 w-3.5 text-gray-8" />
+                                        <span className="text-sm text-gray-12 font-medium">{t("language")}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                        <Badge variant="outline" className="text-[10px] font-semibold border-gray-5/45 bg-gray-4/40 text-gray-8 px-1.5 py-0.5">
+                                            {currentLang.shortLabel}
+                                        </Badge>
+                                        <span className="text-xs text-gray-8 font-medium">{currentLang.label}</span>
+                                        <ChevronDown className={cn(
+                                            "h-2.5 w-2.5 text-gray-7 transition-transform duration-200",
+                                            showLanguagePicker && "rotate-180"
+                                        )} />
+                                    </div>
+                                </Button>
 
-                                    <AnimatePresence>
-                                        {showLanguagePicker && (
-                                            <motion.div
-                                                className="mt-1 rounded-xl bg-gray-3 border border-gray-5/50 overflow-hidden shadow-lg"
-                                                initial={{ opacity: 0, height: 0 }}
-                                                animate={{ opacity: 1, height: "auto" }}
-                                                exit={{ opacity: 0, height: 0 }}
-                                                transition={{ duration: 0.2, ease: "easeOut" }}
-                                            >
-                                                {LANGUAGE_OPTIONS.map((lang) => (
-                                                    <motion.button
-                                                        key={lang.code}
-                                                        onClick={() => { setLocale(lang.code); setShowLanguagePicker(false); }}
-                                                        className={`flex items-center justify-between w-full px-3.5 py-2.5 transition-all ${locale === lang.code
+                                <AnimatePresence>
+                                    {showLanguagePicker && (
+                                        <motion.div
+                                            className="mt-1 rounded-xl bg-gray-3 border border-gray-5/50 overflow-hidden shadow-lg"
+                                            initial={{ opacity: 0, height: 0 }}
+                                            animate={{ opacity: 1, height: "auto" }}
+                                            exit={{ opacity: 0, height: 0 }}
+                                            transition={{ duration: 0.2, ease: "easeOut" }}
+                                        >
+                                            {LANGUAGE_OPTIONS.map((lang) => (
+                                                <Button
+                                                    key={lang.code}
+                                                    variant="ghost"
+                                                    onClick={() => { setLocale(lang.code); setShowLanguagePicker(false); }}
+                                                    className={cn(
+                                                        "flex items-center justify-between w-full px-3.5 py-2.5 h-auto rounded-none",
+                                                        locale === lang.code
                                                             ? "bg-[#E80000]/8 text-gray-12"
                                                             : "text-gray-10 hover:bg-gray-4/50"
-                                                            }`}
-                                                        whileTap={{ scale: 0.98 }}
-                                                    >
-                                                        <div className="flex items-center gap-2.5">
-                                                            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md border border-gray-5/45 bg-gray-4/40 text-gray-8">
-                                                                {lang.shortLabel}
-                                                            </span>
-                                                            <span className="text-sm font-medium">{lang.label}</span>
-                                                        </div>
-                                                        {locale === lang.code && (
-                                                            <motion.svg
-                                                                width="14" height="14" viewBox="0 0 24 24" fill="none"
-                                                                stroke="#E80000" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                                                                initial={{ scale: 0 }} animate={{ scale: 1 }}
-                                                                transition={{ type: "spring", stiffness: 400 }}
-                                                            >
-                                                                <polyline points="20 6 9 17 4 12" />
-                                                            </motion.svg>
-                                                        )}
-                                                    </motion.button>
-                                                ))}
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
-                                </div>
-                            </div>
-
-                            <div className="mb-4">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowDeleteConfirm(true)}
-                                    className="w-full py-3 rounded-xl border border-[#E80000]/35 bg-[#E80000]/10 text-[#FF6666] text-sm font-semibold hover:bg-[#E80000]/14 transition-colors"
-                                >
-                                    {t("deleteMyData")}
-                                </button>
-                            </div>
-
-                            {/* Footer */}
-                            <div className="text-center pt-3 border-t border-gray-5/30">
-                                <Image src="/Logo-optiz.png" alt="OPTIZ" width={22} height={22} className="mx-auto object-contain" style={{ borderRadius: 0 }} />
-                                <p className="text-[9px] text-gray-7 mt-1">v1.0.0</p>
+                                                    )}
+                                                >
+                                                    <div className="flex items-center gap-2.5">
+                                                        <Badge variant="outline" className="text-[10px] font-semibold border-gray-5/45 bg-gray-4/40 text-gray-8 px-1.5 py-0.5">
+                                                            {lang.shortLabel}
+                                                        </Badge>
+                                                        <span className="text-sm font-medium">{lang.label}</span>
+                                                    </div>
+                                                    {locale === lang.code && (
+                                                        <Check className="h-3.5 w-3.5 text-[#E80000]" />
+                                                    )}
+                                                </Button>
+                                            ))}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
                             </div>
                         </div>
 
-                        <AnimatePresence>
-                            {showDeleteConfirm && (
-                                <div className="absolute inset-0 z-20 flex items-center justify-center p-4">
-                                    <motion.div
-                                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                        className="absolute inset-0 bg-black/65 backdrop-blur-sm"
-                                        onClick={() => setShowDeleteConfirm(false)}
-                                    />
-                                    <motion.div
-                                        initial={{ opacity: 0, scale: 0.96, y: 8 }}
-                                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                                        exit={{ opacity: 0, scale: 0.96, y: 8 }}
-                                        className="relative w-full max-w-xs rounded-2xl border border-gray-5/40 bg-gray-2 p-4"
-                                    >
-                                        <h4 className="text-sm font-semibold text-gray-12 mb-1">{t("deleteDataTitle")}</h4>
-                                        <p className="text-xs text-gray-8 leading-relaxed mb-4">{t("deleteDataBody")}</p>
-                                        <div className="flex gap-2">
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowDeleteConfirm(false)}
-                                                className="flex-1 py-2 rounded-lg border border-gray-5/35 bg-gray-3/35 text-xs font-semibold text-gray-10"
-                                            >
-                                                {t("cancel")}
-                                            </button>
-                                            <button
-                                                type="button"
-                                                disabled={deletingData}
-                                                onClick={async () => {
-                                                    await onDeleteData();
-                                                    setShowDeleteConfirm(false);
-                                                }}
-                                                className={`flex-1 py-2 rounded-lg text-xs font-semibold ${
-                                                    deletingData
-                                                        ? "bg-[#E80000]/45 text-white/70 cursor-not-allowed"
-                                                        : "bg-[#E80000] text-white"
-                                                }`}
-                                            >
-                                                {deletingData ? t("deleting") : t("deleteConfirm")}
-                                            </button>
-                                        </div>
-                                    </motion.div>
-                                </div>
+                        {/* Delete data */}
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowDeleteConfirm(true)}
+                            className="w-full mb-4 py-3 h-auto rounded-xl border-[#E80000]/35 bg-[#E80000]/10 text-[#FF6666] text-sm font-semibold hover:bg-[#E80000]/14 hover:text-[#FF6666]"
+                        >
+                            <Trash2 className="h-3.5 w-3.5 mr-2" />
+                            {t("deleteMyData")}
+                        </Button>
+
+                        {/* Footer */}
+                        <Separator className="bg-gray-5/30 mb-3" />
+                        <div className="text-center">
+                            <Image src="/Logo-optiz.png" alt="OPTIZ" width={22} height={22} className="mx-auto object-contain" style={{ borderRadius: 0 }} />
+                            <p className="text-[9px] text-gray-7 mt-1">v1.0.0</p>
+                        </div>
+                    </div>
+                </DrawerContent>
+            </Drawer>
+
+            {/* Delete confirmation dialog */}
+            <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+                <DialogContent className="bg-gray-2 border-gray-5/40 max-w-xs rounded-2xl">
+                    <DialogHeader>
+                        <DialogTitle className="text-sm font-semibold text-gray-12">{t("deleteDataTitle")}</DialogTitle>
+                        <DialogDescription className="text-xs text-gray-8 leading-relaxed">{t("deleteDataBody")}</DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="flex flex-row gap-2 sm:flex-row">
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowDeleteConfirm(false)}
+                            className="flex-1 py-2 h-auto rounded-lg border-gray-5/35 bg-gray-3/35 text-xs font-semibold text-gray-10 hover:bg-gray-4"
+                        >
+                            {t("cancel")}
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            disabled={deletingData}
+                            onClick={async () => {
+                                await onDeleteData();
+                                setShowDeleteConfirm(false);
+                            }}
+                            className={cn(
+                                "flex-1 py-2 h-auto rounded-lg text-xs font-semibold",
+                                deletingData
+                                    ? "bg-[#E80000]/45 text-white/70 cursor-not-allowed"
+                                    : "bg-[#E80000] text-white hover:bg-[#E80000]/90"
                             )}
-                        </AnimatePresence>
-                    </motion.div>
-                </div>
-            )}
-        </AnimatePresence>
+                        >
+                            {deletingData ? t("deleting") : t("deleteConfirm")}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </>
     );
 }

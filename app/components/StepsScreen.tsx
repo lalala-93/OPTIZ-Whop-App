@@ -7,6 +7,13 @@ import { XPToast, type XPToastData } from "./XPToast";
 import { useI18n } from "./i18n";
 import { upsertDailySteps, getDailySteps, getStepsHistory } from "@/lib/actions";
 
+import { cn } from "@/lib/utils";
+import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+
 interface StepsScreenProps {
   userId: string;
   onAwardXpEvent: (source: string, referenceId: string, xpAmount: number) => Promise<void>;
@@ -102,23 +109,25 @@ function StepperRow({
     <div className="flex items-center justify-between">
       <span className="text-[13px] text-gray-10">{label}</span>
       <div className="flex items-center gap-1.5">
-        <button
-          type="button"
+        <Button
+          variant="outline"
+          size="sm"
           onClick={() => onChange(Math.max(min, value - step))}
-          className="w-9 h-8 rounded-lg border border-gray-5/35 bg-gray-3/30 text-[12px] font-semibold text-gray-11 inline-flex items-center justify-center"
+          className="w-9 h-8 rounded-lg border-gray-5/35 bg-gray-3/30 text-[12px] font-semibold text-gray-11 px-0"
         >
           -{step >= 1000 ? `${step / 1000}k` : step}
-        </button>
+        </Button>
         <span className="text-[15px] font-bold text-gray-12 tabular-nums w-[60px] text-center">
           {value.toLocaleString()}
         </span>
-        <button
-          type="button"
+        <Button
+          variant="outline"
+          size="sm"
           onClick={() => onChange(value + step)}
-          className="w-9 h-8 rounded-lg border border-gray-5/35 bg-gray-3/30 text-[12px] font-semibold text-gray-11 inline-flex items-center justify-center"
+          className="w-9 h-8 rounded-lg border-gray-5/35 bg-gray-3/30 text-[12px] font-semibold text-gray-11 px-0"
         >
           +{step >= 1000 ? `${step / 1000}k` : step}
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -277,207 +286,249 @@ export function StepsScreen({ userId, onAwardXpEvent, initialData }: StepsScreen
 
       {/* Progress Hero Card */}
       <motion.section
-        className="rounded-3xl border border-gray-5/35 bg-gray-2/82 p-5"
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <div className="relative">
-          <AnimatePresence>
-            {deltaBubble !== 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 4, scale: 0.95 }}
-                animate={{ opacity: 1, y: -6, scale: 1 }}
-                exit={{ opacity: 0, y: -12 }}
-                className="absolute left-1/2 -translate-x-1/2 top-2 z-10 text-[14px] font-semibold text-[#FF6D6D]"
-              >
-                {deltaBubble > 0 ? `+${deltaBubble}` : deltaBubble}
-              </motion.div>
-            )}
-          </AnimatePresence>
+        <Card className="rounded-3xl border-gray-5/35 bg-gray-2/82 backdrop-blur-xl shadow-none">
+          <CardContent className="p-5">
+            <div className="relative">
+              <AnimatePresence>
+                {deltaBubble !== 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 4, scale: 0.95 }}
+                    animate={{ opacity: 1, y: -6, scale: 1 }}
+                    exit={{ opacity: 0, y: -12 }}
+                    className="absolute left-1/2 -translate-x-1/2 top-2 z-10"
+                  >
+                    <Badge className="border-none bg-[#E80000]/15 text-[#FF6D6D] text-[14px] font-semibold px-2.5 py-0.5">
+                      {deltaBubble > 0 ? `+${deltaBubble}` : deltaBubble}
+                    </Badge>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
-          <StepProgressRing
-            progress={progress}
-            done={state.done}
-            goal={state.goal}
-            stepsUnit={t("stepsUnit")}
-          />
-        </div>
+              <StepProgressRing
+                progress={progress}
+                done={state.done}
+                goal={state.goal}
+                stepsUnit={t("stepsUnit")}
+              />
+            </div>
 
-        {/* Stats below ring */}
-        <div className="mt-4 flex items-center justify-between px-4">
-          <div className="text-center">
-            <p className="text-[11px] text-gray-7 uppercase tracking-wider">{t("stepsRemaining")}</p>
-            <p className="text-[18px] font-semibold text-gray-12 tabular-nums">{remaining.toLocaleString()}</p>
-          </div>
-          <div className="text-center">
-            <p className="text-[11px] text-gray-7 uppercase tracking-wider">Progress</p>
-            <p className="text-[18px] font-semibold text-[#FF6A6A] tabular-nums">{progress}%</p>
-          </div>
-        </div>
+            {/* Stats below ring */}
+            <div className="mt-4 flex items-center justify-between px-4">
+              <div className="text-center">
+                <p className="text-[11px] text-gray-7 uppercase tracking-wider">{t("stepsRemaining")}</p>
+                <p className="text-[18px] font-semibold text-gray-12 tabular-nums">{remaining.toLocaleString()}</p>
+              </div>
+              <div className="text-center">
+                <p className="text-[11px] text-gray-7 uppercase tracking-wider">Progress</p>
+                <Badge className="border-none bg-[#E80000]/12 text-[#FF6A6A] text-[18px] font-semibold tabular-nums px-3 py-0.5 mt-0.5">
+                  {progress}%
+                </Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </motion.section>
 
+      <Separator className="bg-white/[0.04]" />
+
       {/* Step Adjustment Card */}
-      <section className="rounded-3xl border border-gray-5/35 bg-gray-2/82 p-4">
-        <div className="grid grid-cols-3 gap-2 mb-2">
-          {[100, 500, 1000].map((delta) => (
-            <button
-              key={delta}
-              type="button"
-              onClick={() => shiftDone(delta)}
-              className="h-12 rounded-xl border border-[#E80000]/35 bg-[#E80000]/10 text-[15px] font-semibold text-[#FF6D6D] active:scale-95 transition-transform"
-            >
-              +{delta}
-            </button>
-          ))}
-        </div>
-        <div className="grid grid-cols-4 gap-2">
-          {[-100, -10, 10, 50].map((delta) => (
-            <button
-              key={delta}
-              type="button"
-              onClick={() => shiftDone(delta)}
-              className="h-9 rounded-xl border border-gray-5/35 bg-gray-3/30 text-[13px] font-medium text-gray-11 active:scale-95 transition-transform"
-            >
-              {delta > 0 ? `+${delta}` : String(delta)}
-            </button>
-          ))}
-        </div>
-      </section>
+      <Card className="rounded-3xl border-gray-5/35 bg-gray-2/82 backdrop-blur-xl shadow-none">
+        <CardContent className="p-4">
+          <div className="grid grid-cols-3 gap-2 mb-2">
+            {[100, 500, 1000].map((delta) => (
+              <Button
+                key={delta}
+                onClick={() => shiftDone(delta)}
+                className="h-12 rounded-xl bg-gradient-to-r from-[#E80000] to-[#FF2D2D] border border-[#E80000]/35 text-[15px] font-semibold text-white hover:from-[#FF2D2D] hover:to-[#FF4D4D] active:scale-95 transition-transform shadow-[0_0_20px_rgba(232,0,0,0.15)]"
+              >
+                +{delta}
+              </Button>
+            ))}
+          </div>
+          <div className="grid grid-cols-4 gap-2">
+            {[-100, -10, 10, 50].map((delta) => (
+              <Button
+                key={delta}
+                variant="outline"
+                onClick={() => shiftDone(delta)}
+                className="h-9 rounded-xl border-gray-5/35 bg-gray-3/30 text-[13px] font-medium text-gray-11 hover:bg-gray-4/40 active:scale-95 transition-transform"
+              >
+                {delta > 0 ? `+${delta}` : String(delta)}
+              </Button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Separator className="bg-white/[0.04]" />
 
       {/* Goal Settings — always visible, compact steppers */}
-      <section className="rounded-3xl border border-gray-5/35 bg-gray-2/82 p-4 space-y-3">
-        <h3 className="text-[14px] font-semibold text-gray-12 inline-flex items-center gap-1.5">
-          <Target size={15} /> {t("stepsDailyGoal")}
-        </h3>
+      <Card className="rounded-3xl border-gray-5/35 bg-gray-2/82 backdrop-blur-xl shadow-none">
+        <CardHeader className="p-4 pb-0">
+          <h3 className="text-[14px] font-semibold text-gray-12 inline-flex items-center gap-1.5">
+            <Target size={15} /> {t("stepsDailyGoal")}
+          </h3>
+        </CardHeader>
+        <CardContent className="p-4 pt-3 space-y-3">
+          <StepperRow
+            label={t("stepsGoal")}
+            value={state.goal}
+            step={500}
+            min={500}
+            onChange={(next) => updateState({ ...state, goal: Math.max(next, state.baseline + 500) })}
+          />
 
-        <StepperRow
-          label={t("stepsGoal")}
-          value={state.goal}
-          step={500}
-          min={500}
-          onChange={(next) => updateState({ ...state, goal: Math.max(next, state.baseline + 500) })}
-        />
+          <StepperRow
+            label={t("stepsBase")}
+            value={state.baseline}
+            step={500}
+            min={0}
+            onChange={(next) => updateState({ ...state, baseline: next, goal: Math.max(state.goal, next + 500) })}
+          />
+        </CardContent>
+      </Card>
 
-        <StepperRow
-          label={t("stepsBase")}
-          value={state.baseline}
-          step={500}
-          min={0}
-          onChange={(next) => updateState({ ...state, baseline: next, goal: Math.max(state.goal, next + 500) })}
-        />
-      </section>
+      <Separator className="bg-white/[0.04]" />
 
       {/* Coach tip */}
-      <section className="rounded-3xl border border-[#E80000]/15 bg-gradient-to-r from-[#E80000]/5 via-transparent to-transparent p-4">
-        <div className="flex items-start gap-3">
-          <div className="w-8 h-8 rounded-full bg-[#E80000]/12 border border-[#E80000]/20 flex items-center justify-center shrink-0">
-            <Zap size={14} className="text-[#FF6666]" />
+      <Card className="rounded-3xl border-[#E80000]/15 bg-gradient-to-r from-[#E80000]/5 via-transparent to-transparent shadow-none">
+        <CardContent className="p-4">
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-full bg-[#E80000]/12 border border-[#E80000]/20 flex items-center justify-center shrink-0">
+              <Zap size={14} className="text-[#FF6666]" />
+            </div>
+            <div>
+              <p className="text-[12px] font-semibold text-gray-11 mb-0.5">Coach</p>
+              <p className="text-[12px] text-gray-9 leading-relaxed">{t("stepsCoachTip")}</p>
+            </div>
           </div>
-          <div>
-            <p className="text-[12px] font-semibold text-gray-11 mb-0.5">Coach</p>
-            <p className="text-[12px] text-gray-9 leading-relaxed">{t("stepsCoachTip")}</p>
-          </div>
-        </div>
-      </section>
+        </CardContent>
+      </Card>
+
+      <Separator className="bg-white/[0.04]" />
 
       {/* Weekly History — matching nutrition screen design */}
       <motion.section
-        className="rounded-3xl border border-white/[0.06] bg-white/[0.02] p-5"
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
       >
-        <h3 className="text-[14px] font-semibold text-gray-12 mb-5">{t("stepsWeeklyView")}</h3>
-
-        {loadingHistory ? (
-          <div className="h-[180px] flex items-center justify-center">
-            <div className="w-5 h-5 border-2 border-gray-6 border-t-[#E80000] rounded-full animate-spin" />
-          </div>
-        ) : (() => {
-          const todayISO = new Date().toISOString().split("T")[0];
-          // Build 7 days (Mon-Sun of current week)
-          const today = new Date();
-          const dayOfWeek = today.getDay() === 0 ? 6 : today.getDay() - 1;
-          const monday = new Date(today);
-          monday.setDate(today.getDate() - dayOfWeek);
-
-          const dayLabelsShort = [
-            t("dayShortMon"), t("dayShortTue"), t("dayShortWed"), t("dayShortThu"),
-            t("dayShortFri"), t("dayShortSat"), t("dayShortSun"),
-          ];
-
-          const weekBars = Array.from({ length: 7 }, (_, i) => {
-            const d = new Date(monday);
-            d.setDate(monday.getDate() + i);
-            const dateStr = d.toISOString().split("T")[0];
-            const entry = historyData.find((h) => h.log_date === dateStr);
-            return { date: dateStr, done: entry?.done ?? 0, goal: entry?.goal ?? state.goal };
-          });
-
-          const maxVal = Math.max(...weekBars.map((b) => Math.max(b.done, b.goal)), 1);
-          const goalPct = Math.min(100, (state.goal / maxVal) * 100);
-
-          return (
-            <div className="relative h-[180px] mb-2">
-              {/* Goal reference line */}
-              <div className="absolute left-0 right-0 flex items-center" style={{ bottom: `${goalPct}%` }}>
-                <div className="flex-1 border-t border-dashed border-[#E80000]/25" />
-                <span className="text-[9px] text-[#FF6666]/60 tabular-nums ml-1 shrink-0">{state.goal.toLocaleString()}</span>
-              </div>
-
-              {/* Bars */}
-              <div className="flex items-end justify-between gap-2 h-full">
-                {weekBars.map((bar, i) => {
-                  const pct = maxVal > 0 ? Math.max(2, (bar.done / maxVal) * 100) : 2;
-                  const isToday = bar.date === todayISO;
-                  const isFuture = bar.date > todayISO;
-                  const hasDone = bar.done > 0;
-                  const aboveGoal = bar.done > bar.goal;
-                  return (
-                    <div key={bar.date} className="flex-1 flex flex-col items-center h-full justify-end">
-                      {hasDone && !isFuture && (
-                        <span className="text-[10px] font-medium tabular-nums mb-1 text-gray-9">
-                          {bar.done >= 1000 ? `${(bar.done / 1000).toFixed(1)}k` : bar.done}
-                        </span>
+        <Card className="rounded-3xl border-white/[0.06] bg-white/[0.02] backdrop-blur-xl shadow-none">
+          <CardHeader className="p-5 pb-0">
+            <h3 className="text-[14px] font-semibold text-gray-12">{t("stepsWeeklyView")}</h3>
+          </CardHeader>
+          <CardContent className="p-5 pt-5">
+            {loadingHistory ? (
+              <div className="h-[180px] flex flex-col items-center justify-center gap-3">
+                <div className="flex items-end justify-between gap-2 w-full h-[140px]">
+                  {Array.from({ length: 7 }).map((_, i) => (
+                    <Skeleton
+                      key={i}
+                      className={cn(
+                        "flex-1 rounded-lg bg-white/[0.04]",
                       )}
-                      <motion.div
-                        className={`w-full rounded-lg min-h-[4px] ${
-                          isFuture
-                            ? "bg-white/[0.03]"
-                            : isToday
-                            ? aboveGoal
-                              ? "bg-gradient-to-t from-[#FF4D4D] to-[#FF8C8C]"
-                              : "bg-gradient-to-t from-[#E80000] to-[#FF4D4D]"
-                            : hasDone
-                            ? "bg-gradient-to-t from-white/[0.08] to-white/[0.15]"
-                            : "bg-white/[0.03]"
-                        }`}
-                        initial={{ height: 0 }}
-                        animate={{ height: isFuture ? 4 : `${pct}%` }}
-                        transition={{ duration: 0.5, delay: i * 0.06, ease: [0.25, 0.1, 0.25, 1] as const }}
-                      />
-                      <span className={`text-[11px] font-medium mt-2 ${isToday ? "text-[#FF6666]" : "text-gray-8"}`}>
-                        {dayLabelsShort[i]}
-                      </span>
-                    </div>
-                  );
-                })}
+                      style={{ height: `${30 + Math.random() * 60}%` }}
+                    />
+                  ))}
+                </div>
+                <div className="flex justify-between w-full">
+                  {Array.from({ length: 7 }).map((_, i) => (
+                    <Skeleton key={i} className="w-6 h-3 rounded bg-white/[0.04]" />
+                  ))}
+                </div>
+              </div>
+            ) : (() => {
+              const todayISO = new Date().toISOString().split("T")[0];
+              // Build 7 days (Mon-Sun of current week)
+              const today = new Date();
+              const dayOfWeek = today.getDay() === 0 ? 6 : today.getDay() - 1;
+              const monday = new Date(today);
+              monday.setDate(today.getDate() - dayOfWeek);
+
+              const dayLabelsShort = [
+                t("dayShortMon"), t("dayShortTue"), t("dayShortWed"), t("dayShortThu"),
+                t("dayShortFri"), t("dayShortSat"), t("dayShortSun"),
+              ];
+
+              const weekBars = Array.from({ length: 7 }, (_, i) => {
+                const d = new Date(monday);
+                d.setDate(monday.getDate() + i);
+                const dateStr = d.toISOString().split("T")[0];
+                const entry = historyData.find((h) => h.log_date === dateStr);
+                return { date: dateStr, done: entry?.done ?? 0, goal: entry?.goal ?? state.goal };
+              });
+
+              const maxVal = Math.max(...weekBars.map((b) => Math.max(b.done, b.goal)), 1);
+              const goalPct = Math.min(100, (state.goal / maxVal) * 100);
+
+              return (
+                <div className="relative h-[180px] mb-2">
+                  {/* Goal reference line */}
+                  <div className="absolute left-0 right-0 flex items-center" style={{ bottom: `${goalPct}%` }}>
+                    <div className="flex-1 border-t border-dashed border-[#E80000]/25" />
+                    <span className="text-[9px] text-[#FF6666]/60 tabular-nums ml-1 shrink-0">{state.goal.toLocaleString()}</span>
+                  </div>
+
+                  {/* Bars */}
+                  <div className="flex items-end justify-between gap-2 h-full">
+                    {weekBars.map((bar, i) => {
+                      const pct = maxVal > 0 ? Math.max(2, (bar.done / maxVal) * 100) : 2;
+                      const isToday = bar.date === todayISO;
+                      const isFuture = bar.date > todayISO;
+                      const hasDone = bar.done > 0;
+                      const aboveGoal = bar.done > bar.goal;
+                      return (
+                        <div key={bar.date} className="flex-1 flex flex-col items-center h-full justify-end">
+                          {hasDone && !isFuture && (
+                            <span className="text-[10px] font-medium tabular-nums mb-1 text-gray-9">
+                              {bar.done >= 1000 ? `${(bar.done / 1000).toFixed(1)}k` : bar.done}
+                            </span>
+                          )}
+                          <motion.div
+                            className={cn(
+                              "w-full rounded-lg min-h-[4px]",
+                              isFuture
+                                ? "bg-white/[0.03]"
+                                : isToday
+                                ? aboveGoal
+                                  ? "bg-gradient-to-t from-[#FF4D4D] to-[#FF8C8C]"
+                                  : "bg-gradient-to-t from-[#E80000] to-[#FF4D4D]"
+                                : hasDone
+                                ? "bg-gradient-to-t from-white/[0.08] to-white/[0.15]"
+                                : "bg-white/[0.03]"
+                            )}
+                            initial={{ height: 0 }}
+                            animate={{ height: isFuture ? 4 : `${pct}%` }}
+                            transition={{ duration: 0.5, delay: i * 0.06, ease: [0.25, 0.1, 0.25, 1] as const }}
+                          />
+                          <span className={cn("text-[11px] font-medium mt-2", isToday ? "text-[#FF6666]" : "text-gray-8")}>
+                            {dayLabelsShort[i]}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Legend */}
+            <Separator className="bg-white/[0.04] mb-3" />
+            <div className="flex items-center justify-center gap-4">
+              <div className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-sm bg-gradient-to-t from-[#E80000] to-[#FF4D4D]" />
+                <span className="text-[10px] text-gray-8">{t("stepsTitle")}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-6 border-t border-dashed border-[#E80000]/40" />
+                <span className="text-[10px] text-gray-8">{t("stepsGoal")} {state.goal.toLocaleString()}</span>
               </div>
             </div>
-          );
-        })()}
-
-        {/* Legend */}
-        <div className="flex items-center justify-center gap-4 mt-3 pt-3 border-t border-white/[0.04]">
-          <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-sm bg-gradient-to-t from-[#E80000] to-[#FF4D4D]" />
-            <span className="text-[10px] text-gray-8">{t("stepsTitle")}</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-6 border-t border-dashed border-[#E80000]/40" />
-            <span className="text-[10px] text-gray-8">{t("stepsGoal")} {state.goal.toLocaleString()}</span>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </motion.section>
     </div>
   );

@@ -2,13 +2,20 @@
 
 import { useEffect, useMemo, useState, useTransition, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, ChevronLeft, ChevronRight, Quote, RefreshCw } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, Quote, RefreshCw, User } from "lucide-react";
 import { XPRing } from "./XPRing";
 import type { RankTier } from "./rankSystem";
 import { MOTIVATIONAL_QUOTES, getLevelProgress, getRankForLevel, getRankNameKey, formatNumber } from "./rankSystem";
 import { RankBadge } from "./RankBadge";
 import { getLeaderboard } from "@/lib/actions";
 import { useI18n } from "./i18n";
+import { cn } from "@/lib/utils";
+import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Separator } from "@/components/ui/separator";
 
 interface HomeScreenProps {
   userId: string;
@@ -145,140 +152,153 @@ function StreakCalendar({
   }, []);
 
   return (
-    <motion.section
-      className="rounded-2xl border border-gray-5/50 bg-gray-2/80 overflow-hidden"
+    <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
     >
-      {/* Header */}
-      <button
-        type="button"
-        onClick={() => setExpanded((prev) => !prev)}
-        className="w-full flex items-center justify-between px-4 pt-4 pb-3"
-      >
-        <div className="flex items-center gap-2.5">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FF6666" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="#E80000" fillOpacity="0.15" />
-          </svg>
-          <span className="text-[15px] font-semibold text-gray-12">{t("homeActivity")}</span>
-          <span className="text-[13px] font-bold text-[#FF6D6D] tabular-nums">{streakDays}d</span>
-        </div>
-        <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
-          <ChevronDown size={18} className="text-gray-7" />
-        </motion.div>
-      </button>
-
-      {/* ── Compact: last 7 days ── */}
-      {!expanded && (
-        <div className="px-4 pb-4">
-          <div className="flex items-center justify-between">
-            {compactDays.map((day, i) => (
-              <div key={day.date.toISOString()} className="flex flex-col items-center gap-1.5 flex-1">
-                <span className={`text-[10px] font-semibold uppercase tracking-wide ${day.isToday ? "text-gray-12" : "text-gray-7"}`}>
-                  {day.label}
-                </span>
-                <motion.div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center text-[11px] font-bold transition-all ${
-                    day.active
-                      ? "bg-[#E80000] text-white shadow-[0_0_12px_rgba(232,0,0,0.3)]"
-                      : day.isToday
-                        ? "ring-2 ring-[#E80000]/40 bg-[#E80000]/8 text-gray-11"
-                        : "bg-gray-3 border border-gray-5/30 text-gray-7"
-                  }`}
-                  initial={{ scale: 0.85, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: i * 0.03, type: "spring", stiffness: 400, damping: 20 }}
-                >
-                  {day.active ? (
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                  ) : (
-                    day.dayNum
-                  )}
-                </motion.div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ── Expanded: full month calendar ── */}
-      <AnimatePresence>
-        {expanded && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            className="overflow-hidden"
+      <Card className="overflow-hidden border-gray-5/50 bg-gray-2/80">
+        <CardHeader className="p-0">
+          <button
+            type="button"
+            onClick={() => setExpanded((prev) => !prev)}
+            className="w-full flex items-center justify-between px-4 pt-4 pb-3"
           >
+            <div className="flex items-center gap-2.5">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FF6666" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="#E80000" fillOpacity="0.15" />
+              </svg>
+              <span className="text-[15px] font-semibold text-gray-12">{t("homeActivity")}</span>
+              <Badge variant="destructive" className="px-1.5 py-0 text-[11px] font-bold tabular-nums bg-[#E80000]/15 text-[#FF6D6D] border-[#E80000]/20 hover:bg-[#E80000]/15">
+                {streakDays}d
+              </Badge>
+            </div>
+            <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
+              <ChevronDown size={18} className="text-gray-7" />
+            </motion.div>
+          </button>
+        </CardHeader>
+
+        <CardContent className="p-0">
+          {/* ── Compact: last 7 days ── */}
+          {!expanded && (
             <div className="px-4 pb-4">
-              {/* Month nav */}
-              <div className="flex items-center justify-between mb-4">
-                <button
-                  type="button"
-                  onClick={() => navigateMonth(-1)}
-                  className="w-8 h-8 rounded-full bg-gray-4/40 flex items-center justify-center text-gray-8 hover:text-gray-12 active:scale-90 transition-all"
-                >
-                  <ChevronLeft size={16} />
-                </button>
-                <span className="text-[14px] font-semibold text-gray-12">{monthLabel}</span>
-                <button
-                  type="button"
-                  onClick={() => navigateMonth(1)}
-                  className="w-8 h-8 rounded-full bg-gray-4/40 flex items-center justify-center text-gray-8 hover:text-gray-12 active:scale-90 transition-all"
-                >
-                  <ChevronRight size={16} />
-                </button>
-              </div>
-
-              {/* Day column headers */}
-              <div className="grid grid-cols-7 gap-1.5 mb-2">
-                {dayLabels.map((d) => (
-                  <span key={d} className="text-[9px] font-semibold text-gray-6 text-center uppercase tracking-wider">
-                    {d}
-                  </span>
-                ))}
-              </div>
-
-              {/* Calendar grid — rounded circles */}
-              <div className="grid grid-cols-7 gap-1.5">
-                {calendarGrid.map((cell, i) => (
-                  <div key={`${cell.dateStr || `e${i}`}`} className="flex items-center justify-center py-1">
-                    {cell.inMonth ? (
-                      <div
-                        className={`w-9 h-9 rounded-full flex items-center justify-center text-[12px] font-medium transition-all ${
-                          cell.active
-                            ? "bg-[#E80000] text-white font-bold"
-                            : cell.isToday
-                              ? "ring-2 ring-[#E80000]/35 bg-[#E80000]/6 text-gray-12 font-semibold"
-                              : "text-gray-8"
-                        }`}
-                      >
-                        {cell.day}
-                      </div>
-                    ) : null}
+              <div className="flex items-center justify-between">
+                {compactDays.map((day, i) => (
+                  <div key={day.date.toISOString()} className="flex flex-col items-center gap-1.5 flex-1">
+                    <span className={cn(
+                      "text-[10px] font-semibold uppercase tracking-wide",
+                      day.isToday ? "text-gray-12" : "text-gray-7"
+                    )}>
+                      {day.label}
+                    </span>
+                    <motion.div
+                      className={cn(
+                        "w-10 h-10 rounded-full flex items-center justify-center text-[11px] font-bold transition-all",
+                        day.active
+                          ? "bg-[#E80000] text-white shadow-[0_0_12px_rgba(232,0,0,0.3)]"
+                          : day.isToday
+                            ? "ring-2 ring-[#E80000]/40 bg-[#E80000]/8 text-gray-11"
+                            : "bg-gray-3 border border-gray-5/30 text-gray-7"
+                      )}
+                      initial={{ scale: 0.85, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ delay: i * 0.03, type: "spring", stiffness: 400, damping: 20 }}
+                    >
+                      {day.active ? (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      ) : (
+                        day.dayNum
+                      )}
+                    </motion.div>
                   </div>
                 ))}
               </div>
-
-              {/* Legend */}
-              <div className="mt-4 flex items-center justify-center gap-5 text-[10px] text-gray-7">
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#E80000]" />
-                  <span>{t("homeStreak")}</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded-full ring-1.5 ring-[#E80000]/35 bg-[#E80000]/6" />
-                  <span>{t("homeToday")}</span>
-                </div>
-              </div>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.section>
+          )}
+
+          {/* ── Expanded: full month calendar ── */}
+          <AnimatePresence>
+            {expanded && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                className="overflow-hidden"
+              >
+                <div className="px-4 pb-4">
+                  {/* Month nav */}
+                  <div className="flex items-center justify-between mb-4">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => navigateMonth(-1)}
+                      className="h-8 w-8 rounded-full text-gray-8 hover:text-gray-12"
+                    >
+                      <ChevronLeft size={16} />
+                    </Button>
+                    <span className="text-[14px] font-semibold text-gray-12">{monthLabel}</span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => navigateMonth(1)}
+                      className="h-8 w-8 rounded-full text-gray-8 hover:text-gray-12"
+                    >
+                      <ChevronRight size={16} />
+                    </Button>
+                  </div>
+
+                  {/* Day column headers */}
+                  <div className="grid grid-cols-7 gap-1.5 mb-2">
+                    {dayLabels.map((d) => (
+                      <span key={d} className="text-[9px] font-semibold text-gray-6 text-center uppercase tracking-wider">
+                        {d}
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* Calendar grid — rounded circles */}
+                  <div className="grid grid-cols-7 gap-1.5">
+                    {calendarGrid.map((cell, i) => (
+                      <div key={`${cell.dateStr || `e${i}`}`} className="flex items-center justify-center py-1">
+                        {cell.inMonth ? (
+                          <div
+                            className={cn(
+                              "w-9 h-9 rounded-full flex items-center justify-center text-[12px] font-medium transition-all",
+                              cell.active
+                                ? "bg-[#E80000] text-white font-bold"
+                                : cell.isToday
+                                  ? "ring-2 ring-[#E80000]/35 bg-[#E80000]/6 text-gray-12 font-semibold"
+                                  : "text-gray-8"
+                            )}
+                          >
+                            {cell.day}
+                          </div>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Legend */}
+                  <div className="mt-4 flex items-center justify-center gap-5 text-[10px] text-gray-7">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-2.5 h-2.5 rounded-full bg-[#E80000]" />
+                      <span>{t("homeStreak")}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-2.5 h-2.5 rounded-full ring-1.5 ring-[#E80000]/35 bg-[#E80000]/6" />
+                      <span>{t("homeToday")}</span>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 }
 
@@ -292,23 +312,26 @@ const PODIUM_COLORS = {
   3: { accent: "#CD7F32", bg: "rgba(205,127,50,0.04)", border: "rgba(205,127,50,0.12)" },
 } as const;
 
-/* Position number badge — clean and simple */
+/* Position number badge — using shadcn Badge */
 function PositionBadge({ position }: { position: number }) {
   const theme = PODIUM_COLORS[position as 1 | 2 | 3];
   if (theme) {
     return (
-      <span
-        className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0"
+      <Badge
+        className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 px-0 py-0 border-0"
         style={{ background: theme.accent, color: position === 1 ? "#1A1000" : "#FFF" }}
       >
         {position}
-      </span>
+      </Badge>
     );
   }
   return (
-    <span className="w-6 h-6 rounded-full bg-gray-4/50 flex items-center justify-center text-[11px] font-semibold text-gray-8 shrink-0 tabular-nums">
+    <Badge
+      variant="secondary"
+      className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-semibold shrink-0 px-0 py-0 bg-gray-4/50 text-gray-8 border-0 tabular-nums"
+    >
       {position}
-    </span>
+    </Badge>
   );
 }
 
@@ -435,104 +458,123 @@ export function HomeScreen({
       <StreakCalendar streakDays={streakDays} />
 
       {/* ── Section 4: Quote ── */}
-      <motion.section
-        className="rounded-2xl border border-gray-5/50 bg-gray-2/80 p-4"
+      <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.12 }}
       >
-        <div className="flex items-center justify-between mb-2.5">
-          <p className="text-[15px] text-gray-12 font-semibold inline-flex items-center gap-1.5">
-            <Quote size={15} className="text-gray-8" />
-            {t("homeQuote")}
-          </p>
-          <motion.button
-            onClick={() => setQuoteIndex((prev) => (prev + 1) % MOTIVATIONAL_QUOTES.length)}
-            className="w-8 h-8 rounded-full bg-gray-4/40 flex items-center justify-center text-gray-7 hover:text-gray-12 active:scale-90 transition-all"
-            whileTap={{ scale: 0.85, rotate: 180 }}
-          >
-            <RefreshCw size={13} />
-          </motion.button>
-        </div>
-        <p className="text-[13px] text-gray-11 italic leading-relaxed">&ldquo;{quote.text}&rdquo;</p>
-        <p className="text-[10px] text-gray-7 mt-1.5">{quote.author}</p>
-      </motion.section>
+        <Card className="border-gray-5/50 bg-gray-2/80 border-l-[3px] border-l-gray-6">
+          <CardHeader className="flex flex-row items-center justify-between p-4 pb-2.5">
+            <p className="text-[15px] text-gray-12 font-semibold inline-flex items-center gap-1.5">
+              <Quote size={15} className="text-gray-8" />
+              {t("homeQuote")}
+            </p>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setQuoteIndex((prev) => (prev + 1) % MOTIVATIONAL_QUOTES.length)}
+              className="h-8 w-8 rounded-full text-gray-7 hover:text-gray-12"
+              asChild
+            >
+              <motion.button whileTap={{ scale: 0.85, rotate: 180 }}>
+                <RefreshCw size={13} />
+              </motion.button>
+            </Button>
+          </CardHeader>
+          <CardContent className="px-4 pb-4 pt-0">
+            <p className="text-[13px] text-gray-11 italic leading-relaxed">&ldquo;{quote.text}&rdquo;</p>
+            <p className="text-[10px] text-gray-7 mt-1.5">{quote.author}</p>
+          </CardContent>
+        </Card>
+      </motion.div>
 
       {/* ── Section 3: Leaderboard ── */}
-      <motion.section
-        className="rounded-2xl border border-gray-5/50 bg-gray-2/80 p-4"
+      <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.06 }}
       >
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-[15px] font-semibold text-gray-12 inline-flex items-center gap-1.5">
-            <TrophyIcon />
-            {t("homeLeaderboard")}
-          </h3>
-          <span className="text-[11px] text-gray-7">{t("homeGlobalRanking")}</span>
-        </div>
+        <Card className="border-gray-5/50 bg-gray-2/80">
+          <CardHeader className="flex flex-row items-center justify-between p-4 pb-0">
+            <h3 className="text-[15px] font-semibold text-gray-12 inline-flex items-center gap-1.5">
+              <TrophyIcon />
+              {t("homeLeaderboard")}
+            </h3>
+            <span className="text-[11px] text-gray-7">{t("homeGlobalRanking")}</span>
+          </CardHeader>
 
-        {loadingLeaderboard ? (
-          <div className="space-y-2.5">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-[52px] rounded-xl bg-gray-4/20 animate-pulse" />
-            ))}
-          </div>
-        ) : (
-          <div className="space-y-1.5">
-            {entries.map((entry, idx) => {
-              const xp = entry.total_xp ?? 0;
-              const entryLevel = getLevelProgress(xp).level;
-              const isTop3 = entry.position <= 3;
-              const showSeparator = entry.position === 4 && entries.some((e) => e.position <= 3);
+          <CardContent className="p-4 pt-4">
+            {loadingLeaderboard ? (
+              <div className="space-y-2.5">
+                {[1, 2, 3].map((i) => (
+                  <Skeleton key={i} className="h-[52px] rounded-xl" />
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                {entries.map((entry) => {
+                  const xp = entry.total_xp ?? 0;
+                  const entryLevel = getLevelProgress(xp).level;
+                  const isTop3 = entry.position <= 3;
+                  const showSeparator = entry.position === 4 && entries.some((e) => e.position <= 3);
 
-              const podiumColor = PODIUM_COLORS[entry.position as 1 | 2 | 3];
+                  const podiumColor = PODIUM_COLORS[entry.position as 1 | 2 | 3];
 
-              return (
-                <motion.div
-                  key={entry.whop_user_id}
-                  initial={{ opacity: 0, x: -6 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: entry.position * 0.035 }}
-                >
-                  {showSeparator && <div className="h-px bg-gray-5/20 my-2" />}
-                  <div
-                    className={`rounded-xl px-3 py-2.5 flex items-center gap-2.5 transition-colors ${
-                      entry.isMe ? "bg-gray-3/60 border border-gray-5/40" : isTop3 ? "border border-transparent" : "border border-transparent"
-                    }`}
-                    style={isTop3 && !entry.isMe ? { background: podiumColor?.bg } : undefined}
-                  >
-                    <PositionBadge position={entry.position} />
+                  return (
+                    <motion.div
+                      key={entry.whop_user_id}
+                      initial={{ opacity: 0, x: -6 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: entry.position * 0.035 }}
+                    >
+                      {showSeparator && <Separator className="my-2 bg-gray-5/20" />}
+                      <div
+                        className={cn(
+                          "rounded-xl px-3 py-2.5 flex items-center gap-2.5 transition-colors hover:bg-gray-3/40",
+                          entry.isMe
+                            ? "bg-gray-3/60 border border-gray-5/40"
+                            : isTop3
+                              ? "border border-transparent"
+                              : "border border-transparent"
+                        )}
+                        style={isTop3 && !entry.isMe ? { background: podiumColor?.bg } : undefined}
+                      >
+                        <PositionBadge position={entry.position} />
 
-                    <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center shrink-0 bg-gray-4/40 border border-gray-5/20">
-                      {entry.avatar_url ? (
-                        <img src={entry.avatar_url} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="text-gray-7"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
-                      )}
-                    </div>
+                        <Avatar className="h-8 w-8 border border-gray-5/20">
+                          <AvatarImage src={entry.avatar_url || undefined} alt="" />
+                          <AvatarFallback className="bg-gray-4/40">
+                            <User size={16} className="text-gray-7" />
+                          </AvatarFallback>
+                        </Avatar>
 
-                    <div className="flex-1 min-w-0 flex items-center gap-1.5">
-                      <p className={`text-[13px] font-semibold truncate ${entry.isMe ? "text-gray-12" : "text-gray-11"}`}>
-                        {entry.display_name || t("anonymousUser")}
-                      </p>
-                      <InlineRankIcon level={entryLevel} size={16} />
-                    </div>
+                        <div className="flex-1 min-w-0 flex items-center gap-1.5">
+                          <p className={cn(
+                            "text-[13px] font-semibold truncate",
+                            entry.isMe ? "text-gray-12" : "text-gray-11"
+                          )}>
+                            {entry.display_name || t("anonymousUser")}
+                          </p>
+                          <InlineRankIcon level={entryLevel} size={16} />
+                        </div>
 
-                    <div className="flex items-baseline gap-0.5 shrink-0">
-                      <p className="text-[13px] font-bold tabular-nums text-gray-11">
-                        {formatNumber(xp)}
-                      </p>
-                      <span className="text-[9px] font-extrabold text-[#E80000]">XP</span>
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-        )}
-      </motion.section>
+                        <div className="flex items-baseline gap-0.5 shrink-0">
+                          <p className="text-[13px] font-bold tabular-nums text-gray-11">
+                            {formatNumber(xp)}
+                          </p>
+                          <Badge variant="destructive" className="px-1 py-0 text-[9px] font-extrabold bg-[#E80000]/15 text-[#E80000] border-0 hover:bg-[#E80000]/15">
+                            XP
+                          </Badge>
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </motion.div>
 
     </div>
   );

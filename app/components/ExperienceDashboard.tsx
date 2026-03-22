@@ -2,8 +2,19 @@
 
 import { useCallback, useState, useTransition } from "react";
 import { motion } from "framer-motion";
-import { Tabs } from "@whop/react/components";
 import Image from "next/image";
+import { Info, MessageSquare, User, Settings } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 import { HomeScreen } from "./HomeScreen";
 import { TrainingHubScreen } from "./TrainingHubScreen";
 import { StepsScreen } from "./StepsScreen";
@@ -230,203 +241,239 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
   );
 
   return (
-    <div className="min-h-screen bg-gray-1 text-gray-12 flex flex-col w-full relative">
-      <header className="px-4 sm:px-6 pt-4 pb-3 sticky top-0 bg-gray-1 z-30 border-b border-[var(--optiz-border)]">
-        <div className="flex items-center justify-between mb-2.5">
-          <div className="flex items-center gap-2.5 h-10">
-            <motion.div whileTap={{ scale: 0.95 }} className="flex items-center">
-              <Image
-                src="/Logo-optiz.png"
-                alt="OPTIZ"
-                width={52}
-                height={52}
-                className="object-contain -mt-0.5"
-                style={{ borderRadius: 0 }}
-              />
-            </motion.div>
-
-            <motion.button
-              onClick={() => setIsInfoOpen(true)}
-              className="w-10 h-10 rounded-full bg-gray-3/80 border border-gray-5/60 flex items-center justify-center text-gray-7 hover:text-gray-11 hover:bg-gray-4 transition-all"
-              whileTap={{ scale: 0.88 }}
-            >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <path d="M12 16v-4" />
-                <path d="M12 8h.01" />
-              </svg>
-            </motion.button>
-          </div>
-
-          <div className="flex items-center gap-1.5 h-10">
-            <motion.button
-              onClick={() => setIsStreakModalOpen(true)}
-              className="flex items-center gap-1.5 px-3 h-10 rounded-full bg-gray-3/80 border border-gray-5/50 hover:bg-gray-4 transition-all"
-              whileTap={{ scale: 0.93 }}
-            >
-              <AnimatedFireIcon size={18} />
-              <span className="text-[13px] font-bold text-gray-12 tabular-nums leading-none">{streakDays}</span>
-            </motion.button>
-
-            <motion.button
-              onClick={() => setIsXpModalOpen(true)}
-              className="flex items-center gap-1.5 px-3 h-10 rounded-full bg-gray-3/80 border border-gray-5/50 hover:bg-gray-4 transition-all"
-              whileTap={{ scale: 0.93 }}
-            >
-              <AnimatedBoltIcon size={18} />
-              <span className="text-sm font-bold text-gray-12 tabular-nums">{totalXp}</span>
-              <span className="text-[10px] font-extrabold text-[#E80000]">{t("xpLabel")}</span>
-            </motion.button>
-
-            <motion.a
-              href="https://docs.google.com/forms/d/e/1FAIpQLSclDqS1cdg0S_bFSyOf_0xP5MDVYAt2LBmvgKHhQP2BqJXYbw/viewform?usp=dialog"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-10 h-10 rounded-full bg-gray-3/80 border border-gray-5/50 flex items-center justify-center text-gray-7 hover:text-gray-11 hover:bg-gray-4 transition-all shrink-0"
-              whileTap={{ scale: 0.9 }}
-            >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-              </svg>
-            </motion.a>
-
-            <motion.button
-              onClick={() => setIsSettingsOpen(true)}
-              className="w-10 h-10 rounded-full overflow-hidden bg-gray-3/80 border border-gray-5/50 flex items-center justify-center text-gray-9 hover:brightness-125 transition-all shrink-0"
-              whileTap={{ scale: 0.9 }}
-            >
-              {userPhoto ? (
-                <img
-                  src={userPhoto}
-                  alt={t("profileAlt")}
-                  className="w-full h-full object-cover rounded-full block"
+    <TooltipProvider delayDuration={300}>
+      <div className="min-h-screen bg-gray-1 text-gray-12 flex flex-col w-full relative">
+        <header className={cn(
+          "px-4 sm:px-6 pt-4 pb-3 sticky top-0 z-30 border-b border-[var(--optiz-border)]",
+          "optiz-glass"
+        )}>
+          <div className="flex items-center justify-between mb-3">
+            {/* Left: Logo + Info */}
+            <div className="flex items-center gap-2 h-10">
+              <motion.div whileTap={{ scale: 0.95 }} className="flex items-center">
+                <Image
+                  src="/Logo-optiz.png"
+                  alt="OPTIZ"
+                  width={52}
+                  height={52}
+                  className="object-contain -mt-0.5"
+                  style={{ borderRadius: 0 }}
                 />
-              ) : (
-                <svg
-                  width="17"
-                  height="17"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+              </motion.div>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <motion.div whileTap={{ scale: 0.88 }}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setIsInfoOpen(true)}
+                      className="w-10 h-10 rounded-full bg-gray-3/80 border border-gray-5/60 text-gray-7 hover:text-gray-11 hover:bg-gray-4"
+                    >
+                      <Info className="w-[14px] h-[14px]" strokeWidth={2.5} />
+                    </Button>
+                  </motion.div>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  <p className="text-xs">Info</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+
+            {/* Right: Badges + Actions */}
+            <div className="flex items-center gap-1.5 h-10">
+              <motion.button
+                onClick={() => setIsStreakModalOpen(true)}
+                whileTap={{ scale: 0.93 }}
+              >
+                <Badge
+                  variant="outline"
+                  className="flex items-center gap-1.5 px-3 h-10 rounded-full bg-gray-3/80 border-gray-5/50 hover:bg-gray-4 transition-all cursor-pointer"
                 >
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
-              )}
-            </motion.button>
+                  <AnimatedFireIcon size={18} />
+                  <span className="text-[13px] font-bold text-gray-12 tabular-nums leading-none">{streakDays}</span>
+                </Badge>
+              </motion.button>
+
+              <motion.button
+                onClick={() => setIsXpModalOpen(true)}
+                whileTap={{ scale: 0.93 }}
+              >
+                <Badge
+                  variant="outline"
+                  className="flex items-center gap-1.5 px-3 h-10 rounded-full bg-gray-3/80 border-gray-5/50 hover:bg-gray-4 transition-all cursor-pointer"
+                >
+                  <AnimatedBoltIcon size={18} />
+                  <span className="text-sm font-bold text-gray-12 tabular-nums">{totalXp}</span>
+                  <span className="text-[10px] font-extrabold text-[#E80000]">{t("xpLabel")}</span>
+                </Badge>
+              </motion.button>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <motion.div whileTap={{ scale: 0.9 }}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      asChild
+                      className="w-10 h-10 rounded-full bg-gray-3/80 border border-gray-5/50 text-gray-7 hover:text-gray-11 hover:bg-gray-4 shrink-0"
+                    >
+                      <a
+                        href="https://docs.google.com/forms/d/e/1FAIpQLSclDqS1cdg0S_bFSyOf_0xP5MDVYAt2LBmvgKHhQP2BqJXYbw/viewform?usp=dialog"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <MessageSquare className="w-[15px] h-[15px]" strokeWidth={2} />
+                      </a>
+                    </Button>
+                  </motion.div>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  <p className="text-xs">Feedback</p>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <motion.div whileTap={{ scale: 0.9 }}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setIsSettingsOpen(true)}
+                      className="w-10 h-10 rounded-full p-0 overflow-hidden bg-gray-3/80 border border-gray-5/50 hover:brightness-125 shrink-0"
+                    >
+                      <Avatar className="w-10 h-10">
+                        {userPhoto ? (
+                          <AvatarImage src={userPhoto} alt={t("profileAlt")} className="object-cover" />
+                        ) : null}
+                        <AvatarFallback className="bg-transparent text-gray-9">
+                          <User className="w-[17px] h-[17px]" strokeWidth={2} />
+                        </AvatarFallback>
+                      </Avatar>
+                    </Button>
+                  </motion.div>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  <p className="text-xs">Profile</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
           </div>
-        </div>
 
-        <div className="overflow-x-auto">
-          <Tabs.Root value={activeTab} onValueChange={(v) => setActiveTab(v as TabType)}>
-            <Tabs.List className="min-w-max [&_[data-state=active]]:!border-b-[#E80000] [&_[data-state=active]]:!border-b-2 [&_[data-state=active]]:!text-gray-12">
-              <Tabs.Trigger value="home">{t("home")}</Tabs.Trigger>
-              <Tabs.Trigger value="training">{t("trainingTab")}</Tabs.Trigger>
-              <Tabs.Trigger value="steps">{t("stepsTab")}</Tabs.Trigger>
-              <Tabs.Trigger value="diet">{t("dietTab")}</Tabs.Trigger>
-              <Tabs.Trigger value="breathwork">{t("breathworkTab")}</Tabs.Trigger>
-            </Tabs.List>
-          </Tabs.Root>
-        </div>
-      </header>
+          {/* Pill-style Tabs */}
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabType)} className="w-full">
+            <TabsList className="w-full h-11 p-1 rounded-full bg-gray-3/60 border border-gray-5/40">
+              {(
+                [
+                  { value: "home", label: t("home") },
+                  { value: "training", label: t("trainingTab") },
+                  { value: "steps", label: t("stepsTab") },
+                  { value: "diet", label: t("dietTab") },
+                  { value: "breathwork", label: t("breathworkTab") },
+                ] as const
+              ).map((tab) => (
+                <TabsTrigger
+                  key={tab.value}
+                  value={tab.value}
+                  className={cn(
+                    "flex-1 rounded-full text-xs font-semibold transition-all",
+                    "data-[state=inactive]:text-gray-9 data-[state=inactive]:hover:text-gray-11",
+                    "data-[state=active]:bg-[#E80000] data-[state=active]:text-white data-[state=active]:shadow-sm"
+                  )}
+                >
+                  {tab.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        </header>
 
-      <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 scroll-smooth">
-        {activeTab === "home" ? (
-          <HomeScreen
-            userId={userId}
-            userName={userName}
-            userPhoto={userPhoto}
-            level={levelData.level}
-            totalXp={totalXp}
-            currentLevelXp={levelData.currentLevelXp}
-            xpForNextLevel={levelData.xpForNextLevel}
-            progressPercent={levelData.progressPercent}
-            tier={rankData.tier}
-            rankFullName={t(getRankNameKey(rankData.tier.name) as Parameters<typeof t>[0])}
-            rankColors={rankData.tier.gradient}
-            streakDays={streakDays}
-            weeklyProgress={weeklyProgress}
-            onXpRingClick={() => setIsXpModalOpen(true)}
-          />
-        ) : activeTab === "training" ? (
-          <TrainingHubScreen
-            userId={userId}
-            onAwardXpEvent={handleAwardXpEvent}
-            initialCompletionsToday={initialData.workoutCompletionsToday}
-          />
-        ) : activeTab === "steps" ? (
-          <StepsScreen
-            userId={userId}
-            onAwardXpEvent={handleAwardXpEvent}
-            initialData={initialData.stepsToday}
-          />
-        ) : activeTab === "diet" ? (
-          <DietScreen
-            userId={userId}
-            onAwardXpEvent={handleAwardXpEvent}
-            initialData={initialData.nutritionToday}
-          />
-        ) : (
-          <BreathworkScreen
-            userId={userId}
-            initialSessionsToday={initialData.breathworkSessionsToday}
-          />
-        )}
-      </main>
+        <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 scroll-smooth">
+          {activeTab === "home" ? (
+            <HomeScreen
+              userId={userId}
+              userName={userName}
+              userPhoto={userPhoto}
+              level={levelData.level}
+              totalXp={totalXp}
+              currentLevelXp={levelData.currentLevelXp}
+              xpForNextLevel={levelData.xpForNextLevel}
+              progressPercent={levelData.progressPercent}
+              tier={rankData.tier}
+              rankFullName={t(getRankNameKey(rankData.tier.name) as Parameters<typeof t>[0])}
+              rankColors={rankData.tier.gradient}
+              streakDays={streakDays}
+              weeklyProgress={weeklyProgress}
+              onXpRingClick={() => setIsXpModalOpen(true)}
+            />
+          ) : activeTab === "training" ? (
+            <TrainingHubScreen
+              userId={userId}
+              onAwardXpEvent={handleAwardXpEvent}
+              initialCompletionsToday={initialData.workoutCompletionsToday}
+            />
+          ) : activeTab === "steps" ? (
+            <StepsScreen
+              userId={userId}
+              onAwardXpEvent={handleAwardXpEvent}
+              initialData={initialData.stepsToday}
+            />
+          ) : activeTab === "diet" ? (
+            <DietScreen
+              userId={userId}
+              onAwardXpEvent={handleAwardXpEvent}
+              initialData={initialData.nutritionToday}
+            />
+          ) : (
+            <BreathworkScreen
+              userId={userId}
+              initialSessionsToday={initialData.breathworkSessionsToday}
+            />
+          )}
+        </main>
 
-      <SettingsSheet
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-        level={levelData.level}
-        totalXp={totalXp}
-        rankFullName={rankData.fullName}
-        tier={rankData.tier}
-        streakDays={streakDays}
-        challengesJoined={workoutsDone}
-        userName={userName}
-        userPhoto={userPhoto}
-        onUpdateName={handleUpdateName}
-        onUpdatePhoto={handleUpdatePhoto}
-        onDeleteData={handleDeleteMyData}
-        deletingData={deletingData}
-      />
-      <InfoModal isOpen={isInfoOpen} onClose={() => setIsInfoOpen(false)} />
-      <StreakModal
-        isOpen={isStreakModalOpen}
-        onClose={() => setIsStreakModalOpen(false)}
-        streakDays={streakDays}
-        weeklyProgress={weeklyProgress}
-      />
-      <XPMilestonesModal
-        isOpen={isXpModalOpen}
-        onClose={() => setIsXpModalOpen(false)}
-        currentLevel={levelData.level}
-        totalXp={totalXp}
-      />
-      <TaskCompleteAnimation
-        isVisible={taskCompleteAnim.visible}
-        onComplete={() => setTaskCompleteAnim({ ...taskCompleteAnim, visible: false })}
-        xpEarned={taskCompleteAnim.xp}
-      />
-      <LevelUpAnimation
-        isVisible={levelUpAnim.visible}
-        onComplete={() => setLevelUpAnim({ ...levelUpAnim, visible: false })}
-        newLevel={levelUpAnim.newLevel}
-      />
-      <StreakEarnedAnimation isVisible={streakAnim} onComplete={() => setStreakAnim(false)} />
-    </div>
+        <SettingsSheet
+          isOpen={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
+          level={levelData.level}
+          totalXp={totalXp}
+          rankFullName={rankData.fullName}
+          tier={rankData.tier}
+          streakDays={streakDays}
+          challengesJoined={workoutsDone}
+          userName={userName}
+          userPhoto={userPhoto}
+          onUpdateName={handleUpdateName}
+          onUpdatePhoto={handleUpdatePhoto}
+          onDeleteData={handleDeleteMyData}
+          deletingData={deletingData}
+        />
+        <InfoModal isOpen={isInfoOpen} onClose={() => setIsInfoOpen(false)} />
+        <StreakModal
+          isOpen={isStreakModalOpen}
+          onClose={() => setIsStreakModalOpen(false)}
+          streakDays={streakDays}
+          weeklyProgress={weeklyProgress}
+        />
+        <XPMilestonesModal
+          isOpen={isXpModalOpen}
+          onClose={() => setIsXpModalOpen(false)}
+          currentLevel={levelData.level}
+          totalXp={totalXp}
+        />
+        <TaskCompleteAnimation
+          isVisible={taskCompleteAnim.visible}
+          onComplete={() => setTaskCompleteAnim({ ...taskCompleteAnim, visible: false })}
+          xpEarned={taskCompleteAnim.xp}
+        />
+        <LevelUpAnimation
+          isVisible={levelUpAnim.visible}
+          onComplete={() => setLevelUpAnim({ ...levelUpAnim, visible: false })}
+          newLevel={levelUpAnim.newLevel}
+        />
+        <StreakEarnedAnimation isVisible={streakAnim} onComplete={() => setStreakAnim(false)} />
+      </div>
+    </TooltipProvider>
   );
 }
 
