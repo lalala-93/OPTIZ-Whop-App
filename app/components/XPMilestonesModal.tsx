@@ -56,10 +56,7 @@ export function XPMilestonesModal({ isOpen, onClose, currentLevel, totalXp }: XP
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent className={cn(
-                "bg-gray-2 border-gray-4 text-gray-12 max-w-md rounded-3xl p-0 gap-0 max-h-[85vh] flex flex-col overflow-hidden",
-                "[&>button]:hidden"
-            )}>
+            <DialogContent className="bg-gray-2 border-gray-5/40 text-gray-12 max-w-md p-0 gap-0 max-h-[85vh] flex flex-col overflow-hidden">
                 <button
                     onClick={onClose}
                     className="absolute right-4 top-4 w-7 h-7 rounded-full bg-gray-4/80 border border-gray-5/50 flex items-center justify-center text-gray-8 hover:text-gray-12 hover:bg-gray-5 transition-all z-10"

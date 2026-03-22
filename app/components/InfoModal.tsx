@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 import { Zap, Trophy, Flame, BarChart3, X } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -25,10 +24,7 @@ export function InfoModal({ isOpen, onClose }: InfoModalProps) {
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent className={cn(
-                "bg-gray-2 border-gray-4 text-gray-12 max-w-md rounded-3xl p-0 gap-0",
-                "[&>button]:hidden"
-            )}>
+            <DialogContent className="bg-gray-2 border-gray-5/40 text-gray-12 max-w-md p-0 gap-0">
                 <button
                     onClick={onClose}
                     className="absolute right-4 top-4 w-7 h-7 rounded-full bg-gray-4/80 border border-gray-5/50 flex items-center justify-center text-gray-8 hover:text-gray-12 hover:bg-gray-5 transition-all z-10"
@@ -37,7 +33,7 @@ export function InfoModal({ isOpen, onClose }: InfoModalProps) {
                 </button>
                 <div className="p-6 pt-8">
                     <DialogHeader className="items-center mb-6">
-                        <Image src="/Logo-optiz.png" alt="OPTIZ" width={80} height={80} className="object-contain" style={{ borderRadius: 0 }} />
+                        <Image src="/Logo-optiz.png" alt="OPTIZ" width={80} height={80} className="object-contain" style={{ borderRadius: 0 }} priority />
                         <DialogTitle className="text-xl font-black text-gray-12 mt-4 tracking-tight">
                             {t("whatIsOptiz")}
                         </DialogTitle>

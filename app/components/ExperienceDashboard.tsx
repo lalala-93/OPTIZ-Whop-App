@@ -3,17 +3,11 @@
 import { useCallback, useState, useTransition } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { Info, MessageSquare, User, Settings } from "lucide-react";
+import { Info, MessageSquare, User } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { HomeScreen } from "./HomeScreen";
 import { TrainingHubScreen } from "./TrainingHubScreen";
@@ -257,6 +251,7 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
                 height={40}
                 className="object-contain"
                 style={{ borderRadius: 0 }}
+                priority
               />
             </motion.div>
 
@@ -358,7 +353,7 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
         </Tabs>
       </header>
 
-      <main className="flex-1 overflow-y-auto px-4 sm:px-6 pt-2 scroll-smooth">
+      <main className="flex-1 overflow-y-auto px-4 sm:px-6 pt-2 pb-4 scroll-smooth">
         {activeTab === "home" ? (
           <HomeScreen
             userId={userId}
