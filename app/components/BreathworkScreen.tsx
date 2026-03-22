@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AnimatePresence, motion, useSpring, useTransform } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { Pause, Play, RotateCcw, Volume2, VolumeX, Wind, Timer, Zap } from "lucide-react";
 import {
   isSoundEnabled,
@@ -36,7 +36,7 @@ const PRESETS: Preset[] = [
 ];
 
 const DEFAULT_PRESET_ID: Preset["id"] = "focus";
-const TICK_MS = 50; // Faster tick for smoother animations
+const TICK_MS = 200; // Reasonable tick — not too fast, not too slow
 
 function formatDuration(totalSeconds: number) {
   const m = Math.floor(totalSeconds / 60);
@@ -53,114 +53,91 @@ function formatClock(totalSeconds: number) {
 }
 
 /* ═══════════════════════════════════════════
-   BreathingOrb — smooth, coherent animations
+   BreathingOrb — CSS transitions, no springs
+   Animations are driven by CSS `transition` on
+   the phase duration, so the browser handles
+   interpolation on the GPU, not JS.
    ═══════════════════════════════════════════ */
 function BreathingOrb({
-  phaseProgress,
   phase,
+  phaseDuration,
   idle,
   countdown,
   phaseLabel,
 }: {
-  phaseProgress: number; // 0-1 within current phase
   phase: PhaseKey;
+  phaseDuration: number;
   idle: boolean;
   countdown: number;
   phaseLabel: string;
 }) {
-  // Use spring for buttery smooth scale transitions
-  const targetScale = idle ? 1 : phase === "inhale"
-    ? 0.7 + 0.35 * phaseProgress   // 0.7 → 1.05
-    : phase === "hold"
-      ? 1.05                         // Hold steady
-      : 1.05 - 0.35 * phaseProgress; // 1.05 → 0.7
+  // Target scale per phase
+  const scale = idle ? 1 : phase === "inhale" ? 1.15 : phase === "hold" ? 1.15 : 0.8;
+  const glowOpacity = idle ? 0.15 : phase === "inhale" ? 0.5 : phase === "hold" ? 0.45 : 0.15;
 
-  const springScale = useSpring(targetScale, {
-    stiffness: 40,   // Low = smoother
-    damping: 20,     // High = less bounce
-    mass: 1.2,       // Heavier = more inertia
-  });
-
-  // Glow opacity follows scale
-  const glowOpacity = useTransform(springScale, [0.7, 1.05], [0.15, 0.55]);
-  const ringOpacity = useTransform(springScale, [0.7, 1.05], [0.08, 0.3]);
+  // CSS transition duration matches the breathing phase
+  const dur = idle ? "0.6s" : `${phaseDuration}s`;
+  // Hold phase: no transition needed (stays at same scale)
+  const transitionStyle = phase === "hold" && !idle
+    ? { transition: "none" }
+    : { transition: `transform ${dur} cubic-bezier(0.4, 0, 0.2, 1), opacity ${dur} ease` };
 
   const ORB_SIZE = 200;
   const RING_R = 92;
-  const RING_CIRC = 2 * Math.PI * RING_R;
-
-  // Ring progress: fills based on phase progress
-  const ringProgress = idle ? 0 : phaseProgress;
 
   return (
     <div className="relative mx-auto flex items-center justify-center" style={{ width: ORB_SIZE, height: ORB_SIZE }}>
-      {/* Background ring track */}
+      {/* Background ring */}
       <svg
         className="absolute inset-0 -rotate-90"
         viewBox={`0 0 ${ORB_SIZE} ${ORB_SIZE}`}
-        style={{ width: ORB_SIZE, height: ORB_SIZE }}
+        width={ORB_SIZE} height={ORB_SIZE}
       >
         <circle
           cx={ORB_SIZE / 2} cy={ORB_SIZE / 2} r={RING_R}
           fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="1.5"
         />
-        {/* Phase progress ring — smooth stroke animation */}
-        <motion.circle
-          cx={ORB_SIZE / 2} cy={ORB_SIZE / 2} r={RING_R}
-          fill="none"
-          stroke={phase === "hold" ? "#FF4D4D" : "#E80000"}
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeDasharray={RING_CIRC}
-          style={{
-            strokeDashoffset: RING_CIRC * (1 - ringProgress),
-            opacity: ringOpacity,
-          }}
-        />
       </svg>
 
-      {/* Ambient glow — follows scale smoothly */}
-      <motion.div
-        className="absolute rounded-full pointer-events-none"
+      {/* Ambient glow — CSS transition, GPU-composited */}
+      <div
+        className="absolute rounded-full pointer-events-none will-change-transform"
         style={{
-          width: 120,
-          height: 120,
-          background: "radial-gradient(circle, rgba(232,0,0,0.6) 0%, rgba(232,0,0,0.2) 40%, transparent 70%)",
-          filter: "blur(30px)",
-          scale: springScale,
+          width: 120, height: 120,
+          background: "radial-gradient(circle, rgba(232,0,0,0.5) 0%, rgba(232,0,0,0.15) 40%, transparent 70%)",
+          transform: `scale(${scale})`,
           opacity: glowOpacity,
+          filter: "blur(25px)",
+          ...transitionStyle,
         }}
       />
 
-      {/* Inner orb — the breathing circle */}
-      <motion.div
-        className="absolute rounded-full"
+      {/* Inner orb */}
+      <div
+        className="absolute rounded-full border border-white/[0.04] will-change-transform"
         style={{
-          width: 110,
-          height: 110,
-          background: "radial-gradient(circle at 45% 40%, rgba(255,255,255,0.05) 0%, rgba(232,0,0,0.06) 60%, rgba(232,0,0,0.02) 100%)",
-          border: "1px solid rgba(255,255,255,0.04)",
-          scale: springScale,
+          width: 100, height: 100,
+          background: "radial-gradient(circle at 45% 40%, rgba(255,255,255,0.04) 0%, rgba(232,0,0,0.05) 60%, rgba(232,0,0,0.02) 100%)",
+          transform: `scale(${scale * 0.92})`,
+          ...transitionStyle,
         }}
       />
 
-      {/* Center content — countdown + phase */}
+      {/* Center content */}
       <div className="relative z-10 flex flex-col items-center">
-        <motion.span
-          className="text-[44px] font-extralight text-white tabular-nums select-none leading-none"
-          style={{ scale: useTransform(springScale, [0.7, 1.05], [0.92, 1]) }}
+        <span
+          className="text-[44px] font-extralight text-white tabular-nums select-none leading-none will-change-transform"
+          style={{
+            transform: `scale(${idle ? 1 : scale * 0.88})`,
+            ...transitionStyle,
+          }}
         >
           {countdown}
-        </motion.span>
+        </span>
         {!idle && (
-          <motion.span
-            className="text-[10px] font-medium text-white/40 uppercase tracking-[0.15em] mt-1"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.3 }}
-          >
+          <span className="text-[10px] font-medium text-white/35 uppercase tracking-[0.15em] mt-1.5">
             {phaseLabel}
-          </motion.span>
+          </span>
         )}
       </div>
     </div>
@@ -176,13 +153,13 @@ export function BreathworkScreen({ userId, initialSessionsToday }: BreathworkScr
   const [activePreset, setActivePreset] = useState<Preset["id"]>(() => {
     if (typeof window === "undefined") return DEFAULT_PRESET_ID;
     const stored = localStorage.getItem(`optiz-breathwork-preset-${userId}`) as Preset["id"] | null;
-    if (stored && PRESETS.some((preset) => preset.id === stored)) return stored;
+    if (stored && PRESETS.some((p) => p.id === stored)) return stored;
     return DEFAULT_PRESET_ID;
   });
 
   const config = useMemo<BreathState>(() => {
-    const preset = PRESETS.find((item) => item.id === activePreset) ?? PRESETS[0];
-    return { inhale: preset.inhale, hold: preset.hold, exhale: preset.exhale, cycles: preset.cycles };
+    const p = PRESETS.find((item) => item.id === activePreset) ?? PRESETS[0];
+    return { inhale: p.inhale, hold: p.hold, exhale: p.exhale, cycles: p.cycles };
   }, [activePreset]);
 
   const [running, setRunning] = useState(false);
@@ -198,17 +175,13 @@ export function BreathworkScreen({ userId, initialSessionsToday }: BreathworkScr
   }, [activePreset, userId]);
 
   const phaseSegments = useMemo<PhaseSegment[]>(() => {
-    const segments: PhaseSegment[] = [{ key: "inhale", seconds: config.inhale }];
-    if (config.hold > 0) segments.push({ key: "hold", seconds: config.hold });
-    segments.push({ key: "exhale", seconds: config.exhale });
-    return segments;
+    const segs: PhaseSegment[] = [{ key: "inhale", seconds: config.inhale }];
+    if (config.hold > 0) segs.push({ key: "hold", seconds: config.hold });
+    segs.push({ key: "exhale", seconds: config.exhale });
+    return segs;
   }, [config.exhale, config.hold, config.inhale]);
 
-  const cycleSeconds = useMemo(
-    () => phaseSegments.reduce((sum, p) => sum + p.seconds, 0),
-    [phaseSegments],
-  );
-
+  const cycleSeconds = useMemo(() => phaseSegments.reduce((s, p) => s + p.seconds, 0), [phaseSegments]);
   const totalSeconds = Math.max(1, cycleSeconds * Math.max(1, config.cycles));
   const totalMs = totalSeconds * 1000;
   const elapsedSecFloat = Math.min(totalSeconds, elapsedMs / 1000);
@@ -216,32 +189,23 @@ export function BreathworkScreen({ userId, initialSessionsToday }: BreathworkScr
 
   const phaseData = useMemo(() => {
     let cursor = 0;
-    for (const segment of phaseSegments) {
-      const nextCursor = cursor + segment.seconds;
-      if (currentInCycle < nextCursor) {
-        return {
-          key: segment.key,
-          elapsed: currentInCycle - cursor,
-          remaining: Math.max(0, Math.ceil(segment.seconds - (currentInCycle - cursor))),
-          duration: segment.seconds,
-          progress: (currentInCycle - cursor) / segment.seconds,
-        };
+    for (const seg of phaseSegments) {
+      const next = cursor + seg.seconds;
+      if (currentInCycle < next) {
+        return { key: seg.key, remaining: Math.max(0, Math.ceil(seg.seconds - (currentInCycle - cursor))), duration: seg.seconds };
       }
-      cursor = nextCursor;
+      cursor = next;
     }
     const last = phaseSegments[phaseSegments.length - 1];
-    return { key: last.key, elapsed: last.seconds, remaining: 0, duration: last.seconds, progress: 1 };
+    return { key: last.key, remaining: 0, duration: last.seconds };
   }, [currentInCycle, phaseSegments]);
 
-  const phaseLabel = phaseData.key === "inhale" ? t("breathworkInhale")
-    : phaseData.key === "hold" ? t("breathworkHold") : t("breathworkExhale");
-
+  const phaseLabel = phaseData.key === "inhale" ? t("breathworkInhale") : phaseData.key === "hold" ? t("breathworkHold") : t("breathworkExhale");
   const nextPhaseLabel = (() => {
     const idx = phaseSegments.findIndex((p) => p.key === phaseData.key);
     const next = phaseSegments[(idx + 1) % phaseSegments.length];
     return next.key === "inhale" ? t("breathworkInhale") : next.key === "hold" ? t("breathworkHold") : t("breathworkExhale");
   })();
-
   const cycleNumber = Math.min(config.cycles, Math.floor(elapsedSecFloat / Math.max(1, cycleSeconds)) + 1);
 
   const finishSession = useCallback(() => {
@@ -256,7 +220,6 @@ export function BreathworkScreen({ userId, initialSessionsToday }: BreathworkScr
     setSessionsToday((prev) => prev + 1);
   }, [activePreset, config.cycles, config.exhale, config.hold, config.inhale, soundOn, t, userId]);
 
-  // High-frequency timer for smooth animations
   useEffect(() => {
     if (!running) return;
     const timer = setInterval(() => {
@@ -278,15 +241,10 @@ export function BreathworkScreen({ userId, initialSessionsToday }: BreathworkScr
   }, [phaseData.key, running, soundOn]);
 
   const applyPreset = (presetId: Preset["id"]) => {
-    setActivePreset(presetId);
-    setRunning(false);
-    setElapsedMs(0);
-    lastPhaseRef.current = "inhale";
+    setActivePreset(presetId); setRunning(false); setElapsedMs(0); lastPhaseRef.current = "inhale";
   };
-
-  const toggleSound = () => { const next = !soundOn; setSoundOnState(next); setSoundEnabled(next); };
+  const toggleSound = () => { const n = !soundOn; setSoundOnState(n); setSoundEnabled(n); };
   const resetSession = () => { setRunning(false); setElapsedMs(0); lastPhaseRef.current = "inhale"; };
-
   const handleMainAction = () => {
     if (running) { setRunning(false); return; }
     if (elapsedMs >= totalMs) { setElapsedMs(0); lastPhaseRef.current = "inhale"; }
@@ -312,14 +270,10 @@ export function BreathworkScreen({ userId, initialSessionsToday }: BreathworkScr
         </div>
         <div className="flex items-center gap-2">
           {hasStarted && (
-            <motion.div
-              initial={{ opacity: 0, x: 8 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-3/40 border border-gray-5/20"
-            >
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-3/40 border border-gray-5/20">
               <Timer size={11} className="text-gray-7" />
               <span className="text-[12px] font-semibold text-gray-11 tabular-nums">{formatClock(remainingTotal)}</span>
-            </motion.div>
+            </div>
           )}
           {sessionsToday > 0 && (
             <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-[#E80000]/6 border border-[#E80000]/12">
@@ -336,17 +290,16 @@ export function BreathworkScreen({ userId, initialSessionsToday }: BreathworkScr
           const secs = (preset.inhale + preset.hold + preset.exhale) * preset.cycles;
           const sel = activePreset === preset.id;
           return (
-            <motion.button
+            <button
               key={preset.id}
               type="button"
               onClick={() => applyPreset(preset.id)}
               className={cn(
-                "flex-1 flex flex-col items-center gap-0.5 py-2.5 px-2 rounded-xl border transition-colors",
+                "flex-1 flex flex-col items-center gap-0.5 py-2.5 px-2 rounded-xl border transition-colors duration-150 active:scale-[0.96]",
                 sel
                   ? "bg-[#E80000]/6 border-[#E80000]/20"
-                  : "bg-gray-3/20 border-gray-5/15 hover:bg-gray-3/40"
+                  : "bg-gray-3/20 border-gray-5/15"
               )}
-              whileTap={{ scale: 0.96 }}
             >
               <span className={cn("text-[12px] font-semibold", sel ? "text-[#FF6666]" : "text-gray-11")}>
                 {t(preset.titleKey)}
@@ -354,7 +307,7 @@ export function BreathworkScreen({ userId, initialSessionsToday }: BreathworkScr
               <span className={cn("text-[10px]", sel ? "text-[#FF6666]/60" : "text-gray-7")}>
                 {formatDuration(secs)}
               </span>
-            </motion.button>
+            </button>
           );
         })}
       </div>
@@ -365,21 +318,21 @@ export function BreathworkScreen({ userId, initialSessionsToday }: BreathworkScr
         {hasStarted && (
           <div className="h-[2px] bg-gray-5/10">
             <div
-              className="h-full bg-gradient-to-r from-[#E80000] to-[#FF4D4D] transition-[width] duration-100 ease-linear"
-              style={{ width: `${overallProgress}%` }}
+              className="h-full bg-gradient-to-r from-[#E80000] to-[#FF4D4D]"
+              style={{ width: `${overallProgress}%`, transition: "width 200ms linear" }}
             />
           </div>
         )}
 
         <div className="px-5 pt-5 pb-6">
-          {/* Phase label — centered above orb */}
+          {/* Phase label */}
           <AnimatePresence mode="wait">
             <motion.div
               key={isFinished ? "done" : phaseData.key}
-              initial={{ opacity: 0, y: 4 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
               className="text-center mb-1"
             >
               <p className="text-xl font-medium text-gray-12">
@@ -393,19 +346,18 @@ export function BreathworkScreen({ userId, initialSessionsToday }: BreathworkScr
               {t("breathworkCycle")} {cycleNumber}/{config.cycles} · {nextPhaseLabel}
             </p>
           )}
-
           {!hasStarted && <div className="h-4" />}
 
-          {/* Orb */}
+          {/* Orb — all CSS transitions, no JS animation loop */}
           <BreathingOrb
-            phaseProgress={isFinished ? 0 : phaseData.progress}
             phase={phaseData.key}
+            phaseDuration={phaseData.duration}
             idle={isIdle}
             countdown={isFinished ? 0 : phaseData.remaining}
             phaseLabel={phaseLabel}
           />
 
-          {/* Cycle progress dots */}
+          {/* Cycle dots */}
           <div className="flex items-center justify-center gap-1 mt-5 mb-6">
             {Array.from({ length: config.cycles }).map((_, i) => {
               const done = i < cycleNumber - 1;
@@ -414,7 +366,7 @@ export function BreathworkScreen({ userId, initialSessionsToday }: BreathworkScr
                 <div
                   key={i}
                   className={cn(
-                    "h-1 rounded-full transition-all duration-500 ease-out",
+                    "h-1 rounded-full transition-all duration-300",
                     done ? "w-1 bg-[#E80000]"
                       : active ? "w-3 bg-[#FF4D4D]"
                       : "w-1 bg-white/[0.06]"
@@ -427,48 +379,42 @@ export function BreathworkScreen({ userId, initialSessionsToday }: BreathworkScr
           {/* Controls */}
           {!hasStarted ? (
             <div className="flex justify-center">
-              <motion.button
+              <button
                 type="button"
                 onClick={handleMainAction}
-                className="h-12 px-10 rounded-full optiz-gradient-bg text-white text-[14px] font-semibold inline-flex items-center gap-2 shadow-lg shadow-[#E80000]/15"
-                whileTap={{ scale: 0.94 }}
+                className="h-12 px-10 rounded-full optiz-gradient-bg text-white text-[14px] font-semibold inline-flex items-center gap-2 shadow-lg shadow-[#E80000]/15 active:scale-[0.94] transition-transform"
               >
                 <Play size={16} fill="white" /> {t("breathworkStart")}
-              </motion.button>
+              </button>
             </div>
           ) : (
             <div className="flex items-center justify-center gap-5">
-              <motion.button
+              <button
                 type="button"
                 onClick={resetSession}
-                className="w-10 h-10 rounded-full border border-gray-5/20 bg-gray-3/20 text-gray-8 inline-flex items-center justify-center"
-                whileTap={{ scale: 0.88 }}
+                className="w-10 h-10 rounded-full border border-gray-5/20 bg-gray-3/20 text-gray-8 inline-flex items-center justify-center active:scale-[0.88] transition-transform"
               >
                 <RotateCcw size={14} />
-              </motion.button>
+              </button>
 
-              <motion.button
+              <button
                 type="button"
                 onClick={handleMainAction}
-                className="w-14 h-14 rounded-full optiz-gradient-bg text-white inline-flex items-center justify-center shadow-lg shadow-[#E80000]/20"
-                whileTap={{ scale: 0.88 }}
+                className="w-14 h-14 rounded-full optiz-gradient-bg text-white inline-flex items-center justify-center shadow-lg shadow-[#E80000]/20 active:scale-[0.88] transition-transform"
               >
                 {running ? <Pause size={20} fill="white" /> : <Play size={20} fill="white" className="ml-0.5" />}
-              </motion.button>
+              </button>
 
-              <motion.button
+              <button
                 type="button"
                 onClick={toggleSound}
                 className={cn(
-                  "w-10 h-10 rounded-full border inline-flex items-center justify-center",
-                  soundOn
-                    ? "border-gray-5/20 bg-gray-3/20 text-gray-8"
-                    : "border-[#E80000]/15 bg-[#E80000]/4 text-[#FF6666]/50"
+                  "w-10 h-10 rounded-full border inline-flex items-center justify-center active:scale-[0.88] transition-transform",
+                  soundOn ? "border-gray-5/20 bg-gray-3/20 text-gray-8" : "border-[#E80000]/15 bg-[#E80000]/4 text-[#FF6666]/50"
                 )}
-                whileTap={{ scale: 0.88 }}
               >
                 {soundOn ? <Volume2 size={14} /> : <VolumeX size={14} />}
-              </motion.button>
+              </button>
             </div>
           )}
         </div>

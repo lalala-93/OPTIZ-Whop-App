@@ -1,5 +1,6 @@
 import type { Config } from "tailwindcss";
 import { frostedThemePlugin } from "@whop/react/tailwind";
+import tailwindAnimate from "tailwindcss-animate";
 
 const config: Config = {
   content: [
@@ -8,8 +9,7 @@ const config: Config = {
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./node_modules/@whop/react/dist/**/*.{js,mjs}",
   ],
-  plugins: [frostedThemePlugin()],
+  plugins: [frostedThemePlugin(), tailwindAnimate],
 };
 
 export default config;
-

@@ -17,9 +17,10 @@ const DialogOverlay = React.forwardRef<
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      "fixed inset-0 z-50 bg-black/60 backdrop-blur-[6px]",
+      "fixed inset-0 z-50 bg-black/60",
       "data-[state=open]:animate-in data-[state=closed]:animate-out",
       "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+      "duration-200",
       className
     )}
     {...props}
@@ -36,18 +37,18 @@ const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed z-50 w-full max-w-md border border-gray-5/40 bg-gray-2 shadow-2xl",
-        "duration-300 ease-out",
+        "fixed z-50 w-full max-w-md border border-gray-5/30 bg-gray-2 shadow-2xl outline-none",
         // Mobile: bottom sheet
         "inset-x-0 bottom-0 rounded-t-[20px]",
         // Desktop: centered
-        "sm:bottom-auto sm:left-[50%] sm:top-[50%] sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-2xl",
+        "sm:bottom-auto sm:left-[50%] sm:top-[50%] sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-2xl sm:inset-x-auto",
         // Animations
         "data-[state=open]:animate-in data-[state=closed]:animate-out",
         "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
-        "data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
-        "sm:data-[state=closed]:slide-out-to-bottom-0 sm:data-[state=open]:slide-in-from-bottom-0",
+        "data-[state=closed]:slide-out-to-bottom-[80%] data-[state=open]:slide-in-from-bottom-[80%]",
+        "sm:data-[state=closed]:slide-out-to-bottom-[2%] sm:data-[state=open]:slide-in-from-bottom-[2%]",
         "sm:data-[state=closed]:zoom-out-95 sm:data-[state=open]:zoom-in-95",
+        "duration-300",
         className
       )}
       {...props}
