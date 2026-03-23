@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { BarChart3, Footprints, Target, Zap } from "lucide-react";
+import { Footprints, Target } from "lucide-react";
 import { XPToast, type XPToastData } from "./XPToast";
 import { useI18n } from "./i18n";
 import { upsertDailySteps, getDailySteps, getStepsHistory } from "@/lib/actions";
@@ -10,7 +10,6 @@ import { upsertDailySteps, getDailySteps, getStepsHistory } from "@/lib/actions"
 import { cn } from "@/lib/utils";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -41,8 +40,8 @@ function getTodayISO() {
   return new Date().toISOString().split("T")[0];
 }
 
-/* ── StepProgressRing ── */
-function StepProgressRing({
+/* ── StepProgressBar ── */
+function StepProgressBar({
   progress,
   done,
   goal,
@@ -53,39 +52,27 @@ function StepProgressRing({
   goal: number;
   stepsUnit: string;
 }) {
-  const size = 180;
-  const strokeWidth = 10;
-  const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference * (1 - Math.min(100, progress) / 100);
-
   return (
-    <div className="relative mx-auto w-[180px] h-[180px]">
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90">
-        <defs>
-          <linearGradient id="stepGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#E80000" />
-            <stop offset="100%" stopColor="#FF2D2D" />
-          </linearGradient>
-        </defs>
-        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={strokeWidth} />
-        <motion.circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke="url(#stepGradient)"
-          strokeWidth={strokeWidth}
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          animate={{ strokeDashoffset: offset }}
-          transition={{ type: "spring", stiffness: 60, damping: 15 }}
+    <div>
+      <div className="flex items-baseline justify-between mb-3">
+        <p className="text-[32px] font-bold text-gray-12 tabular-nums leading-none tracking-tight">
+          {done.toLocaleString()}
+        </p>
+        <p className="text-[13px] text-gray-8 tabular-nums">
+          / {goal.toLocaleString()} {stepsUnit}
+        </p>
+      </div>
+      <div className="h-3 rounded-full bg-white/[0.06] overflow-hidden">
+        <motion.div
+          className="h-full rounded-full bg-[#E80000]"
+          initial={{ width: 0 }}
+          animate={{ width: `${Math.min(100, progress)}%` }}
+          transition={{ type: "spring", stiffness: 80, damping: 18 }}
         />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <Footprints size={20} className="text-gray-8 mb-1" />
-        <p className="text-[36px] font-bold text-gray-12 tabular-nums leading-none">{done.toLocaleString()}</p>
-        <p className="text-[13px] text-gray-8 mt-1">/ {goal.toLocaleString()} {stepsUnit}</p>
+      </div>
+      <div className="flex items-center justify-between mt-2">
+        <p className="text-[11px] text-gray-7 tabular-nums">{progress}%</p>
+        <p className="text-[11px] text-gray-7 tabular-nums">{Math.max(0, goal - done).toLocaleString()} {stepsUnit} left</p>
       </div>
     </div>
   );
@@ -286,80 +273,82 @@ export function StepsScreen({ userId, onAwardXpEvent, initialData }: StepsScreen
         <p className="text-sm text-gray-8 leading-relaxed">{t("stepsSubtitle")}</p>
       </div>
 
-      {/* Progress Ring + Quick Add — unified hero card */}
+      {/* Progress Card */}
       <motion.section initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-        <Card className="rounded-3xl border-white/[0.06] bg-white/[0.025] shadow-none overflow-hidden">
-          <CardContent className="p-5 pb-4">
-            {/* Ring */}
-            <StepProgressRing
+        <Card className="rounded-2xl border-white/[0.06] bg-white/[0.025] shadow-none">
+          <CardContent className="p-5">
+            <StepProgressBar
               progress={progress}
               done={state.done}
               goal={state.goal}
               stepsUnit={t("stepsUnit")}
             />
-
-            {/* Floating delta — OUTSIDE the ring, below it */}
-            <div className="h-7 flex items-center justify-center">
-              <AnimatePresence mode="popLayout">
-                {deltaBubble !== 0 && (
-                  <motion.p
-                    key={deltaKey}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                    className={`text-[15px] font-semibold tabular-nums ${deltaBubble > 0 ? "text-[#FF6D6D]" : "text-gray-9"}`}
-                  >
-                    {deltaBubble > 0 ? `+${deltaBubble.toLocaleString()}` : deltaBubble.toLocaleString()} {t("stepsUnit")}
-                  </motion.p>
-                )}
-              </AnimatePresence>
-            </div>
-
-            {/* Stats row */}
-            <div className="mt-1 grid grid-cols-2 gap-3">
-              <div className="rounded-2xl bg-white/[0.03] border border-white/[0.06] p-3 text-center">
-                <p className="text-[10px] text-gray-7 uppercase tracking-wider mb-1">{t("stepsRemaining")}</p>
-                <p className="text-[20px] font-semibold text-gray-12 tabular-nums leading-none">{remaining.toLocaleString()}</p>
-              </div>
-              <div className="rounded-2xl bg-white/[0.03] border border-white/[0.06] p-3 text-center">
-                <p className="text-[10px] text-gray-7 uppercase tracking-wider mb-1">Progress</p>
-                <p className="text-[20px] font-semibold tabular-nums leading-none" style={{ color: progress >= 100 ? "#FF6D6D" : "var(--gray-12)" }}>{progress}%</p>
-              </div>
-            </div>
-
-            {/* Primary add buttons */}
-            <div className="mt-4 grid grid-cols-3 gap-2">
-              {[100, 500, 1000].map((delta) => (
-                <Button
-                  key={delta}
-                  onClick={() => shiftDone(delta)}
-                  className="h-[52px] rounded-2xl bg-[#E80000] hover:bg-[#FF2D2D] border-none text-[16px] font-semibold text-white active:scale-[0.96] transition-transform"
-                >
-                  +{delta >= 1000 ? `${delta / 1000}k` : delta}
-                </Button>
-              ))}
-            </div>
-
-            {/* Secondary adjust buttons */}
-            <div className="mt-2 grid grid-cols-4 gap-1.5">
-              {[-100, -10, +10, +50].map((delta) => (
-                <Button
-                  key={delta}
-                  variant="ghost"
-                  onClick={() => shiftDone(delta)}
-                  className="h-10 rounded-xl text-[13px] font-medium text-gray-10 hover:bg-white/[0.04] active:scale-[0.96] transition-transform"
-                >
-                  {delta > 0 ? `+${delta}` : String(delta)}
-                </Button>
-              ))}
-            </div>
           </CardContent>
         </Card>
       </motion.section>
 
+      {/* Quick Add Card */}
+      <Card className="rounded-2xl border-white/[0.06] bg-white/[0.025] shadow-none">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-[13px] font-semibold text-gray-11 inline-flex items-center gap-1.5">
+              <Footprints size={14} className="text-gray-8" /> {t("stepsTitle")}
+            </h3>
+            {/* Inline delta feedback */}
+            <AnimatePresence mode="wait">
+              {deltaBubble !== 0 && (
+                <motion.span
+                  key={deltaKey}
+                  initial={{ opacity: 0, x: 8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -4 }}
+                  transition={{ duration: 0.3 }}
+                  className={cn(
+                    "text-[13px] font-semibold tabular-nums",
+                    deltaBubble > 0 ? "text-emerald-400" : "text-gray-9",
+                  )}
+                >
+                  {deltaBubble > 0 ? "+" : ""}{deltaBubble.toLocaleString()} {t("stepsUnit")}
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Primary — large step increments */}
+          <div className="grid grid-cols-3 gap-2 mb-2">
+            {[100, 500, 1000].map((delta) => (
+              <Button
+                key={delta}
+                onClick={() => shiftDone(delta)}
+                variant="outline"
+                className="h-12 rounded-xl border-white/[0.08] bg-white/[0.03] text-[15px] font-semibold text-gray-12 hover:bg-white/[0.06] active:scale-[0.97] transition-transform"
+              >
+                +{delta >= 1000 ? `${delta / 1000}k` : delta}
+              </Button>
+            ))}
+          </div>
+
+          {/* Secondary — fine adjustments */}
+          <div className="grid grid-cols-4 gap-1.5">
+            {[-100, -10, +10, +50].map((delta) => (
+              <Button
+                key={delta}
+                variant="ghost"
+                onClick={() => shiftDone(delta)}
+                className={cn(
+                  "h-9 rounded-lg text-[12px] font-medium hover:bg-white/[0.04] active:scale-[0.97] transition-transform",
+                  delta < 0 ? "text-gray-8" : "text-gray-11",
+                )}
+              >
+                {delta > 0 ? `+${delta}` : String(delta)}
+              </Button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Goal Settings */}
-      <Card className="rounded-3xl border-white/[0.06] bg-white/[0.025] shadow-none">
+      <Card className="rounded-2xl border-white/[0.06] bg-white/[0.025] shadow-none">
         <CardContent className="p-4 space-y-3">
           <h3 className="text-[13px] font-semibold text-gray-11 inline-flex items-center gap-1.5">
             <Target size={14} className="text-gray-8" /> {t("stepsDailyGoal")}
@@ -382,13 +371,8 @@ export function StepsScreen({ userId, onAwardXpEvent, initialData }: StepsScreen
       </Card>
 
       {/* Coach tip */}
-      <div className="rounded-2xl border border-white/[0.05] bg-white/[0.015] p-4">
-        <div className="flex items-start gap-3">
-          <div className="w-7 h-7 rounded-lg bg-[#E80000]/10 flex items-center justify-center shrink-0 mt-0.5">
-            <Zap size={13} className="text-[#FF6D6D]" />
-          </div>
-          <p className="text-[12px] text-gray-8 leading-relaxed">{t("stepsCoachTip")}</p>
-        </div>
+      <div className="rounded-xl border border-white/[0.04] p-3.5">
+        <p className="text-[11px] text-gray-7 leading-relaxed">{t("stepsCoachTip")}</p>
       </div>
 
       {/* Weekly History — matching nutrition screen design */}
