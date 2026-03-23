@@ -144,6 +144,7 @@ export function StepsScreen({ userId, onAwardXpEvent, initialData }: StepsScreen
   }));
   const [toast, setToast] = useState<XPToastData | null>(null);
   const [deltaBubble, setDeltaBubble] = useState(0);
+  const [deltaKey, setDeltaKey] = useState(0);
   const [milestonesAwarded, setMilestonesAwarded] = useState<number[]>(initialData?.milestonesAwarded ?? []);
   const [goalHit, setGoalHit] = useState(initialData?.goalHit ?? false);
   const [historyData, setHistoryData] = useState<{ log_date: string; done: number; goal: number }[]>([]);
@@ -271,7 +272,8 @@ export function StepsScreen({ userId, onAwardXpEvent, initialData }: StepsScreen
     const next = { ...state, done: clampInt(state.done + delta) };
     updateState(next);
     setDeltaBubble(delta);
-    setTimeout(() => setDeltaBubble(0), 320);
+    setDeltaKey((k) => k + 1);
+    setTimeout(() => setDeltaBubble(0), 900);
   };
 
   return (
@@ -292,17 +294,20 @@ export function StepsScreen({ userId, onAwardXpEvent, initialData }: StepsScreen
         <Card className="rounded-3xl border-gray-5/35 bg-gray-2/82 backdrop-blur-xl shadow-none">
           <CardContent className="p-5">
             <div className="relative">
-              <AnimatePresence>
+              <AnimatePresence mode="popLayout">
                 {deltaBubble !== 0 && (
                   <motion.div
-                    initial={{ opacity: 0, y: 4, scale: 0.95 }}
-                    animate={{ opacity: 1, y: -6, scale: 1 }}
-                    exit={{ opacity: 0, y: -12 }}
-                    className="absolute left-1/2 -translate-x-1/2 top-2 z-10"
+                    key={deltaKey}
+                    initial={{ opacity: 0, y: 10, scale: 0.8 }}
+                    animate={{ opacity: 1, y: -20, scale: 1 }}
+                    exit={{ opacity: 0, y: -45, scale: 0.7 }}
+                    transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+                    className="absolute left-1/2 -translate-x-1/2 top-0 z-10 pointer-events-none"
                   >
-                    <Badge className="border-none bg-[#E80000]/15 text-[#FF6D6D] text-[14px] font-semibold px-2.5 py-0.5">
-                      {deltaBubble > 0 ? `+${deltaBubble}` : deltaBubble}
-                    </Badge>
+                    <span className={`text-[22px] font-bold tabular-nums drop-shadow-lg ${deltaBubble > 0 ? "text-white" : "text-gray-9"}`}>
+                      {deltaBubble > 0 ? `+${deltaBubble.toLocaleString()}` : deltaBubble.toLocaleString()}
+                      <span className="text-[13px] font-semibold text-gray-8 ml-0.5">{t("stepsUnit")}</span>
+                    </span>
                   </motion.div>
                 )}
               </AnimatePresence>
