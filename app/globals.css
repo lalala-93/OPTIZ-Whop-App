@@ -113,6 +113,23 @@ body {
   --radius: 0.75rem;
 }
 
+/* ── Modal/Sheet smooth scroll for iOS + Whop iframe ── */
+[data-vaul-drawer-wrapper] {
+  touch-action: pan-y;
+}
+
+[data-radix-dialog-content],
+[data-vaul-drawer] {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* Force GPU compositing on animated elements to prevent jank */
+[data-radix-dialog-overlay],
+[data-vaul-overlay] {
+  will-change: opacity;
+}
+
 /* ── Utility Classes ── */
 .optiz-gradient-text {
   background: var(--optiz-gradient);

@@ -9,31 +9,39 @@ interface RankBadgeProps {
     size?: number;
     className?: string;
     mousePosition?: { x: number; y: number };
+    /** When true, disables mount animations and heavy SVG filters (use in lists/scrollable areas) */
+    static?: boolean;
 }
 
-export function RankBadge({ colors, glowColor, tierName, size = 80, className = "", mousePosition }: RankBadgeProps) {
+export function RankBadge({ colors, glowColor, tierName, size = 80, className = "", mousePosition, static: isStatic }: RankBadgeProps) {
     const id = `rb-${(tierName || "def").slice(0, 4)}-${size}`;
     const t = (tierName || "Recruit").toLowerCase();
 
-    // Subtle breathing — CSS only, no JS animation loop
-    const breathing = {};
+    const Wrapper = isStatic ? "div" : motion.div;
+    const SvgWrapper = isStatic ? "svg" : motion.svg;
+
+    const wrapperProps = isStatic
+        ? {}
+        : {
+              initial: { scale: 0.8, opacity: 0 },
+              animate: { scale: 1, opacity: 1 },
+              transition: { type: "spring", stiffness: 250, damping: 20 },
+              whileHover: { scale: 1.05 },
+          };
 
     return (
-        <motion.div
+        <Wrapper
             className={`relative flex items-center justify-center pointer-events-none ${className}`}
             style={{
                 width: size,
                 height: size,
-                background: `radial-gradient(circle at 30% 20%, ${colors[0]}18 0%, transparent 62%)`,
+                background: isStatic ? "none" : `radial-gradient(circle at 30% 20%, ${colors[0]}18 0%, transparent 62%)`,
                 borderRadius: "50%",
             }}
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: "spring", stiffness: 250, damping: 20 }}
-            whileHover={{ scale: 1.05 }}
+            {...(wrapperProps as Record<string, unknown>)}
         >
-            {/* Ambient Background Glow for higher tiers */}
-            {(t === "veteran" || t === "prestige") && (
+            {/* Ambient Background Glow for higher tiers — skip in static mode */}
+            {!isStatic && (t === "veteran" || t === "prestige") && (
                 <div
                     className="absolute inset-0 rounded-full"
                     style={{
@@ -44,11 +52,9 @@ export function RankBadge({ colors, glowColor, tierName, size = 80, className = 
                 />
             )}
 
-            {/* Reflection Overlay (Cursor follow) */}
-            {mousePosition && (
-                <div
-                    className="absolute inset-0 z-10 overflow-hidden rounded-full mix-blend-overlay"
-                >
+            {/* Reflection Overlay (Cursor follow) — skip in static mode */}
+            {!isStatic && mousePosition && (
+                <div className="absolute inset-0 z-10 overflow-hidden rounded-full mix-blend-overlay">
                     <motion.div
                         className="w-full h-full"
                         style={{
@@ -60,7 +66,7 @@ export function RankBadge({ colors, glowColor, tierName, size = 80, className = 
                 </div>
             )}
 
-            <motion.svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-2xl relative z-0" animate={breathing}>
+            <SvgWrapper viewBox="0 0 100 100" className={`w-full h-full relative z-0 ${isStatic ? "" : "drop-shadow-2xl"}`} {...({} as Record<string, unknown>)}>
                 <defs>
                     <linearGradient id={`${id}-metal`} x1="0" y1="0" x2="1" y2="1">
                         <stop offset="0%" stopColor="#6B7280" />
@@ -83,39 +89,44 @@ export function RankBadge({ colors, glowColor, tierName, size = 80, className = 
                         <stop offset="70%" stopColor="#B45309" />
                         <stop offset="100%" stopColor="#78350F" />
                     </linearGradient>
-                    <filter id={`${id}-drop`}>
-                        <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="#000" floodOpacity="0.5" />
-                    </filter>
-                    <filter id={`${id}-glow-red`}>
-                        <feGaussianBlur stdDeviation="3" result="coloredBlur" />
-                        <feMerge>
-                            <feMergeNode in="coloredBlur" />
-                            <feMergeNode in="SourceGraphic" />
-                        </feMerge>
-                    </filter>
-                    <filter id={`${id}-glow-gold`}>
-                        <feGaussianBlur stdDeviation="4" result="coloredBlur" />
-                        <feMerge>
-                            <feMergeNode in="coloredBlur" />
-                            <feMergeNode in="SourceGraphic" />
-                        </feMerge>
-                    </filter>
+                    {/* SVG filters only in non-static mode (heavy on GPU) */}
+                    {!isStatic && (
+                        <>
+                            <filter id={`${id}-drop`}>
+                                <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="#000" floodOpacity="0.5" />
+                            </filter>
+                            <filter id={`${id}-glow-red`}>
+                                <feGaussianBlur stdDeviation="3" result="coloredBlur" />
+                                <feMerge>
+                                    <feMergeNode in="coloredBlur" />
+                                    <feMergeNode in="SourceGraphic" />
+                                </feMerge>
+                            </filter>
+                            <filter id={`${id}-glow-gold`}>
+                                <feGaussianBlur stdDeviation="4" result="coloredBlur" />
+                                <feMerge>
+                                    <feMergeNode in="coloredBlur" />
+                                    <feMergeNode in="SourceGraphic" />
+                                </feMerge>
+                            </filter>
+                        </>
+                    )}
                 </defs>
 
                 {/* Render specific geometry based on rank */}
-                {t === "recruit" && <InitiateBadge id={id} />}
-                {t === "soldier" && <GrinderBadge id={id} />}
-                {t === "veteran" && <EliteBadge id={id} />}
-                {t === "prestige" && <ApexBadge id={id} />}
-            </motion.svg>
-        </motion.div>
+                {t === "recruit" && <InitiateBadge id={id} noFilter={isStatic} />}
+                {t === "soldier" && <GrinderBadge id={id} noFilter={isStatic} />}
+                {t === "veteran" && <EliteBadge id={id} noFilter={isStatic} />}
+                {t === "prestige" && <ApexBadge id={id} noFilter={isStatic} />}
+            </SvgWrapper>
+        </Wrapper>
     );
 }
 
 // ── TIER 1: INITIATE (Raw Steel, Hexagon) ──
-function InitiateBadge({ id }: { id: string }) {
+function InitiateBadge({ id, noFilter }: { id: string; noFilter?: boolean }) {
     return (
-        <g filter={`url(#${id}-drop)`}>
+        <g filter={noFilter ? undefined : `url(#${id}-drop)`}>
             {/* Heavy Base Hexagon */}
             <path d="M50 10 L85 25 L85 75 L50 90 L15 75 L15 25 Z" fill={`url(#${id}-metal)`} stroke="#4B5563" strokeWidth="2" />
 
@@ -129,9 +140,9 @@ function InitiateBadge({ id }: { id: string }) {
 }
 
 // ── TIER 2: GRINDER (Forged Bronze, Heavy Shield) ──
-function GrinderBadge({ id }: { id: string }) {
+function GrinderBadge({ id, noFilter }: { id: string; noFilter?: boolean }) {
     return (
-        <g filter={`url(#${id}-drop)`}>
+        <g filter={noFilter ? undefined : `url(#${id}-drop)`}>
             {/* Aggressive Wide Shield Base */}
             <path d="M50 5 L95 25 L85 80 L50 95 L15 80 L5 25 Z" fill={`url(#${id}-bronze)`} stroke="#D97706" strokeWidth="2.5" />
 
@@ -148,9 +159,9 @@ function GrinderBadge({ id }: { id: string }) {
 }
 
 // ── TIER 3: ELITE (OPTIZ Red & Black, Demon Shield) ──
-function EliteBadge({ id }: { id: string }) {
+function EliteBadge({ id, noFilter }: { id: string; noFilter?: boolean }) {
     return (
-        <g filter={`url(#${id}-drop)`}>
+        <g filter={noFilter ? undefined : `url(#${id}-drop)`}>
             {/* Winged Demon Base */}
             <path d="M50 5 L95 20 L80 55 L95 65 L50 95 L5 65 L20 55 L5 20 Z" fill={`url(#${id}-crimson)`} stroke="#DC2626" strokeWidth="2" />
 
@@ -158,23 +169,23 @@ function EliteBadge({ id }: { id: string }) {
             <path d="M50 14 L82 26 L70 55 L82 62 L50 85 L18 62 L30 55 L18 26 Z" fill="#000000" />
 
             {/* Red Core Light */}
-            <circle cx="50" cy="50" r="15" fill="#DC2626" filter={`url(#${id}-glow-red)`} opacity="0.6" />
+            <circle cx="50" cy="50" r="15" fill="#DC2626" filter={noFilter ? undefined : `url(#${id}-glow-red)`} opacity="0.6" />
 
             {/* The "Optiz" Spark/Bolt */}
-            <path d="M45 25 L65 25 L55 50 L70 50 L35 80 L45 55 L30 55 Z" fill="#FF5252" filter={`url(#${id}-glow-red)`} opacity="0.9" />
+            <path d="M45 25 L65 25 L55 50 L70 50 L35 80 L45 55 L30 55 Z" fill="#FF5252" filter={noFilter ? undefined : `url(#${id}-glow-red)`} opacity="0.9" />
         </g>
     );
 }
 
 // ── TIER 4: APEX (Floating Obsidian & Gold, Masterpiece) ──
-function ApexBadge({ id }: { id: string }) {
+function ApexBadge({ id, noFilter }: { id: string; noFilter?: boolean }) {
     return (
         <g>
             {/* Gold Back-Arc */}
-            <path d="M20 30 Q50 0 80 30" fill="none" stroke={`url(#${id}-gold)`} strokeWidth="4" strokeLinecap="round" filter={`url(#${id}-glow-gold)`} />
+            <path d="M20 30 Q50 0 80 30" fill="none" stroke={`url(#${id}-gold)`} strokeWidth="4" strokeLinecap="round" filter={noFilter ? undefined : `url(#${id}-glow-gold)`} />
 
             {/* Main Obsidian Shield with Gold Border */}
-            <g filter={`url(#${id}-drop)`}>
+            <g filter={noFilter ? undefined : `url(#${id}-drop)`}>
                 <path d="M50 10 L90 35 L75 85 L50 100 L25 85 L10 35 Z" fill="#09090B" stroke={`url(#${id}-gold)`} strokeWidth="3" />
 
                 {/* Gold Inner Carvings */}
@@ -182,7 +193,7 @@ function ApexBadge({ id }: { id: string }) {
 
                 {/* Center Core Gem */}
                 <g>
-                    <circle cx="50" cy="55" r="18" fill="#FBBF24" filter={`url(#${id}-glow-gold)`} opacity="0.6" />
+                    <circle cx="50" cy="55" r="18" fill="#FBBF24" filter={noFilter ? undefined : `url(#${id}-glow-gold)`} opacity="0.6" />
                     <path d="M50 35 L65 55 L50 75 L35 55 Z" fill={`url(#${id}-gold)`} />
                     <path d="M50 42 L58 55 L50 68 L42 55 Z" fill="#FEF08A" />
                 </g>

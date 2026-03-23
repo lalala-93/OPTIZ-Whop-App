@@ -6,7 +6,6 @@ import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { RANK_TIERS, getXpForLevel, getRankForLevel, getRankNameKey, formatNumber } from "./rankSystem";
@@ -56,7 +55,7 @@ export function XPMilestonesModal({ isOpen, onClose, currentLevel, totalXp }: XP
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent className="bg-gray-2 border-gray-5/40 text-gray-12 max-w-md p-0 gap-0 max-h-[85vh] flex flex-col overflow-hidden">
+            <DialogContent className="bg-gray-2 border-gray-5/40 text-gray-12 max-w-md p-0 gap-0 max-h-[85vh] flex flex-col">
                 <button
                     onClick={onClose}
                     className="absolute right-4 top-4 w-7 h-7 rounded-full bg-gray-4/80 border border-gray-5/50 flex items-center justify-center text-gray-8 hover:text-gray-12 hover:bg-gray-5 transition-all z-10"
@@ -105,8 +104,8 @@ export function XPMilestonesModal({ isOpen, onClose, currentLevel, totalXp }: XP
                     </div>
                 </div>
 
-                {/* Level list */}
-                <ScrollArea className="flex-1 px-4 py-3">
+                {/* Level list — native scroll for smooth iOS/iframe touch */}
+                <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-3 -webkit-overflow-scrolling-touch">
                     <div className="space-y-0.5">
                         {levels.map((item) => (
                             <div key={item.level}>
@@ -118,6 +117,7 @@ export function XPMilestonesModal({ isOpen, onClose, currentLevel, totalXp }: XP
                                             glowColor={item.rank.tier.glowColor}
                                             tierName={item.rank.tier.name}
                                             size={22}
+                                            static
                                         />
                                         <span
                                             className="text-[10px] font-bold uppercase tracking-widest"
@@ -192,7 +192,7 @@ export function XPMilestonesModal({ isOpen, onClose, currentLevel, totalXp }: XP
                             {t("milestonesBeyond20")}
                         </p>
                     </div>
-                </ScrollArea>
+                </div>
             </DialogContent>
         </Dialog>
     );

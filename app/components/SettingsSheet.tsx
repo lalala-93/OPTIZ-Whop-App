@@ -85,7 +85,7 @@ export function SettingsSheet({
     return (
         <>
             <Drawer open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-                <DrawerContent className="bg-gray-2/95 backdrop-blur-xl border-gray-4 max-h-[85vh] overflow-y-auto">
+                <DrawerContent className="bg-gray-2/95 backdrop-blur-xl border-gray-4 max-h-[85vh] overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: "touch" }}>
                     <DrawerHeader className="relative pb-0">
                         <Button
                             variant="ghost"
