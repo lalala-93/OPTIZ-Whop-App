@@ -819,13 +819,13 @@ export function TrainingHubScreen({ userId, onAwardXpEvent, initialCompletionsTo
                     </div>
                   </div>
                   <div className="flex gap-1.5 mt-2">
-                    <Badge className="rounded-full bg-white/10 backdrop-blur-sm text-[10px] text-white/80 border-0 hover:bg-white/15">
+                    <Badge className="rounded-full bg-white/10 text-[10px] text-white/80 border-0 hover:bg-white/15">
                       {s.exercises.length} {t("exercises")}
                     </Badge>
-                    <Badge className="rounded-full bg-white/10 backdrop-blur-sm text-[10px] text-white/80 border-0 hover:bg-white/15">
+                    <Badge className="rounded-full bg-white/10 text-[10px] text-white/80 border-0 hover:bg-white/15">
                       ~{s.durationMin} {t("minutesShort")}
                     </Badge>
-                    <Badge className="rounded-full bg-white/10 backdrop-blur-sm text-[10px] text-white/80 border-0 hover:bg-white/15">
+                    <Badge className="rounded-full bg-white/10 text-[10px] text-white/80 border-0 hover:bg-white/15">
                       {prog.level === "beginner" ? t("trainingLevelBeginner") : t("trainingLevelIntermediate")}
                     </Badge>
                   </div>

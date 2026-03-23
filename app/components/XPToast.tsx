@@ -25,7 +25,7 @@ export function XPToast({ toast }: XPToastProps) {
           transition={{ type: "spring", stiffness: 400, damping: 28 }}
           className="fixed bottom-[calc(env(safe-area-inset-bottom,0px)+24px)] left-1/2 -translate-x-1/2 z-40 w-[min(88vw,380px)]"
         >
-          <div className="rounded-2xl border border-[#E80000]/25 bg-gray-2/95 backdrop-blur-xl px-4 py-3 shadow-[0_8px_32px_rgba(232,0,0,0.12),0_16px_48px_rgba(0,0,0,0.4)]">
+          <div className="rounded-2xl border border-[#E80000]/25 bg-gray-2 px-4 py-3 shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
             <div className="flex items-center gap-3">
               {/* XP icon */}
               <div className="w-9 h-9 rounded-xl bg-[#E80000]/12 border border-[#E80000]/20 flex items-center justify-center shrink-0">

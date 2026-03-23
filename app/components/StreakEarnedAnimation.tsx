@@ -30,7 +30,7 @@ export function StreakEarnedAnimation({ isVisible, onComplete }: StreakEarnedAni
                     transition={{ type: "spring", stiffness: 400, damping: 30 }}
                 >
                     <div className="pointer-events-auto bg-gray-2 border border-gray-5/50 shadow-[0_8px_32px_rgba(0,0,0,0.5)] rounded-2xl px-5 py-3 flex items-center gap-3 max-w-xs">
-                        <div className="shrink-0" style={{ filter: "drop-shadow(0 0 8px rgba(255,107,0,0.4))" }}>
+                        <div className="shrink-0">
                             <AnimatedFireIcon size={28} />
                         </div>
                         <div>

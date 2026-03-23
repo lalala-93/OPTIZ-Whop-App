@@ -10,12 +10,12 @@ interface TaskCompleteAnimationProps {
     xpEarned: number;
 }
 
-const PARTICLES = Array.from({ length: 12 }, (_, i) => ({
+const PARTICLES = Array.from({ length: 6 }, (_, i) => ({
     id: i,
-    angle: (i / 12) * 360,
-    delay: i * 0.03,
-    distance: 60 + Math.random() * 40,
-    size: 3 + Math.random() * 4,
+    angle: (i / 6) * 360,
+    delay: i * 0.04,
+    distance: 50 + Math.random() * 30,
+    size: 3 + Math.random() * 3,
 }));
 
 export function TaskCompleteAnimation({
@@ -42,9 +42,9 @@ export function TaskCompleteAnimation({
                     transition={{ duration: 0.2 }}
                     className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none"
                 >
-                    {/* Backdrop */}
+                    {/* Backdrop — no blur for perf */}
                     <motion.div
-                        className="absolute inset-0 bg-black/70 backdrop-blur-md"
+                        className="absolute inset-0 bg-black/80"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
@@ -57,14 +57,6 @@ export function TaskCompleteAnimation({
                             initial={{ scale: 0, opacity: 0.8 }}
                             animate={{ scale: 4, opacity: 0 }}
                             transition={{ duration: 1, ease: "easeOut" }}
-                        />
-
-                        {/* Second ring */}
-                        <motion.div
-                            className="absolute w-16 h-16 rounded-full border border-[#FF2D2D]"
-                            initial={{ scale: 0, opacity: 0.5 }}
-                            animate={{ scale: 3, opacity: 0 }}
-                            transition={{ duration: 0.8, delay: 0.1, ease: "easeOut" }}
                         />
 
                         {/* Particles */}
@@ -97,7 +89,7 @@ export function TaskCompleteAnimation({
 
                         {/* Checkmark circle */}
                         <motion.div
-                            className="w-20 h-20 rounded-full bg-[#E80000] flex items-center justify-center shadow-[0_0_40px_rgba(232,0,0,0.4)]"
+                            className="w-20 h-20 rounded-full bg-[#E80000] flex items-center justify-center"
                             initial={{ scale: 0.2, opacity: 0 }}
                             animate={{
                                 scale: [0.2, 1.15, 1],

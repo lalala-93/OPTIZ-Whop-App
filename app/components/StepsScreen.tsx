@@ -381,7 +381,7 @@ export function StepsScreen({ userId, onAwardXpEvent, initialData }: StepsScreen
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
       >
-        <Card className="rounded-3xl border-white/[0.06] bg-white/[0.02] backdrop-blur-xl shadow-none">
+        <Card className="rounded-3xl border-white/[0.06] bg-white/[0.02] shadow-none">
           <CardHeader className="p-5 pb-0">
             <h3 className="text-[14px] font-semibold text-gray-12">{t("stepsWeeklyView")}</h3>
           </CardHeader>

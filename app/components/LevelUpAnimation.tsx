@@ -12,14 +12,14 @@ interface LevelUpAnimationProps {
     newLevel: number;
 }
 
-const CONFETTI = Array.from({ length: 20 }, (_, i) => ({
+const CONFETTI = Array.from({ length: 8 }, (_, i) => ({
     id: i,
-    x: -150 + Math.random() * 300,
-    delay: Math.random() * 0.5,
-    duration: 1.5 + Math.random() * 1,
-    size: 4 + Math.random() * 6,
-    color: ["#E80000", "#FF2D2D", "#FFD700", "#FF6D00", "#FFFFFF"][Math.floor(Math.random() * 5)],
-    rotation: Math.random() * 720,
+    x: -120 + Math.random() * 240,
+    delay: Math.random() * 0.3,
+    duration: 1.2 + Math.random() * 0.6,
+    size: 4 + Math.random() * 4,
+    color: ["#E80000", "#FF2D2D", "#FFD700", "#FFFFFF"][i % 4],
+    rotation: Math.random() * 360,
 }));
 
 export function LevelUpAnimation({
@@ -85,19 +85,6 @@ export function LevelUpAnimation({
                     ))}
 
                     <div className="relative z-10 flex flex-col items-center">
-                        {/* Glow ring */}
-                        <motion.div
-                            className="absolute rounded-full"
-                            style={{
-                                width: 160,
-                                height: 160,
-                                boxShadow: `0 0 60px ${rankData.tier.glowColor}, 0 0 120px ${rankData.tier.glowColor}`,
-                            }}
-                            initial={{ scale: 0, opacity: 0 }}
-                            animate={{ scale: [0, 1.5, 1.2], opacity: [0, 0.6, 0.3] }}
-                            transition={{ duration: 1, delay: 0.2 }}
-                        />
-
                         {/* Rank badge */}
                         <motion.div
                             initial={{ scale: 0, rotate: -30 }}

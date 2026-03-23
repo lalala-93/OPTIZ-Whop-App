@@ -425,12 +425,7 @@ export function HomeScreen({
   return (
     <div className="flex flex-col gap-4 pb-8">
       {/* ── Section 1: Rank Ring ── */}
-      <motion.div
-        className="flex flex-col items-center pt-1"
-        initial={{ opacity: 0, y: 12, scale: 0.97 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-      >
+      <div className="flex flex-col items-center pt-1 animate-fade-in">
         <div>
           <XPRing
             progressPercent={progressPercent}
@@ -452,17 +447,13 @@ export function HomeScreen({
             {translatedRank}
           </p>
         </div>
-      </motion.div>
+      </div>
 
       {/* ── Section 2: Streak Calendar ── */}
       <StreakCalendar streakDays={streakDays} />
 
       {/* ── Section 4: Quote ── */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.12 }}
-      >
+      <div className="animate-fade-in">
         <Card className="border-gray-5/50 bg-gray-2/80 border-l-[3px] border-l-gray-6">
           <CardHeader className="flex flex-row items-center justify-between p-4 pb-2.5">
             <p className="text-[15px] text-gray-12 font-semibold inline-flex items-center gap-1.5">
@@ -486,14 +477,10 @@ export function HomeScreen({
             <p className="text-[10px] text-gray-7 mt-1.5">{quote.author}</p>
           </CardContent>
         </Card>
-      </motion.div>
+      </div>
 
       {/* ── Section 3: Leaderboard ── */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.06 }}
-      >
+      <div className="animate-fade-in">
         <Card className="border-gray-5/50 bg-gray-2/80">
           <CardHeader className="flex flex-row items-center justify-between p-4 pb-0">
             <h3 className="text-[15px] font-semibold text-gray-12 inline-flex items-center gap-1.5">
@@ -574,7 +561,7 @@ export function HomeScreen({
             )}
           </CardContent>
         </Card>
-      </motion.div>
+      </div>
 
     </div>
   );

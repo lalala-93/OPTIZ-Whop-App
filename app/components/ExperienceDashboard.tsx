@@ -238,12 +238,12 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
     <div className="min-h-screen bg-gray-1 text-gray-12 flex flex-col w-full relative">
       <header className={cn(
         "px-4 sm:px-6 pt-2 pb-1 sticky top-0 z-30 border-b border-[var(--optiz-border)]",
-        "bg-gray-1/95 backdrop-blur-lg isolate"
+        "bg-gray-1/[0.97] isolate"
       )}>
         <div className="flex items-center justify-between mb-1">
           {/* Left: Logo + Info */}
           <div className="flex items-center gap-1.5">
-            <motion.div whileTap={{ scale: 0.95 }} className="flex items-center">
+            <div className="flex items-center">
               <Image
                 src="/Logo-optiz.png"
                 alt="OPTIZ"
@@ -253,9 +253,9 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
                 style={{ borderRadius: 0 }}
                 priority
               />
-            </motion.div>
+            </div>
 
-            <motion.div whileTap={{ scale: 0.88 }}>
+            <div>
               <Button
                 variant="ghost"
                 size="icon"
@@ -264,7 +264,7 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
               >
                 <Info className="w-[14px] h-[14px]" strokeWidth={2.5} />
               </Button>
-            </motion.div>
+            </div>
           </div>
 
           {/* Right: Badges + Actions */}
