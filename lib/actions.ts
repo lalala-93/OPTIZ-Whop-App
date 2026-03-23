@@ -116,12 +116,8 @@ export async function loadUserData(userId: string) {
 
     const today = getTodayISO();
 
-    const [
-        todosRes, challengesRes, tasksRes, joinedRes, streakRes,
-        completionsRes, participantsRes,
-        // V2 queries
-        stepsTodayRes, nutritionTodayRes, breathworkTodayRes, workoutCompletionsTodayRes,
-    ] = await Promise.all([
+    // V1 queries (always safe — tables exist)
+    const [todosRes, challengesRes, tasksRes, joinedRes, streakRes, completionsRes, participantsRes] = await Promise.all([
         db.from("todos").select("id, text, completed").eq("user_id", userId).order("created_at", { ascending: false }),
         db.from("challenges").select("*").eq("is_active", true).order("created_at", { ascending: false }),
         db.from("challenge_tasks").select("*").order("sort_order", { ascending: true }),
@@ -129,15 +125,28 @@ export async function loadUserData(userId: string) {
         db.from("streak_log").select("streak_date").eq("user_id", userId).order("streak_date", { ascending: false }).limit(30),
         db.from("task_completions").select("task_id").eq("user_id", userId).eq("completed_date", today),
         db.from("user_challenges").select("challenge_id"),
-        // V2: steps today (+ latest row for carry-over if none today)
-        db.from("steps_daily_logs").select("baseline, goal, done, milestones_awarded, goal_hit, log_date").eq("user_id", userId).order("log_date", { ascending: false }).limit(2),
-        // V2: nutrition today + meals
-        db.from("nutrition_daily_logs").select("*, nutrition_meals(*)").eq("user_id", userId).eq("log_date", today).maybeSingle(),
-        // V2: breathwork sessions count today
-        db.from("breathwork_sessions").select("id", { count: "exact", head: true }).eq("user_id", userId).gte("completed_at", `${today}T00:00:00`).lte("completed_at", `${today}T23:59:59`),
-        // V2: workout completions today
-        db.from("workout_logs").select("program_id, session_id").eq("user_id", userId).eq("completed_date", today),
     ]);
+
+    // V2 queries — wrapped in try/catch so app works even if tables haven't been created yet
+    let stepsTodayRes: { data: unknown[] | null } = { data: null };
+    let nutritionTodayRes: { data: unknown | null } = { data: null };
+    let breathworkTodayRes: { count: number | null } = { count: 0 };
+    let workoutCompletionsTodayRes: { data: { program_id: string; session_id: string }[] | null } = { data: null };
+
+    try {
+        const [stepsR, nutritionR, breathworkR, workoutR] = await Promise.all([
+            db.from("steps_daily_logs").select("baseline, goal, done, milestones_awarded, goal_hit, log_date").eq("user_id", userId).order("log_date", { ascending: false }).limit(2),
+            db.from("nutrition_daily_logs").select("*, nutrition_meals(*)").eq("user_id", userId).eq("log_date", today).maybeSingle(),
+            db.from("breathwork_sessions").select("id", { count: "exact", head: true }).eq("user_id", userId).gte("completed_at", `${today}T00:00:00`).lte("completed_at", `${today}T23:59:59`),
+            db.from("workout_logs").select("program_id, session_id").eq("user_id", userId).eq("completed_date", today),
+        ]);
+        stepsTodayRes = stepsR;
+        nutritionTodayRes = nutritionR;
+        breathworkTodayRes = breathworkR;
+        workoutCompletionsTodayRes = workoutR;
+    } catch (err) {
+        console.warn("[OPTIZ] V2 tables not yet created — using defaults:", err);
+    }
 
     // Compute participant counts
     const participantCounts: Record<string, number> = {};
@@ -456,6 +465,7 @@ export async function saveWorkoutLog(userId: string, payload: WorkoutLogPayload)
             program_title: payload.programTitle,
             session_id: payload.sessionId,
             session_name: payload.sessionName,
+            completed_at: new Date().toISOString(),
             completed_date: today,
             total_volume: payload.totalVolume,
             improved_sets: payload.improvedSets,
