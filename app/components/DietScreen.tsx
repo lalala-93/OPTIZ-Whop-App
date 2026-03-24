@@ -538,8 +538,7 @@ export function DietScreen({ userId, onAwardXpEvent, initialData }: DietScreenPr
 
   const maxWeeklyCal = Math.max(goals.calorieGoal, ...weeklyBars.map((b) => b.cal), 1);
 
-  /* ── Staggered animation helpers ── */
-  const stagger = (i: number) => ({ initial: { opacity: 0, y: 8 }, animate: { opacity: 1, y: 0 }, transition: { delay: Math.min(i * 0.03, 0.15), duration: 0.25, ease: [0.25, 0.1, 0.25, 1] as const } });
+  /* ── Stagger removed for perf — CSS handles fade-in ── */
 
   /* ── Render ── */
   return (
@@ -547,13 +546,13 @@ export function DietScreen({ userId, onAwardXpEvent, initialData }: DietScreenPr
       <XPToast toast={toast} />
 
       {/* Header */}
-      <motion.div {...stagger(0)}>
+      <div>
         <h2 className="text-[26px] leading-tight font-semibold text-gray-12 mb-1.5">{t("dietTitle")}</h2>
         <p className="text-sm text-gray-8 leading-relaxed">{t("dietSubtitle")}</p>
-      </motion.div>
+      </div>
 
       {/* Daily / Weekly toggle */}
-      <motion.div {...stagger(1)}>
+      <div>
         <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "daily" | "weekly")}>
           <TabsList className="bg-white/[0.03] border border-white/[0.06] h-9">
             <TabsTrigger
@@ -570,12 +569,12 @@ export function DietScreen({ userId, onAwardXpEvent, initialData }: DietScreenPr
             </TabsTrigger>
           </TabsList>
         </Tabs>
-      </motion.div>
+      </div>
 
       <Separator className="bg-white/[0.04]" />
 
       {/* Calorie Dashboard */}
-      <motion.div {...stagger(2)}>
+      <div>
         <Card className="rounded-3xl border-white/[0.06] bg-white/[0.02] shadow-none">
           <CardContent className="p-5 pt-5">
             <CalorieRing eaten={checkedTotals.calories} goal={goals.calorieGoal} />
@@ -605,7 +604,7 @@ export function DietScreen({ userId, onAwardXpEvent, initialData }: DietScreenPr
             </div>
           </CardContent>
         </Card>
-      </motion.div>
+      </div>
 
       {/* ══ DAILY VIEW ══ */}
       {viewMode === "daily" ? (
@@ -615,7 +614,7 @@ export function DietScreen({ userId, onAwardXpEvent, initialData }: DietScreenPr
             const slotCal = slotTemplates.filter((t) => checkedIds.has(t.id)).reduce((s, t) => s + t.calories, 0);
             const isAddingThis = addingSlot === slot;
             return (
-              <motion.div key={slot} {...stagger(3 + slotIdx)}>
+              <div key={slot}>
                 <Card className="rounded-3xl border-white/[0.06] bg-white/[0.02] shadow-none overflow-hidden">
                   {/* Slot header */}
                   <CardHeader className="flex flex-row items-center justify-between px-4 pt-4 pb-2 space-y-0">
@@ -840,13 +839,13 @@ export function DietScreen({ userId, onAwardXpEvent, initialData }: DietScreenPr
                     )}
                   </AnimatePresence>
                 </Card>
-              </motion.div>
+              </div>
             );
           })}
         </>
       ) : (
         /* ══ WEEKLY VIEW — Bar Chart ══ */
-        <motion.div {...stagger(3)}>
+        <div>
           <Card className="rounded-3xl border-white/[0.06] bg-white/[0.02] shadow-none">
             <CardHeader className="px-5 pt-5 pb-0 space-y-0">
               <h3 className="text-[14px] font-semibold text-gray-12">{t("dietWeekly")}</h3>
@@ -919,13 +918,13 @@ export function DietScreen({ userId, onAwardXpEvent, initialData }: DietScreenPr
               </div>
             </CardContent>
           </Card>
-        </motion.div>
+        </div>
       )}
 
       <Separator className="bg-white/[0.04]" />
 
       {/* ── Hydration ── */}
-      <motion.div {...stagger(6)}>
+      <div>
         <Card className="rounded-3xl border-white/[0.06] bg-white/[0.02] shadow-none">
           <CardContent className="p-4 pt-4">
             <div className="flex items-center justify-between mb-3">
@@ -963,10 +962,10 @@ export function DietScreen({ userId, onAwardXpEvent, initialData }: DietScreenPr
             </div>
           </CardContent>
         </Card>
-      </motion.div>
+      </div>
 
       {/* ── Goals Settings ── */}
-      <motion.div {...stagger(7)}>
+      <div>
         <Card className="rounded-3xl border-white/[0.06] bg-white/[0.02] shadow-none overflow-hidden">
           <CardHeader className="p-0 space-y-0">
             <Button
@@ -998,7 +997,7 @@ export function DietScreen({ userId, onAwardXpEvent, initialData }: DietScreenPr
             )}
           </AnimatePresence>
         </Card>
-      </motion.div>
+      </div>
     </div>
   );
 }
