@@ -241,8 +241,8 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
               <Image
                 src="/Logo-optiz.png"
                 alt="OPTIZ"
-                width={32}
-                height={32}
+                width={38}
+                height={38}
                 className="object-contain"
                 style={{ borderRadius: 0 }}
                 priority

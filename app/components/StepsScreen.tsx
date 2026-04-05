@@ -266,7 +266,7 @@ export function StepsScreen({ userId, onAwardXpEvent, initialData }: StepsScreen
       <XPToast toast={toast} />
 
       {/* Header */}
-      <div className="flex items-center gap-2 mb-1">
+      <div className="flex items-center gap-2 mb-4">
         <Footprints size={16} className="text-gray-7" />
         <h2 className="text-base font-semibold text-gray-12">{t("stepsTitle")}</h2>
       </div>

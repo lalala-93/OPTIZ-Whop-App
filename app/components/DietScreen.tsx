@@ -556,7 +556,7 @@ export function DietScreen({ userId, onAwardXpEvent, initialData }: DietScreenPr
       <XPToast toast={toast} />
 
       {/* Header */}
-      <div className="flex items-center gap-2 mb-1">
+      <div className="flex items-center gap-2 mb-4">
         <Apple size={16} className="text-gray-7" />
         <h2 className="text-base font-semibold text-gray-12">{t("dietTitle")}</h2>
       </div>

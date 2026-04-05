@@ -25,17 +25,19 @@ type PhaseKey = "inhale" | "hold" | "exhale";
 interface PhaseSegment { key: PhaseKey; seconds: number; }
 
 interface Preset extends BreathState {
-  id: "focus" | "calm" | "reset-quick";
-  titleKey: "breathworkPresetQuick" | "breathworkPresetFocus" | "breathworkPresetCalm";
+  id: string;
+  titleKey: string;
 }
 
 const PRESETS: Preset[] = [
+  { id: "reset-quick", titleKey: "breathworkPresetQuick", inhale: 4, hold: 2, exhale: 4, cycles: 3 },
   { id: "focus", titleKey: "breathworkPresetFocus", inhale: 4, hold: 4, exhale: 4, cycles: 8 },
   { id: "calm", titleKey: "breathworkPresetCalm", inhale: 4, hold: 4, exhale: 6, cycles: 10 },
-  { id: "reset-quick", titleKey: "breathworkPresetQuick", inhale: 4, hold: 2, exhale: 4, cycles: 5 },
+  { id: "deep", titleKey: "breathworkPresetDeep", inhale: 5, hold: 5, exhale: 7, cycles: 8 },
+  { id: "sleep", titleKey: "breathworkPresetSleep", inhale: 4, hold: 7, exhale: 8, cycles: 6 },
 ];
 
-const DEFAULT_PRESET_ID: Preset["id"] = "focus";
+const DEFAULT_PRESET_ID = "focus";
 const TICK_MS = 200; // Reasonable tick — not too fast, not too slow
 
 function formatDuration(totalSeconds: number) {
@@ -302,7 +304,7 @@ export function BreathworkScreen({ userId, initialSessionsToday }: BreathworkScr
               )}
             >
               <span className={cn("text-[12px] font-semibold", sel ? "text-[#FF6666]" : "text-gray-11")}>
-                {t(preset.titleKey)}
+                {t(preset.titleKey as Parameters<typeof t>[0])}
               </span>
               <span className={cn("text-[10px]", sel ? "text-[#FF6666]/60" : "text-gray-7")}>
                 {formatDuration(secs)}
