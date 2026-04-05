@@ -123,9 +123,10 @@ function buildSets(session: ProgramSessionTemplate, prev: SessionArchive | null)
     const rowCount = Math.max(ex.sets, ps.length);
     m[ex.id] = Array.from({ length: rowCount }).map((_, idx) => {
       const p = ps[idx];
-      const targetReps = (ex as any).perSetReps?.[idx] ?? ex.reps;
+      const targetReps = ex.perSetReps?.[idx] ?? ex.reps;
+      const defaultLoadStr = ex.defaultLoad ? String(ex.defaultLoad) : "";
       return {
-        load: p ? String(p.load) : "",
+        load: p ? String(p.load) : defaultLoadStr,
         reps: p ? String(p.reps) : targetReps > 0 ? String(targetReps) : "",
         rpe: "",
         done: false,
@@ -405,7 +406,7 @@ function WorkoutFunnel({
                           inputMode="numeric"
                           onChange={(e) => upd(ex.id, i, { reps: e.target.value })}
                           disabled={row.done}
-                          placeholder={ex.reps > 0 ? String((ex as any).perSetReps?.[i] ?? ex.reps) : "Max"}
+                          placeholder={ex.reps > 0 ? String(ex.perSetReps?.[i] ?? ex.reps) : "-"}
                           className="w-full max-w-[5rem] h-9 rounded-lg bg-transparent text-center text-[14px] text-gray-12 placeholder:text-gray-6 disabled:opacity-50 border-0 focus:bg-gray-3/30 transition-colors"
                         />
                       </div>

@@ -13,6 +13,8 @@ export interface ProgramExerciseTemplate {
   perSetReps?: number[];
   /** Note shown below exercise (e.g. "45s-1min récup", "EMOM 10min") */
   note?: string;
+  /** Default load in kg — pre-filled in tracker for gym exercises */
+  defaultLoad?: number;
   muscles: string;
   videoUrl: string;
 }
@@ -109,7 +111,7 @@ function ex(
   id: string,
   sets: number,
   reps: number,
-  opts?: { repsLabel?: string; perSetReps?: number[]; note?: string },
+  opts?: { repsLabel?: string; perSetReps?: number[]; note?: string; defaultLoad?: number },
 ): ProgramExerciseTemplate {
   const base = BASE_LIBRARY.find((e) => e.id === id);
   if (!base) throw new Error(`Missing exercise: ${id}`);
@@ -121,6 +123,7 @@ function ex(
     repsLabel: opts?.repsLabel,
     perSetReps: opts?.perSetReps,
     note: opts?.note,
+    defaultLoad: opts?.defaultLoad,
     muscles: base.muscles,
     videoUrl: base.videoUrl,
   };
@@ -218,12 +221,12 @@ const SALLE: ProgramTemplate = {
       durationMin: 55,
       exercises: [
         ex("push-up", 3, 0, { repsLabel: "Max reps", note: "Échauffement. 45s-1min récup" }),
-        ex("db-pullover", 4, 20, { note: "Focus haut de pec. 45s-1min récup" }),
-        ex("db-military-press", 4, 15, { note: "⚡ Superset avec élévation haut de pec. 45s-1min récup" }),
-        ex("high-chest-raise", 4, 15, { note: "⚡ Superset avec développé militaire" }),
-        ex("db-incline-fly", 4, 20, { perSetReps: [20, 15, 10, 10], note: "⚡ Superset avec squeeze press. 45s-1min récup" }),
-        ex("squeeze-press", 4, 20, { perSetReps: [20, 15, 10, 10], note: "⚡ Superset avec écarté incliné" }),
-        ex("skull-crusher", 4, 20, { note: "45s-1min récup" }),
+        ex("db-pullover", 4, 20, { defaultLoad: 12, note: "Focus haut de pec. 45s-1min récup" }),
+        ex("db-military-press", 4, 15, { defaultLoad: 14, note: "⚡ Superset avec élévation haut de pec. 45s-1min récup" }),
+        ex("high-chest-raise", 4, 15, { defaultLoad: 6, note: "⚡ Superset avec développé militaire" }),
+        ex("db-incline-fly", 4, 20, { defaultLoad: 8, perSetReps: [20, 15, 10, 10], note: "⚡ Superset avec squeeze press. 45s-1min récup" }),
+        ex("squeeze-press", 4, 20, { defaultLoad: 8, perSetReps: [20, 15, 10, 10], note: "⚡ Superset avec écarté incliné" }),
+        ex("skull-crusher", 4, 20, { defaultLoad: 8, note: "45s-1min récup" }),
         ex("dips", 1, 0, { repsLabel: "5 min", note: "Pratiquer dips pendant 5 minutes en continu" }),
       ],
     },
@@ -234,12 +237,12 @@ const SALLE: ProgramTemplate = {
       durationMin: 55,
       exercises: [
         ex("pull-up-prona", 1, 0, { repsLabel: "EMOM 10 min", note: "Ou 4 séries tirage vertical 30/20/15/15" }),
-        ex("upright-row", 4, 30, { perSetReps: [30, 20, 20, 15], note: "45s-1min récup" }),
-        ex("barbell-shrug", 4, 40, { perSetReps: [40, 30, 20, 20], note: "⚡ Superset avec oiseau haltères. 45s-1min récup" }),
-        ex("rear-delt-fly", 4, 20, { perSetReps: [20, 20, 15, 15], note: "⚡ Superset avec shrug barre" }),
+        ex("upright-row", 4, 30, { defaultLoad: 30, perSetReps: [30, 20, 20, 15], note: "45s-1min récup" }),
+        ex("barbell-shrug", 4, 40, { defaultLoad: 40, perSetReps: [40, 30, 20, 20], note: "⚡ Superset avec oiseau haltères. 45s-1min récup" }),
+        ex("rear-delt-fly", 4, 20, { defaultLoad: 4, perSetReps: [20, 20, 15, 15], note: "⚡ Superset avec shrug barre" }),
         ex("band-rear-delt", 4, 20, { note: "⚡ Superset avec rack pulls. Récup active. 45s-1min récup" }),
-        ex("rack-pull", 4, 15, { note: "⚡ Superset avec arrière d'épaule élastique" }),
-        ex("hammer-curl", 3, 15, { note: "45s-1min récup" }),
+        ex("rack-pull", 4, 15, { defaultLoad: 40, note: "⚡ Superset avec arrière d'épaule élastique" }),
+        ex("hammer-curl", 3, 15, { defaultLoad: 10, note: "45s-1min récup" }),
       ],
     },
     {
@@ -248,11 +251,11 @@ const SALLE: ProgramTemplate = {
       focus: "Quadriceps, ischios, fessiers",
       durationMin: 55,
       exercises: [
-        ex("walking-lunge", 4, 40, { perSetReps: [40, 30, 20, 20], note: "45s-1min récup" }),
-        ex("goblet-squat-elevated", 4, 15, { note: "45s-1min récup" }),
-        ex("step-up", 4, 10, { note: "⚡ Superset avec élévation latérale. 45s-1min récup" }),
-        ex("lateral-raise-mid", 4, 20, { note: "⚡ Superset avec step up. Départ mi-amplitude" }),
-        ex("romanian-deadlift-db", 4, 20, { perSetReps: [20, 20, 15, 15], note: "45s-1min récup" }),
+        ex("walking-lunge", 4, 40, { defaultLoad: 10, perSetReps: [40, 30, 20, 20], note: "45s-1min récup" }),
+        ex("goblet-squat-elevated", 4, 15, { defaultLoad: 16, note: "45s-1min récup" }),
+        ex("step-up", 4, 10, { defaultLoad: 10, note: "⚡ Superset avec élévation latérale. 45s-1min récup" }),
+        ex("lateral-raise-mid", 4, 20, { defaultLoad: 4, note: "⚡ Superset avec step up. Départ mi-amplitude" }),
+        ex("romanian-deadlift-db", 4, 20, { defaultLoad: 14, perSetReps: [20, 20, 15, 15], note: "45s-1min récup" }),
         ex("push-up", 3, 0, { repsLabel: "Max reps", note: "Finisher. 45s-1min récup" }),
       ],
     },
@@ -263,11 +266,11 @@ const SALLE: ProgramTemplate = {
       durationMin: 50,
       exercises: [
         ex("dips", 1, 0, { repsLabel: "EMOM 10 min", note: "1 série par minute pendant 10 minutes" }),
-        ex("overhead-triceps", 4, 15, { note: "Debout avec un haltère. 45s-1min récup" }),
+        ex("overhead-triceps", 4, 15, { defaultLoad: 10, note: "Debout avec un haltère. 45s-1min récup" }),
         ex("chin-up", 4, 0, { repsLabel: "Max reps", note: "45s-1min récup" }),
-        ex("hammer-curl", 3, 15, { note: "45s-1min récup" }),
-        ex("walking-lunge", 3, 30, { note: "⚡ Superset avec marche du fermier. 45s-1min récup" }),
-        ex("farmer-walk", 3, 0, { repsLabel: "Échec grip", note: "⚡ Superset avec fentes marchées" }),
+        ex("hammer-curl", 3, 15, { defaultLoad: 10, note: "45s-1min récup" }),
+        ex("walking-lunge", 3, 30, { defaultLoad: 10, note: "⚡ Superset avec marche du fermier. 45s-1min récup" }),
+        ex("farmer-walk", 3, 0, { defaultLoad: 16, repsLabel: "Échec grip", note: "⚡ Superset avec fentes marchées" }),
       ],
     },
   ],
