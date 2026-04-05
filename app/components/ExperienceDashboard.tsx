@@ -233,7 +233,7 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
   return (
     <div className="min-h-screen bg-gray-1 text-gray-12 flex flex-col w-full relative">
       {/* ── Header ── */}
-      <header className="px-4 sm:px-6 pt-3 pb-2 sticky top-0 z-30 bg-gray-1/[0.97] border-b border-white/[0.04]">
+      <header className="px-4 sm:px-6 pt-3 pb-2.5 sticky top-0 z-30 bg-gray-1/80 backdrop-blur-xl border-b border-white/[0.04]" style={{ WebkitBackdropFilter: "blur(20px)" }}>
         <div className="flex items-center justify-between">
           {/* Left: Logo */}
           <div className="flex items-center gap-2">
@@ -331,8 +331,8 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
       </main>
 
       {/* ── Bottom Navigation ── */}
-      <nav className="fixed bottom-0 inset-x-0 z-30 bg-gray-1/[0.97] border-t border-white/[0.06] pb-[env(safe-area-inset-bottom)]">
-        <div className="flex items-center justify-around h-14 max-w-lg mx-auto">
+      <nav className="fixed bottom-0 inset-x-0 z-30 bg-gray-1/80 backdrop-blur-xl border-t border-white/[0.06] pb-[env(safe-area-inset-bottom)]" style={{ WebkitBackdropFilter: "blur(20px)" }}>
+        <div className="flex items-center justify-around h-16 max-w-lg mx-auto">
           {([
             { value: "home" as TabType, icon: Home, label: t("home") },
             { value: "training" as TabType, icon: Dumbbell, label: t("trainingTab") },

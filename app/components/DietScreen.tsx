@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, ChevronDown, ChevronUp, Droplets, Flame, Minus, Plus, Trash2, X, Zap } from "lucide-react";
+import { Apple, Check, ChevronDown, ChevronUp, Droplets, Flame, Minus, Plus, Trash2, X, Zap } from "lucide-react";
 import { XPToast, type XPToastData } from "./XPToast";
 import { useI18n } from "./i18n";
 import {
@@ -546,9 +546,9 @@ export function DietScreen({ userId, onAwardXpEvent, initialData }: DietScreenPr
       <XPToast toast={toast} />
 
       {/* Header */}
-      <div>
-        <h2 className="text-[26px] leading-tight font-semibold text-gray-12 mb-1.5">{t("dietTitle")}</h2>
-        <p className="text-sm text-gray-8 leading-relaxed">{t("dietSubtitle")}</p>
+      <div className="flex items-center gap-2 mb-1">
+        <Apple size={16} className="text-gray-7" />
+        <h2 className="text-base font-semibold text-gray-12">{t("dietTitle")}</h2>
       </div>
 
       {/* Daily / Weekly toggle */}

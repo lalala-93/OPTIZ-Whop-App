@@ -768,9 +768,9 @@ export function TrainingHubScreen({ userId, onAwardXpEvent, initialCompletionsTo
 
   return (
     <div className="pb-8">
-      <div className="mb-4">
-        <h2 className="text-xl font-semibold text-gray-12">{t("trainingTitle")}</h2>
-        <p className="text-[13px] text-gray-8 mt-0.5">{t("trainingSubtitle")}</p>
+      <div className="flex items-center gap-2 mb-5">
+        <Dumbbell size={16} className="text-gray-7" />
+        <h2 className="text-base font-semibold text-gray-12">{t("trainingTitle")}</h2>
       </div>
 
       <AnimatePresence>
