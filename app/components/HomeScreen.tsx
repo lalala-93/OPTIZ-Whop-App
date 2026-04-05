@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, ChevronLeft, ChevronRight, Quote, RefreshCw, User } from "lucide-react";
 import { XPRing } from "./XPRing";
 import type { RankTier } from "./rankSystem";
@@ -153,10 +152,7 @@ function StreakCalendar({
   }, []);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-    >
+    <div className="animate-fade-in">
       <Card className="overflow-hidden border-gray-5/50 bg-gray-2/80">
         <CardHeader className="p-0">
           <button
@@ -173,9 +169,9 @@ function StreakCalendar({
                 {streakDays}d
               </Badge>
             </div>
-            <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
+            <div className="transition-transform duration-200" style={{ transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
               <ChevronDown size={18} className="text-gray-7" />
-            </motion.div>
+            </div>
           </button>
         </CardHeader>
 
@@ -192,7 +188,7 @@ function StreakCalendar({
                     )}>
                       {day.label}
                     </span>
-                    <motion.div
+                    <div
                       className={cn(
                         "w-10 h-10 rounded-full flex items-center justify-center text-[11px] font-bold transition-all",
                         day.active
@@ -201,9 +197,6 @@ function StreakCalendar({
                             ? "ring-2 ring-[#E80000]/40 bg-[#E80000]/8 text-gray-11"
                             : "bg-gray-3 border border-gray-5/30 text-gray-7"
                       )}
-                      initial={{ scale: 0.85, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      transition={{ delay: i * 0.03, type: "spring", stiffness: 400, damping: 20 }}
                     >
                       {day.active ? (
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -212,7 +205,7 @@ function StreakCalendar({
                       ) : (
                         day.dayNum
                       )}
-                    </motion.div>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -220,14 +213,9 @@ function StreakCalendar({
           )}
 
           {/* ── Expanded: full month calendar ── */}
-          <AnimatePresence>
-            {expanded && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                className="overflow-hidden"
+          {expanded && (
+              <div
+                className="overflow-hidden animate-fade-in"
               >
                 <div className="px-4 pb-4">
                   {/* Month nav */}
@@ -294,12 +282,11 @@ function StreakCalendar({
                     </div>
                   </div>
                 </div>
-              </motion.div>
+              </div>
             )}
-          </AnimatePresence>
         </CardContent>
       </Card>
-    </motion.div>
+    </div>
   );
 }
 

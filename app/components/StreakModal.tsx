@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { Check, RotateCcw, Trophy, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -49,25 +48,18 @@ export function StreakModal({ isOpen, onClose, streakDays, weeklyProgress }: Str
                 <div className="p-6 pt-8">
                     {/* Giant animated flame */}
                     <DialogHeader className="items-center mb-5">
-                        <motion.div
+                        <div
                             className="mb-2"
-                            initial={{ scale: 0.8 }}
-                            animate={{ scale: 1 }}
-                            transition={{ type: "spring", stiffness: 200, damping: 15 }}
                             style={{ filter: "drop-shadow(0 0 16px rgba(255, 100, 0, 0.4))" }}
                         >
                             <AnimatedFireIcon size={64} />
-                        </motion.div>
+                        </div>
 
-                        <motion.div
-                            initial={{ scale: 0.8, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            transition={{ delay: 0.15, type: "spring" }}
-                        >
+                        <div>
                             <Badge className="bg-[#E80000]/15 text-[#FF4444] border-[#E80000]/30 hover:bg-[#E80000]/20 text-3xl font-black px-4 py-1.5 tabular-nums">
                                 {streakDays} {streakDays === 1 ? t("day") : t("days")}
                             </Badge>
-                        </motion.div>
+                        </div>
 
                         <DialogTitle className="text-sm text-gray-9 mt-1 font-medium">
                             {t("currentStreak")}
@@ -89,7 +81,7 @@ export function StreakModal({ isOpen, onClose, streakDays, weeklyProgress }: Str
                                         )}>
                                             {dayLabel}
                                         </span>
-                                        <motion.div
+                                        <div
                                             className={cn(
                                                 "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold",
                                                 isDone
@@ -98,12 +90,9 @@ export function StreakModal({ isOpen, onClose, streakDays, weeklyProgress }: Str
                                                         ? "border-2 border-[#E80000]/50 bg-[#E80000]/10 text-gray-11"
                                                         : "bg-gray-4 text-gray-7 border border-gray-5"
                                             )}
-                                            initial={isDone ? { scale: 0 } : {}}
-                                            animate={isDone ? { scale: 1 } : {}}
-                                            transition={{ type: "spring", stiffness: 400, damping: 15, delay: i * 0.05 }}
                                         >
                                             {isDone ? "✓" : ""}
-                                        </motion.div>
+                                        </div>
                                     </div>
                                 );
                             })}

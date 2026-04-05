@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+
 import { Footprints, Target } from "lucide-react";
 import { XPToast, type XPToastData } from "./XPToast";
 import { useI18n } from "./i18n";
@@ -63,11 +63,9 @@ function StepProgressBar({
         </p>
       </div>
       <div className="h-3 rounded-full bg-white/[0.06] overflow-hidden">
-        <motion.div
+        <div
           className="h-full rounded-full bg-[#E80000]"
-          initial={{ width: 0 }}
-          animate={{ width: `${Math.min(100, progress)}%` }}
-          transition={{ type: "spring", stiffness: 80, damping: 18 }}
+          style={{ width: `${Math.min(100, progress)}%`, transition: "width 0.5s ease-out" }}
         />
       </div>
       <div className="flex items-center justify-between mt-2">
@@ -274,7 +272,7 @@ export function StepsScreen({ userId, onAwardXpEvent, initialData }: StepsScreen
       </div>
 
       {/* Progress Card */}
-      <motion.section initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+      <div>
         <Card className="rounded-2xl border-white/[0.06] bg-white/[0.03] shadow-none">
           <CardContent className="p-5">
             <StepProgressBar
@@ -285,7 +283,7 @@ export function StepsScreen({ userId, onAwardXpEvent, initialData }: StepsScreen
             />
           </CardContent>
         </Card>
-      </motion.section>
+      </div>
 
       {/* Quick Add Card */}
       <Card className="rounded-2xl border-white/[0.06] bg-white/[0.03] shadow-none">
@@ -295,23 +293,16 @@ export function StepsScreen({ userId, onAwardXpEvent, initialData }: StepsScreen
               <Footprints size={14} className="text-gray-8" /> {t("stepsTitle")}
             </h3>
             {/* Inline delta feedback */}
-            <AnimatePresence mode="wait">
-              {deltaBubble !== 0 && (
-                <motion.span
-                  key={deltaKey}
-                  initial={{ opacity: 0, x: 8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -4 }}
-                  transition={{ duration: 0.3 }}
-                  className={cn(
-                    "text-[13px] font-semibold tabular-nums",
-                    deltaBubble > 0 ? "text-emerald-400" : "text-gray-9",
-                  )}
-                >
-                  {deltaBubble > 0 ? "+" : ""}{deltaBubble.toLocaleString()} {t("stepsUnit")}
-                </motion.span>
+            <span
+              key={deltaKey}
+              className={cn(
+                "text-[13px] font-semibold tabular-nums transition-opacity duration-300",
+                deltaBubble !== 0 ? "opacity-100" : "opacity-0",
+                deltaBubble > 0 ? "text-emerald-400" : "text-gray-9",
               )}
-            </AnimatePresence>
+            >
+              {deltaBubble !== 0 ? `${deltaBubble > 0 ? "+" : ""}${deltaBubble.toLocaleString()} ${t("stepsUnit")}` : "\u00A0"}
+            </span>
           </div>
 
           {/* Primary — large step increments */}
@@ -448,7 +439,7 @@ export function StepsScreen({ userId, onAwardXpEvent, initialData }: StepsScreen
                               {bar.done >= 1000 ? `${(bar.done / 1000).toFixed(1)}k` : bar.done}
                             </span>
                           )}
-                          <motion.div
+                          <div
                             className={cn(
                               "w-full rounded-lg min-h-[4px]",
                               isFuture
@@ -461,9 +452,7 @@ export function StepsScreen({ userId, onAwardXpEvent, initialData }: StepsScreen
                                 ? "bg-gradient-to-t from-white/[0.08] to-white/[0.15]"
                                 : "bg-white/[0.03]"
                             )}
-                            initial={{ height: 0 }}
-                            animate={{ height: isFuture ? 4 : `${pct}%` }}
-                            transition={{ duration: 0.5, delay: i * 0.06, ease: [0.25, 0.1, 0.25, 1] as const }}
+                            style={{ height: isFuture ? 4 : `${pct}%`, transition: "height 0.4s ease-out" }}
                           />
                           <span className={cn("text-[11px] font-medium mt-2", isToday ? "text-[#FF6666]" : "text-gray-8")}>
                             {dayLabelsShort[i]}

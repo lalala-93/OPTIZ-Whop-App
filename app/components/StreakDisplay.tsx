@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { AnimatedFireIcon } from "./AnimatedIcons";
 import { useI18n } from "./i18n";
 
@@ -24,11 +23,8 @@ export function StreakDisplay({ streakDays, weeklyProgress }: StreakDisplayProps
     const todayIndex = day === 0 ? 6 : day - 1;
 
     return (
-        <motion.div
-            className="rounded-2xl p-4 bg-gray-3/30 border border-gray-5/40"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.25 }}
+        <div
+            className="rounded-2xl p-4 bg-gray-3/30 border border-gray-5/40 animate-fade-in"
         >
             {/* Header */}
             <div className="flex items-center gap-2.5 mb-4">
@@ -60,32 +56,24 @@ export function StreakDisplay({ streakDays, weeklyProgress }: StreakDisplayProps
                                 }`}>
                                 {day}
                             </span>
-                            <motion.div
+                            <div
                                 className={`w-8 h-8 rounded-full flex items-center justify-center ${isDone
                                     ? "bg-[#E80000] text-white"
                                     : isToday
                                         ? "border-[1.5px] border-[#E80000]/40 bg-[#E80000]/8 text-gray-10"
                                         : "bg-gray-4/60 text-gray-6 border border-gray-5/40"
                                     }`}
-                                initial={isDone ? { scale: 0.6, opacity: 0 } : {}}
-                                animate={isDone ? { scale: 1, opacity: 1 } : {}}
-                                transition={
-                                    isDone
-                                        ? { type: "spring", stiffness: 400, damping: 18, delay: i * 0.04 }
-                                        : {}
-                                }
-                                whileTap={isDone ? { scale: 0.9 } : {}}
                             >
                                 {isDone && (
                                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                                         <polyline points="20 6 9 17 4 12" />
                                     </svg>
                                 )}
-                            </motion.div>
+                            </div>
                         </div>
                     );
                 })}
             </div>
-        </motion.div>
+        </div>
     );
 }
