@@ -44,11 +44,13 @@ const DrawerContent = React.forwardRef<
       ref={ref}
       className={cn(
         "fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto flex-col rounded-t-[20px] border border-gray-5/40 bg-gray-2",
+        "max-h-[85dvh] overflow-y-auto overscroll-contain",
         className
       )}
+      style={{ WebkitOverflowScrolling: "touch" } as React.CSSProperties}
       {...props}
     >
-      <div className="mx-auto mt-4 h-1 w-10 rounded-full bg-gray-6" />
+      <div className="mx-auto mt-4 h-1 w-10 rounded-full bg-gray-6 shrink-0 sticky top-0 z-10" />
       {children}
     </DrawerPrimitive.Content>
   </DrawerPortal>

@@ -114,6 +114,15 @@ body {
 }
 
 /* ── Modal/Sheet smooth scroll for iOS + Whop iframe ── */
+
+/* dvh fallback for browsers/iframes that don't support it */
+@supports not (max-height: 1dvh) {
+  [data-radix-dialog-content],
+  [data-vaul-drawer] > [data-vaul-drawer-content] {
+    max-height: 85% !important;
+  }
+}
+
 [data-vaul-drawer-wrapper] {
   touch-action: pan-y;
 }

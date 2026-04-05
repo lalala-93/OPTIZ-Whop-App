@@ -85,8 +85,8 @@ export function SettingsSheet({
     return (
         <>
             <Drawer open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-                <DrawerContent className="bg-gray-2 border-gray-4 max-h-[85vh]">
-                    <DrawerHeader className="relative pb-0 shrink-0">
+                <DrawerContent className="bg-gray-2 border-gray-4">
+                    <DrawerHeader className="relative pb-0">
                         <Button
                             variant="ghost"
                             size="icon"
@@ -98,7 +98,7 @@ export function SettingsSheet({
                         <DrawerTitle className="sr-only">{t("settings")}</DrawerTitle>
                     </DrawerHeader>
 
-                    <div className="px-6 pb-6 overflow-y-auto overscroll-contain flex-1" style={{ WebkitOverflowScrolling: "touch" }}>
+                    <div className="px-6 pb-6">
                         {/* Profile */}
                         <div className="flex flex-col items-center mb-5">
                             <button

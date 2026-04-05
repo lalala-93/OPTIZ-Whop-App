@@ -39,10 +39,12 @@ const DialogContent = React.forwardRef<
       className={cn(
         "fixed z-50 w-full max-w-md border border-gray-5/30 bg-gray-2 shadow-2xl outline-none",
         // Mobile: bottom sheet
-        "inset-x-0 bottom-0 rounded-t-[20px] max-h-[85vh]",
+        "inset-x-0 bottom-0 rounded-t-[20px]",
+        "max-h-[85dvh]",
+        "overflow-y-auto overscroll-contain",
         // Desktop: centered
-        "sm:bottom-auto sm:left-[50%] sm:top-[50%] sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-2xl sm:inset-x-auto",
-        // Fast GPU-only animations (transform + opacity only)
+        "sm:bottom-auto sm:left-[50%] sm:top-[50%] sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-2xl sm:inset-x-auto sm:max-h-[85vh]",
+        // Animations
         "data-[state=open]:animate-in data-[state=closed]:animate-out",
         "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
         "data-[state=closed]:slide-out-to-bottom-[30%] data-[state=open]:slide-in-from-bottom-[30%]",
@@ -50,11 +52,11 @@ const DialogContent = React.forwardRef<
         "duration-200 ease-out",
         className
       )}
-      style={{ WebkitOverflowScrolling: "touch", overscrollBehavior: "contain" }}
+      style={{ WebkitOverflowScrolling: "touch" } as React.CSSProperties}
       {...props}
     >
       {/* Mobile drag handle */}
-      <div className="flex justify-center pt-3 pb-1 sm:hidden">
+      <div className="flex justify-center pt-3 pb-1 sm:hidden sticky top-0 z-10 bg-gray-2 rounded-t-[20px]">
         <div className="w-10 h-1 rounded-full bg-gray-6" />
       </div>
       {children}
