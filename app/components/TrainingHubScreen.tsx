@@ -48,7 +48,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog,
@@ -302,23 +301,15 @@ function WorkoutFunnel({
         </div>
       </div>
 
-      {/* Progress bar */}
-      <div className="mb-3">
-        <Progress
-          value={progressPercent}
-          className="h-[3px] bg-gray-5/30"
-        />
-        <div className="flex items-center gap-1 mt-1">
-          {session.exercises.map((_, i) => (
-            <div key={i} className={cn(
-              "h-[3px] rounded-full flex-1 transition-all duration-300",
-              i < exIdx ? "bg-[#E80000]" : i === exIdx ? "bg-[#FF6D6D]" : "bg-gray-5/30"
-            )} />
-          ))}
-        </div>
+      {/* Exercise counter — step dots */}
+      <div className="flex items-center gap-1.5 mb-3">
+        {session.exercises.map((_, i) => (
+          <div key={i} className={cn(
+            "h-1 rounded-full flex-1 transition-all duration-300",
+            i < exIdx ? "bg-[#E80000]" : i === exIdx ? "bg-[#FF6D6D]" : "bg-white/[0.06]"
+          )} />
+        ))}
       </div>
-
-      {/* Exercise counter */}
       <p className="text-[11px] text-gray-7 uppercase tracking-widest mb-2">
         {t("trainingExerciseOf", { current: String(exIdx + 1), total: String(session.exercises.length) })}
       </p>
@@ -342,6 +333,12 @@ function WorkoutFunnel({
                   <Play size={16} className="text-[#FF6D6D] ml-0.5" />
                 </a>
               </div>
+              {/* Exercise note (superset, rest, instructions) */}
+              {ex.note && (
+                <p className="text-[11px] text-gray-8 mt-2 leading-relaxed border-t border-white/[0.04] pt-2">
+                  {ex.note}
+                </p>
+              )}
             </CardContent>
           </Card>
 
