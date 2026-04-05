@@ -127,7 +127,7 @@ function buildSets(session: ProgramSessionTemplate, prev: SessionArchive | null)
       const defaultLoadStr = ex.defaultLoad ? String(ex.defaultLoad) : "";
       return {
         load: p ? String(p.load) : defaultLoadStr,
-        reps: p ? String(p.reps) : targetReps > 0 ? String(targetReps) : "",
+        reps: p ? String(p.reps) : String(targetReps > 0 ? targetReps : 5),
         rpe: "",
         done: false,
       };
@@ -406,7 +406,7 @@ function WorkoutFunnel({
                           inputMode="numeric"
                           onChange={(e) => upd(ex.id, i, { reps: e.target.value })}
                           disabled={row.done}
-                          placeholder={ex.reps > 0 ? String(ex.perSetReps?.[i] ?? ex.reps) : "-"}
+                          placeholder={String(ex.perSetReps?.[i] ?? (ex.reps > 0 ? ex.reps : 5))}
                           className="w-full max-w-[5rem] h-9 rounded-lg bg-transparent text-center text-[14px] text-gray-12 placeholder:text-gray-6 disabled:opacity-50 border-0 focus:bg-gray-3/30 transition-colors"
                         />
                       </div>
