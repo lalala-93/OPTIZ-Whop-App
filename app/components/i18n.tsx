@@ -263,7 +263,7 @@ const translations = {
     milestonesSummary: "Level {level} · {rank} · {xp} XP",
     milestonesLevelLabel: "Level {level}",
     milestonesCurrentTag: "Here",
-    milestonesBeyond20: "XP has no cap — keep climbing beyond level 20.",
+    milestonesBeyond20: "XP has no cap. Keep climbing beyond level 20.",
 
     // Training V2
     trainingTitle: "Training",

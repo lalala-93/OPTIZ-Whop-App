@@ -55,7 +55,7 @@ export function InfoModal({ isOpen, onClose }: InfoModalProps) {
                         </div>
 
                         <p className="text-xs text-gray-7 text-center italic">
-                            &ldquo;{t("aboutQuote")}&rdquo; — OPTIZ
+                            &ldquo;{t("aboutQuote")}&rdquo; OPTIZ
                         </p>
                     </div>
 
