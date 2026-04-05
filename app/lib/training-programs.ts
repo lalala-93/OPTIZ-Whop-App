@@ -132,7 +132,7 @@ function ex(
 const STREET_PARK: ProgramTemplate = {
   id: "street-park",
   title: "Street Park",
-  subtitle: "Chaise romaine + 2 élastiques. Aucun matériel de salle nécessaire.",
+  subtitle: "Chaise romaine + élastiques. Zéro salle, zéro excuse.",
   level: "intermediate",
   location: "outdoor",
   image: "/images/street-park.jpeg",
@@ -204,7 +204,7 @@ const STREET_PARK: ProgramTemplate = {
 const SALLE: ProgramTemplate = {
   id: "salle",
   title: "Salle",
-  subtitle: "Programme complet haltères, barre et banc. 4 séances par semaine.",
+  subtitle: "Haltères, barre, banc. Le programme complet.",
   level: "intermediate",
   location: "gym",
   image: "/images/salle.jpeg",

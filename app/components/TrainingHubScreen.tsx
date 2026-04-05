@@ -777,26 +777,26 @@ export function TrainingHubScreen({ userId, onAwardXpEvent, initialCompletionsTo
                 allDone ? "border-white/[0.04] opacity-50" : "border-white/[0.06] hover:border-white/[0.12]"
               )}
             >
-              <div className="bg-white/[0.03] p-4">
-                <div className="flex items-start justify-between gap-3 mb-3">
-                  <div>
-                    <p className="text-[17px] font-semibold text-gray-12 leading-tight">{prog.title}</p>
-                    <p className="text-[12px] text-gray-8 mt-0.5">{prog.subtitle}</p>
+              {/* Image header */}
+              <div className="relative h-32">
+                <Image
+                  src={prog.image}
+                  alt={prog.title}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 600px"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-3.5">
+                  <div className="flex items-end justify-between gap-2">
+                    <div>
+                      <p className="text-[18px] font-bold text-white leading-tight">{prog.title}</p>
+                      <p className="text-[11px] text-white/60 mt-0.5">{prog.subtitle}</p>
+                    </div>
+                    <Badge className="shrink-0 bg-white/10 text-[11px] text-white/80 border-0 hover:bg-white/10 tabular-nums">
+                      {doneCount}/{prog.sessions.length}
+                    </Badge>
                   </div>
-                  <span className="text-[11px] font-semibold text-gray-7 tabular-nums shrink-0">
-                    {doneCount}/{prog.sessions.length}
-                  </span>
-                </div>
-                <div className="flex gap-1.5 flex-wrap">
-                  <Badge className="rounded-full bg-white/[0.06] text-[10px] text-gray-9 border-0 hover:bg-white/[0.06]">
-                    {prog.sessions.length} séances
-                  </Badge>
-                  <Badge className="rounded-full bg-white/[0.06] text-[10px] text-gray-9 border-0 hover:bg-white/[0.06]">
-                    {prog.level === "beginner" ? t("trainingLevelBeginner") : t("trainingLevelIntermediate")}
-                  </Badge>
-                  <Badge className="rounded-full bg-white/[0.06] text-[10px] text-gray-9 border-0 hover:bg-white/[0.06]">
-                    {prog.location === "outdoor" ? "Street park" : prog.location === "gym" ? "Salle" : "Home"}
-                  </Badge>
                 </div>
               </div>
             </button>

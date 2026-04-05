@@ -267,7 +267,7 @@ const translations = {
 
     // Training V2
     trainingTitle: "Training",
-    trainingSubtitle: "Pick a workout and earn +100 XP.",
+    trainingSubtitle: "Choose your program, complete a session, earn XP.",
     trainingRecordBeaten: "Record beaten",
     trainingValidSets: "sets completed",
     trainingRest: "Rest",
@@ -610,7 +610,7 @@ const translations = {
 
     // Training V2
     trainingTitle: "Entraînement",
-    trainingSubtitle: "Choisis une séance et gagne +100 XP.",
+    trainingSubtitle: "Choisis ton programme, valide ta séance, gagne de l'XP.",
     trainingRecordBeaten: "Record battu",
     trainingValidSets: "séries validées",
     trainingRest: "Repos",
