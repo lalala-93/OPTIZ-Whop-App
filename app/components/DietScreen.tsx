@@ -102,40 +102,50 @@ interface FoodItem {
 type FoodCategory = "all" | "protein" | "carb" | "fat";
 
 const FOOD_DB: FoodItem[] = [
-  // ── Proteins ──
-  { id: "ground-beef", emoji: "\u{1F969}", name: { en: "Ground beef 15%", fr: "Viande hach\u00e9e 15%" }, category: "protein", defaultQty: 150, unit: "g", step: 50, cal: 327, p: 29, c: 0, f: 23 },
-  { id: "chicken", emoji: "\u{1F357}", name: { en: "Chicken breast", fr: "Poulet" }, category: "protein", defaultQty: 150, unit: "g", step: 50, cal: 247, p: 47, c: 0, f: 5 },
-  { id: "fatty-fish", emoji: "\u{1F41F}", name: { en: "Fatty fish", fr: "Poisson gras" }, category: "protein", defaultQty: 150, unit: "g", step: 50, cal: 312, p: 30, c: 0, f: 20 },
-  { id: "eggs", emoji: "\u{1F95A}", name: { en: "Eggs", fr: "\u0152ufs" }, category: "protein", defaultQty: 3, unit: "pcs", step: 1, cal: 234, p: 19, c: 2, f: 17 },
-  { id: "beef-liver", emoji: "\u{1F356}", name: { en: "Beef liver", fr: "Foie de b\u0153uf" }, category: "protein", defaultQty: 100, unit: "g", step: 25, cal: 135, p: 20, c: 4, f: 4 },
-  { id: "lamb", emoji: "\u{1F969}", name: { en: "Lamb", fr: "Agneau" }, category: "protein", defaultQty: 150, unit: "g", step: 50, cal: 294, p: 25, c: 0, f: 21 },
-  { id: "sardines", emoji: "\u{1F41F}", name: { en: "Sardines", fr: "Sardines" }, category: "protein", defaultQty: 100, unit: "g", step: 25, cal: 208, p: 25, c: 0, f: 11 },
-  { id: "bone-broth", emoji: "\u{1F372}", name: { en: "Bone broth", fr: "Bouillon d'os" }, category: "protein", defaultQty: 250, unit: "ml", step: 50, cal: 40, p: 8, c: 1, f: 0 },
-  { id: "kefir", emoji: "\u{1F95B}", name: { en: "Kefir", fr: "K\u00e9fir" }, category: "protein", defaultQty: 200, unit: "ml", step: 50, cal: 126, p: 7, c: 9, f: 7 },
-  { id: "skyr", emoji: "\u{1F963}", name: { en: "Skyr", fr: "Skyr" }, category: "protein", defaultQty: 150, unit: "g", step: 50, cal: 95, p: 17, c: 6, f: 0 },
-  { id: "raw-milk", emoji: "\u{1F95B}", name: { en: "Raw milk", fr: "Lait cru" }, category: "protein", defaultQty: 250, unit: "ml", step: 50, cal: 155, p: 8, c: 12, f: 8 },
-  // ── Carbs ──
-  { id: "rice", emoji: "\u{1F35A}", name: { en: "Rice (raw)", fr: "Riz cru" }, category: "carb", defaultQty: 80, unit: "g", step: 10, cal: 292, p: 6, c: 64, f: 0 },
-  { id: "potato", emoji: "\u{1F954}", name: { en: "Potatoes", fr: "Pommes de terre" }, category: "carb", defaultQty: 200, unit: "g", step: 50, cal: 154, p: 4, c: 34, f: 0 },
-  { id: "sweet-potato", emoji: "\u{1F360}", name: { en: "Sweet potato", fr: "Patates douces" }, category: "carb", defaultQty: 200, unit: "g", step: 50, cal: 172, p: 3, c: 40, f: 0 },
-  { id: "sourdough", emoji: "\u{1F35E}", name: { en: "Sourdough bread", fr: "Pain au levain" }, category: "carb", defaultQty: 60, unit: "g", step: 10, cal: 155, p: 5, c: 30, f: 1 },
-  { id: "honey", emoji: "\u{1F36F}", name: { en: "Honey", fr: "Miel" }, category: "carb", defaultQty: 15, unit: "g", step: 5, cal: 46, p: 0, c: 12, f: 0 },
-  { id: "dates", emoji: "\u{1F334}", name: { en: "Dates", fr: "Dattes" }, category: "carb", defaultQty: 40, unit: "g", step: 10, cal: 111, p: 1, c: 28, f: 0 },
-  { id: "banana", emoji: "\u{1F34C}", name: { en: "Banana", fr: "Banane" }, category: "carb", defaultQty: 120, unit: "g", step: 30, cal: 107, p: 1, c: 28, f: 0 },
-  { id: "apple", emoji: "\u{1F34E}", name: { en: "Apple", fr: "Pomme" }, category: "carb", defaultQty: 150, unit: "g", step: 50, cal: 78, p: 1, c: 21, f: 0 },
-  { id: "blueberries", emoji: "\u{1FAD0}", name: { en: "Blueberries", fr: "Myrtilles" }, category: "carb", defaultQty: 100, unit: "g", step: 25, cal: 57, p: 1, c: 14, f: 0 },
-  { id: "kiwi", emoji: "\u{1F95D}", name: { en: "Kiwi", fr: "Kiwi" }, category: "carb", defaultQty: 80, unit: "g", step: 20, cal: 49, p: 1, c: 12, f: 0 },
-  { id: "orange", emoji: "\u{1F34A}", name: { en: "Orange", fr: "Orange" }, category: "carb", defaultQty: 150, unit: "g", step: 50, cal: 71, p: 1, c: 18, f: 0 },
-  { id: "mango", emoji: "\u{1F96D}", name: { en: "Mango", fr: "Mangue" }, category: "carb", defaultQty: 150, unit: "g", step: 50, cal: 90, p: 1, c: 23, f: 0 },
-  // ── Fats ──
-  { id: "ghee", emoji: "\u{1F9C8}", name: { en: "Ghee", fr: "Ghee" }, category: "fat", defaultQty: 15, unit: "g", step: 5, cal: 135, p: 0, c: 0, f: 15 },
-  { id: "beef-tallow", emoji: "\u{1F356}", name: { en: "Beef tallow", fr: "Suif de b\u0153uf" }, category: "fat", defaultQty: 15, unit: "g", step: 5, cal: 130, p: 0, c: 0, f: 14 },
-  { id: "raw-butter", emoji: "\u{1F9C8}", name: { en: "Raw butter", fr: "Beurre cru" }, category: "fat", defaultQty: 15, unit: "g", step: 5, cal: 108, p: 0, c: 0, f: 12 },
-  { id: "raw-cheese", emoji: "\u{1F9C0}", name: { en: "Raw milk cheese", fr: "Fromage lait cru" }, category: "fat", defaultQty: 30, unit: "g", step: 10, cal: 121, p: 8, c: 0, f: 10 },
-  { id: "raw-cream", emoji: "\u{1FAD9}", name: { en: "Raw cream", fr: "Cr\u00e8me crue" }, category: "fat", defaultQty: 20, unit: "ml", step: 10, cal: 69, p: 0, c: 1, f: 7 },
-  { id: "avocado", emoji: "\u{1F951}", name: { en: "Avocado", fr: "Avocat" }, category: "fat", defaultQty: 80, unit: "g", step: 20, cal: 128, p: 2, c: 7, f: 12 },
-  { id: "coconut-oil", emoji: "\u{1F965}", name: { en: "Coconut oil", fr: "Huile de coco" }, category: "fat", defaultQty: 15, unit: "g", step: 5, cal: 121, p: 0, c: 0, f: 14 },
+  // ── Protéines ──
+  { id: "ground-beef", emoji: "🥩", name: { en: "Ground beef 15%", fr: "Viande hachée 15%" }, category: "protein", defaultQty: 150, unit: "g", step: 50, cal: 327, p: 29, c: 0, f: 23 },
+  { id: "chicken", emoji: "🍗", name: { en: "Chicken breast", fr: "Poulet" }, category: "protein", defaultQty: 150, unit: "g", step: 50, cal: 247, p: 47, c: 0, f: 5 },
+  { id: "salmon", emoji: "🐟", name: { en: "Wild salmon", fr: "Saumon sauvage" }, category: "protein", defaultQty: 150, unit: "g", step: 50, cal: 309, p: 39, c: 0, f: 20 },
+  { id: "sardines", emoji: "🐟", name: { en: "Sardines", fr: "Sardines" }, category: "protein", defaultQty: 100, unit: "g", step: 25, cal: 208, p: 25, c: 0, f: 11 },
+  { id: "eggs", emoji: "🥚", name: { en: "Eggs", fr: "Œufs" }, category: "protein", defaultQty: 3, unit: "pcs", step: 1, cal: 234, p: 19, c: 2, f: 17 },
+  { id: "lamb", emoji: "🍖", name: { en: "Lamb", fr: "Agneau" }, category: "protein", defaultQty: 150, unit: "g", step: 50, cal: 375, p: 35, c: 0, f: 32 },
+  { id: "beef-liver", emoji: "🥩", name: { en: "Beef liver", fr: "Foie de bœuf" }, category: "protein", defaultQty: 100, unit: "g", step: 25, cal: 135, p: 20, c: 4, f: 4 },
+  { id: "mackerel", emoji: "🐟", name: { en: "Mackerel", fr: "Maquereau" }, category: "protein", defaultQty: 100, unit: "g", step: 25, cal: 205, p: 19, c: 0, f: 14 },
+  { id: "herring", emoji: "🐟", name: { en: "Herring", fr: "Hareng" }, category: "protein", defaultQty: 100, unit: "g", step: 25, cal: 233, p: 20, c: 0, f: 18 },
+  { id: "skyr", emoji: "🥣", name: { en: "Skyr", fr: "Skyr" }, category: "protein", defaultQty: 150, unit: "g", step: 50, cal: 95, p: 17, c: 6, f: 0 },
+  { id: "bone-broth", emoji: "🍲", name: { en: "Bone broth", fr: "Bouillon d'os" }, category: "protein", defaultQty: 250, unit: "ml", step: 50, cal: 40, p: 8, c: 1, f: 0 },
+
+  // ── Glucides ──
+  { id: "rice", emoji: "🍚", name: { en: "Rice (raw)", fr: "Riz cru" }, category: "carb", defaultQty: 80, unit: "g", step: 10, cal: 292, p: 6, c: 64, f: 0 },
+  { id: "potato", emoji: "🥔", name: { en: "Potatoes", fr: "Pommes de terre" }, category: "carb", defaultQty: 200, unit: "g", step: 50, cal: 154, p: 4, c: 34, f: 0 },
+  { id: "sweet-potato", emoji: "🍠", name: { en: "Sweet potato", fr: "Patate douce" }, category: "carb", defaultQty: 200, unit: "g", step: 50, cal: 172, p: 3, c: 40, f: 0 },
+  { id: "quinoa", emoji: "🌾", name: { en: "Quinoa", fr: "Quinoa" }, category: "carb", defaultQty: 80, unit: "g", step: 10, cal: 96, p: 3, c: 17, f: 1 },
+  { id: "sourdough", emoji: "🍞", name: { en: "Sourdough bread", fr: "Pain au levain" }, category: "carb", defaultQty: 60, unit: "g", step: 10, cal: 155, p: 5, c: 30, f: 1 },
+  { id: "pasta", emoji: "🍝", name: { en: "Pasta (raw)", fr: "Pâtes crues" }, category: "carb", defaultQty: 80, unit: "g", step: 10, cal: 280, p: 10, c: 57, f: 1 },
+  { id: "honey", emoji: "🍯", name: { en: "Honey", fr: "Miel" }, category: "carb", defaultQty: 15, unit: "g", step: 5, cal: 46, p: 0, c: 12, f: 0 },
+  { id: "dates", emoji: "🌴", name: { en: "Medjool dates", fr: "Dattes Medjool" }, category: "carb", defaultQty: 40, unit: "g", step: 10, cal: 111, p: 1, c: 28, f: 0 },
+  { id: "banana", emoji: "🍌", name: { en: "Banana", fr: "Banane" }, category: "carb", defaultQty: 120, unit: "g", step: 30, cal: 107, p: 1, c: 28, f: 0 },
+  { id: "apple", emoji: "🍎", name: { en: "Apple", fr: "Pomme" }, category: "carb", defaultQty: 150, unit: "g", step: 50, cal: 78, p: 1, c: 21, f: 0 },
+  { id: "orange", emoji: "🍊", name: { en: "Orange", fr: "Orange" }, category: "carb", defaultQty: 150, unit: "g", step: 50, cal: 71, p: 1, c: 18, f: 0 },
+  { id: "kiwi", emoji: "🥝", name: { en: "Kiwi", fr: "Kiwi" }, category: "carb", defaultQty: 80, unit: "g", step: 20, cal: 49, p: 1, c: 12, f: 0 },
+  { id: "strawberry", emoji: "🍓", name: { en: "Strawberries", fr: "Fraises" }, category: "carb", defaultQty: 150, unit: "g", step: 50, cal: 48, p: 1, c: 12, f: 0 },
+  { id: "blueberries", emoji: "🫐", name: { en: "Blueberries", fr: "Myrtilles" }, category: "carb", defaultQty: 100, unit: "g", step: 25, cal: 57, p: 1, c: 14, f: 0 },
+  { id: "mango", emoji: "🥭", name: { en: "Mango", fr: "Mangue" }, category: "carb", defaultQty: 150, unit: "g", step: 50, cal: 90, p: 1, c: 23, f: 0 },
+
+  // ── Lipides ──
+  { id: "ghee", emoji: "🧈", name: { en: "Ghee", fr: "Ghee" }, category: "fat", defaultQty: 15, unit: "g", step: 5, cal: 135, p: 0, c: 0, f: 15 },
+  { id: "raw-butter", emoji: "🧈", name: { en: "Raw butter", fr: "Beurre cru" }, category: "fat", defaultQty: 15, unit: "g", step: 5, cal: 108, p: 0, c: 0, f: 12 },
+  { id: "raw-cheese", emoji: "🧀", name: { en: "Raw milk cheese", fr: "Fromage lait cru" }, category: "fat", defaultQty: 30, unit: "g", step: 10, cal: 121, p: 8, c: 0, f: 10 },
+  { id: "kefir", emoji: "🥛", name: { en: "Kefir", fr: "Kéfir" }, category: "fat", defaultQty: 200, unit: "ml", step: 50, cal: 126, p: 7, c: 9, f: 7 },
+  { id: "avocado", emoji: "🥑", name: { en: "Avocado", fr: "Avocat" }, category: "fat", defaultQty: 80, unit: "g", step: 20, cal: 128, p: 2, c: 7, f: 12 },
+  { id: "coconut-oil", emoji: "🥥", name: { en: "Coconut oil", fr: "Huile de coco" }, category: "fat", defaultQty: 15, unit: "g", step: 5, cal: 121, p: 0, c: 0, f: 14 },
+  { id: "almonds", emoji: "🌰", name: { en: "Almonds", fr: "Amandes" }, category: "fat", defaultQty: 30, unit: "g", step: 10, cal: 174, p: 6, c: 2, f: 15 },
+  { id: "walnuts", emoji: "🌰", name: { en: "Walnuts", fr: "Noix" }, category: "fat", defaultQty: 30, unit: "g", step: 10, cal: 196, p: 5, c: 1, f: 20 },
+  { id: "peanut-butter", emoji: "🥜", name: { en: "Peanut butter", fr: "Beurre de cacahuète" }, category: "fat", defaultQty: 20, unit: "g", step: 5, cal: 118, p: 5, c: 1, f: 10 },
+  { id: "almond-butter", emoji: "🥜", name: { en: "Almond butter", fr: "Beurre d'amande" }, category: "fat", defaultQty: 20, unit: "g", step: 5, cal: 123, p: 4, c: 1, f: 11 },
+  { id: "coconut-water", emoji: "🥥", name: { en: "Coconut water", fr: "Eau de coco" }, category: "fat", defaultQty: 250, unit: "ml", step: 50, cal: 45, p: 0, c: 9, f: 0 },
 ];
+
 
 const SLOTS = ["matin", "midi", "soir"] as const;
 type Slot = (typeof SLOTS)[number];

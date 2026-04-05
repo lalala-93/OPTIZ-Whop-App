@@ -2,7 +2,7 @@
 
 import { useCallback, useState, useTransition } from "react";
 import Image from "next/image";
-import { Home, Dumbbell, Footprints, Apple, Wind, Info, User } from "lucide-react";
+import { Home, Dumbbell, Footprints, Apple, Wind, User } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { HomeScreen } from "./HomeScreen";
@@ -233,19 +233,21 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
   return (
     <div className="min-h-screen bg-gray-1 text-gray-12 flex flex-col w-full relative">
       {/* ── Header ── */}
-      <header className="px-4 sm:px-6 pt-3 pb-2.5 sticky top-0 z-30 bg-gray-1/80 backdrop-blur-xl border-b border-white/[0.04]" style={{ WebkitBackdropFilter: "blur(20px)" }}>
+      <header className="px-4 sm:px-6 pt-3.5 pb-3 sticky top-0 z-30 bg-gray-1/80 backdrop-blur-xl border-b border-white/[0.04]" style={{ WebkitBackdropFilter: "blur(20px)" }}>
         <div className="flex items-center justify-between">
           {/* Left: Logo */}
           <div className="flex items-center gap-2">
-            <Image
-              src="/Logo-optiz.png"
-              alt="OPTIZ"
-              width={36}
-              height={36}
-              className="object-contain"
-              style={{ borderRadius: 0 }}
-              priority
-            />
+            <button onClick={() => setIsInfoOpen(true)} className="active:scale-95 transition-transform">
+              <Image
+                src="/Logo-optiz.png"
+                alt="OPTIZ"
+                width={32}
+                height={32}
+                className="object-contain"
+                style={{ borderRadius: 0 }}
+                priority
+              />
+            </button>
           </div>
 
           {/* Right: Streak + XP + Avatar */}
@@ -285,7 +287,7 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
       </header>
 
       {/* ── Main content ── */}
-      <main className="flex-1 overflow-y-auto px-4 sm:px-6 pt-3 pb-24 scroll-smooth">
+      <main className="flex-1 overflow-y-auto px-4 sm:px-6 pt-4 pb-28 scroll-smooth">
         {activeTab === "home" ? (
           <HomeScreen
             userId={userId}
@@ -331,8 +333,8 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
       </main>
 
       {/* ── Bottom Navigation ── */}
-      <nav className="fixed bottom-0 inset-x-0 z-30 bg-gray-1/80 backdrop-blur-xl border-t border-white/[0.06] pb-[env(safe-area-inset-bottom)]" style={{ WebkitBackdropFilter: "blur(20px)" }}>
-        <div className="flex items-center justify-around h-16 max-w-lg mx-auto">
+      <nav className="fixed bottom-0 inset-x-0 z-30 bg-gray-1/80 backdrop-blur-xl border-t border-white/[0.06]" style={{ WebkitBackdropFilter: "blur(20px)", paddingBottom: "env(safe-area-inset-bottom)" }}>
+        <div className="flex items-stretch justify-around h-[60px] max-w-lg mx-auto">
           {([
             { value: "home" as TabType, icon: Home, label: t("home") },
             { value: "training" as TabType, icon: Dumbbell, label: t("trainingTab") },
@@ -346,12 +348,12 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
                 key={tab.value}
                 onClick={() => setActiveTab(tab.value)}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors active:scale-95",
+                  "flex flex-col items-center justify-center gap-1 flex-1 transition-colors",
                   active ? "text-[#E80000]" : "text-gray-7"
                 )}
               >
-                <tab.icon size={20} strokeWidth={active ? 2.2 : 1.8} />
-                <span className={cn("text-[10px] font-medium", active && "font-semibold")}>{tab.label}</span>
+                <tab.icon size={22} strokeWidth={active ? 2 : 1.6} />
+                <span className={cn("text-[10px]", active ? "font-semibold" : "font-medium")}>{tab.label}</span>
               </button>
             );
           })}
