@@ -84,8 +84,8 @@ function BreathingOrb({
     ? { transition: "none" }
     : { transition: `transform ${dur} cubic-bezier(0.4, 0, 0.2, 1), opacity ${dur} ease` };
 
-  const ORB_SIZE = 200;
-  const RING_R = 92;
+  const ORB_SIZE = 280;
+  const RING_R = 128;
 
   return (
     <div className="relative mx-auto flex items-center justify-center" style={{ width: ORB_SIZE, height: ORB_SIZE }}>
@@ -105,7 +105,7 @@ function BreathingOrb({
       <div
         className="absolute rounded-full pointer-events-none will-change-transform"
         style={{
-          width: 120, height: 120,
+          width: 180, height: 180,
           background: "radial-gradient(circle, rgba(232,0,0,0.5) 0%, rgba(232,0,0,0.15) 40%, transparent 70%)",
           transform: `scale(${scale})`,
           opacity: glowOpacity,
@@ -118,7 +118,7 @@ function BreathingOrb({
       <div
         className="absolute rounded-full border border-white/[0.04] will-change-transform"
         style={{
-          width: 100, height: 100,
+          width: 160, height: 160,
           background: "radial-gradient(circle at 45% 40%, rgba(255,255,255,0.04) 0%, rgba(232,0,0,0.05) 60%, rgba(232,0,0,0.02) 100%)",
           transform: `scale(${scale * 0.92})`,
           ...transitionStyle,
@@ -128,7 +128,7 @@ function BreathingOrb({
       {/* Center content */}
       <div className="relative z-10 flex flex-col items-center">
         <span
-          className="text-[44px] font-extralight text-white tabular-nums select-none leading-none will-change-transform"
+          className="text-[56px] font-extralight text-white tabular-nums select-none leading-none will-change-transform"
           style={{
             transform: `scale(${idle ? 1 : scale * 0.88})`,
             ...transitionStyle,
@@ -265,29 +265,115 @@ export function BreathworkScreen({ userId, initialSessionsToday }: BreathworkScr
       <XPToast toast={toast} />
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-5">
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Wind size={16} className="text-gray-7" />
-          <h2 className="text-lg font-semibold text-gray-12">{t("breathworkTitle")}</h2>
+          <h2 className="text-base font-semibold text-gray-12">{t("breathworkTitle")}</h2>
         </div>
         <div className="flex items-center gap-2">
           {hasStarted && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-3/40 border border-gray-5/20">
-              <Timer size={11} className="text-gray-7" />
-              <span className="text-[12px] font-semibold text-gray-11 tabular-nums">{formatClock(remainingTotal)}</span>
-            </div>
+            <span className="text-[12px] font-semibold text-gray-8 tabular-nums">{formatClock(remainingTotal)}</span>
           )}
           {sessionsToday > 0 && (
-            <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-[#E80000]/6 border border-[#E80000]/12">
-              <Zap size={10} className="text-[#FF6666]" />
-              <span className="text-[10px] font-bold text-[#FF6666] tabular-nums">{sessionsToday}</span>
-            </div>
+            <span className="text-[10px] font-bold text-[#FF6666] tabular-nums">{sessionsToday}x</span>
           )}
         </div>
       </div>
 
-      {/* Presets */}
-      <div className="flex gap-2 mb-5">
+      {/* Phase label */}
+      <div className="text-center mb-2">
+        <AnimatePresence mode="wait">
+          <motion.p
+            key={isFinished ? "done" : phaseData.key}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="text-lg font-medium text-gray-12"
+          >
+            {isFinished ? t("breathworkFinished") : phaseLabel}
+          </motion.p>
+        </AnimatePresence>
+        {hasStarted && !isFinished && (
+          <p className="text-[10px] text-gray-7 mt-0.5">
+            {t("breathworkCycle")} {cycleNumber}/{config.cycles}
+          </p>
+        )}
+      </div>
+
+      {/* Orb — large, centered */}
+      <div className="flex justify-center my-4">
+        <BreathingOrb
+          phase={phaseData.key}
+          phaseDuration={phaseData.duration}
+          idle={isIdle}
+          countdown={isFinished ? 0 : phaseData.remaining}
+          phaseLabel={phaseLabel}
+        />
+      </div>
+
+      {/* Cycle dots */}
+      <div className="flex items-center justify-center gap-1 mb-6">
+        {Array.from({ length: config.cycles }).map((_, i) => {
+          const done = i < cycleNumber - 1;
+          const active = i === cycleNumber - 1 && hasStarted;
+          return (
+            <div
+              key={i}
+              className={cn(
+                "h-1.5 rounded-full transition-all duration-300",
+                done ? "w-1.5 bg-[#E80000]"
+                  : active ? "w-4 bg-[#FF4D4D]"
+                  : "w-1.5 bg-white/[0.06]"
+              )}
+            />
+          );
+        })}
+      </div>
+
+      {/* Controls */}
+      <div className="flex items-center justify-center gap-5 mb-8">
+        {hasStarted && (
+          <button
+            type="button"
+            onClick={resetSession}
+            className="w-11 h-11 rounded-full border border-white/[0.08] bg-white/[0.03] text-gray-8 inline-flex items-center justify-center active:scale-[0.88] transition-transform"
+          >
+            <RotateCcw size={16} />
+          </button>
+        )}
+
+        <button
+          type="button"
+          onClick={handleMainAction}
+          className="w-16 h-16 rounded-full bg-[#E80000] text-white inline-flex items-center justify-center shadow-[0_0_30px_rgba(232,0,0,0.25)] active:scale-[0.9] transition-transform"
+        >
+          {!hasStarted ? (
+            <Play size={24} fill="white" className="ml-0.5" />
+          ) : running ? (
+            <Pause size={24} fill="white" />
+          ) : (
+            <Play size={24} fill="white" className="ml-0.5" />
+          )}
+        </button>
+
+        {hasStarted && (
+          <button
+            type="button"
+            onClick={toggleSound}
+            className={cn(
+              "w-11 h-11 rounded-full border inline-flex items-center justify-center active:scale-[0.88] transition-transform",
+              soundOn ? "border-white/[0.08] bg-white/[0.03] text-gray-8" : "border-[#E80000]/15 bg-[#E80000]/4 text-[#FF6666]/50"
+            )}
+          >
+            {soundOn ? <Volume2 size={16} /> : <VolumeX size={16} />}
+          </button>
+        )}
+      </div>
+
+      {/* Presets — bottom list */}
+      <div className="space-y-2">
+        <p className="text-[11px] text-gray-7 uppercase tracking-wider font-medium">{t("breathworkTitle")}</p>
         {PRESETS.map((preset) => {
           const secs = (preset.inhale + preset.hold + preset.exhale) * preset.cycles;
           const sel = activePreset === preset.id;
@@ -297,129 +383,26 @@ export function BreathworkScreen({ userId, initialSessionsToday }: BreathworkScr
               type="button"
               onClick={() => applyPreset(preset.id)}
               className={cn(
-                "flex-1 flex flex-col items-center gap-0.5 py-2.5 px-2 rounded-xl border transition-colors duration-150 active:scale-[0.96]",
+                "w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-colors active:scale-[0.98]",
                 sel
                   ? "bg-[#E80000]/6 border-[#E80000]/20"
-                  : "bg-gray-3/20 border-gray-5/15"
+                  : "bg-white/[0.02] border-white/[0.06]"
               )}
             >
-              <span className={cn("text-[12px] font-semibold", sel ? "text-[#FF6666]" : "text-gray-11")}>
-                {t(preset.titleKey as Parameters<typeof t>[0])}
-              </span>
-              <span className={cn("text-[10px]", sel ? "text-[#FF6666]/60" : "text-gray-7")}>
+              <div className="flex items-center gap-3">
+                <span className={cn("text-[13px] font-semibold", sel ? "text-[#FF6666]" : "text-gray-12")}>
+                  {t(preset.titleKey as Parameters<typeof t>[0])}
+                </span>
+                <span className="text-[11px] text-gray-7">
+                  {preset.inhale}-{preset.hold}-{preset.exhale}
+                </span>
+              </div>
+              <span className={cn("text-[12px] tabular-nums", sel ? "text-[#FF6666]" : "text-gray-8")}>
                 {formatDuration(secs)}
               </span>
             </button>
           );
         })}
-      </div>
-
-      {/* Main card */}
-      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] overflow-hidden">
-        {/* Progress bar */}
-        {hasStarted && (
-          <div className="h-[2px] bg-gray-5/10">
-            <div
-              className="h-full bg-gradient-to-r from-[#E80000] to-[#FF4D4D]"
-              style={{ width: `${overallProgress}%`, transition: "width 200ms linear" }}
-            />
-          </div>
-        )}
-
-        <div className="px-5 pt-5 pb-6">
-          {/* Phase label */}
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={isFinished ? "done" : phaseData.key}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
-              className="text-center mb-1"
-            >
-              <p className="text-xl font-medium text-gray-12">
-                {isFinished ? t("breathworkFinished") : phaseLabel}
-              </p>
-            </motion.div>
-          </AnimatePresence>
-
-          {hasStarted && !isFinished && (
-            <p className="text-[10px] text-gray-7 text-center mb-4">
-              {t("breathworkCycle")} {cycleNumber}/{config.cycles} · {nextPhaseLabel}
-            </p>
-          )}
-          {!hasStarted && <div className="h-4" />}
-
-          {/* Orb — all CSS transitions, no JS animation loop */}
-          <BreathingOrb
-            phase={phaseData.key}
-            phaseDuration={phaseData.duration}
-            idle={isIdle}
-            countdown={isFinished ? 0 : phaseData.remaining}
-            phaseLabel={phaseLabel}
-          />
-
-          {/* Cycle dots */}
-          <div className="flex items-center justify-center gap-1 mt-5 mb-6">
-            {Array.from({ length: config.cycles }).map((_, i) => {
-              const done = i < cycleNumber - 1;
-              const active = i === cycleNumber - 1 && hasStarted;
-              return (
-                <div
-                  key={i}
-                  className={cn(
-                    "h-1 rounded-full transition-all duration-300",
-                    done ? "w-1 bg-[#E80000]"
-                      : active ? "w-3 bg-[#FF4D4D]"
-                      : "w-1 bg-white/[0.06]"
-                  )}
-                />
-              );
-            })}
-          </div>
-
-          {/* Controls */}
-          {!hasStarted ? (
-            <div className="flex justify-center">
-              <button
-                type="button"
-                onClick={handleMainAction}
-                className="h-12 px-10 rounded-full optiz-gradient-bg text-white text-[14px] font-semibold inline-flex items-center gap-2 shadow-lg shadow-[#E80000]/15 active:scale-[0.94] transition-transform"
-              >
-                <Play size={16} fill="white" /> {t("breathworkStart")}
-              </button>
-            </div>
-          ) : (
-            <div className="flex items-center justify-center gap-5">
-              <button
-                type="button"
-                onClick={resetSession}
-                className="w-10 h-10 rounded-full border border-gray-5/20 bg-gray-3/20 text-gray-8 inline-flex items-center justify-center active:scale-[0.88] transition-transform"
-              >
-                <RotateCcw size={14} />
-              </button>
-
-              <button
-                type="button"
-                onClick={handleMainAction}
-                className="w-14 h-14 rounded-full optiz-gradient-bg text-white inline-flex items-center justify-center shadow-lg shadow-[#E80000]/20 active:scale-[0.88] transition-transform"
-              >
-                {running ? <Pause size={20} fill="white" /> : <Play size={20} fill="white" className="ml-0.5" />}
-              </button>
-
-              <button
-                type="button"
-                onClick={toggleSound}
-                className={cn(
-                  "w-10 h-10 rounded-full border inline-flex items-center justify-center active:scale-[0.88] transition-transform",
-                  soundOn ? "border-gray-5/20 bg-gray-3/20 text-gray-8" : "border-[#E80000]/15 bg-[#E80000]/4 text-[#FF6666]/50"
-                )}
-              >
-                {soundOn ? <Volume2 size={14} /> : <VolumeX size={14} />}
-              </button>
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );
