@@ -456,17 +456,15 @@ function WorkoutFunnel({
 // ══════════════════════════════════════════
 
 function ProgramDetailView({
-  program, completed, lastArchive, onBack, onLaunch,
+  program, isSessionDone, getLastArchive, onBack, onLaunchSession,
 }: {
   program: ProgramTemplate;
-  completed: boolean;
-  lastArchive: SessionArchive | null;
+  isSessionDone: (sessionId: string) => boolean;
+  getLastArchive: (sessionId: string) => SessionArchive | null;
   onBack: () => void;
-  onLaunch: () => void;
+  onLaunchSession: (session: ProgramSessionTemplate) => void;
 }) {
   const { t, locale } = useI18n();
-  const session = program.sessions[0];
-  const setsCount = session.exercises.reduce((s, ex) => s + ex.sets, 0);
 
   return (
     <div className="pb-8">
@@ -479,96 +477,71 @@ function ProgramDetailView({
         <ArrowLeft size={14} /> {t("back")}
       </Button>
 
-      {/* Hero image */}
-      <div className="relative rounded-2xl overflow-hidden mb-4 aspect-[2/1]">
-        <Image src={program.image} alt={program.title} fill className={`object-cover ${program.id === "optiz-start" ? "object-[center_25%]" : "object-[center_70%]"}`} sizes="(max-width: 768px) 100vw, 600px" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 p-4">
-          <Badge className="bg-[#E80000]/20 text-[#FF6D6D] border-[#E80000]/30 mb-1.5 text-[10px] uppercase tracking-widest font-semibold">
-            {program.level === "beginner" ? t("trainingLevelBeginner") : t("trainingLevelIntermediate")}
-          </Badge>
-          <h2 className="text-[22px] font-bold text-white leading-tight">{program.title}</h2>
-          <p className="text-[13px] text-white/70 mt-0.5">{program.subtitle}</p>
-        </div>
+      {/* Header */}
+      <div className="mb-5">
+        <Badge className="bg-[#E80000]/12 text-[#FF6D6D] border-[#E80000]/20 mb-2 text-[9px] uppercase tracking-widest font-semibold hover:bg-[#E80000]/12">
+          {program.level === "beginner" ? t("trainingLevelBeginner") : t("trainingLevelIntermediate")} · {program.sessions.length} séances
+        </Badge>
+        <h2 className="text-xl font-bold text-gray-12 leading-tight">{program.title}</h2>
+        <p className="text-[13px] text-gray-8 mt-0.5">{program.subtitle}</p>
       </div>
 
-      {/* Stats row */}
-      <div className="flex gap-2 mb-4">
-        <Card className="flex-1 border-gray-5/25 bg-gray-2/60">
-          <CardContent className="py-2 px-0 text-center">
-            <p className="text-[14px] font-semibold text-gray-12">{session.exercises.length}</p>
-            <p className="text-[10px] text-gray-7">{t("exercises")}</p>
-          </CardContent>
-        </Card>
-        <Card className="flex-1 border-gray-5/25 bg-gray-2/60">
-          <CardContent className="py-2 px-0 text-center">
-            <p className="text-[14px] font-semibold text-gray-12">{setsCount}</p>
-            <p className="text-[10px] text-gray-7">{t("sets")}</p>
-          </CardContent>
-        </Card>
-        <Card className="flex-1 border-gray-5/25 bg-gray-2/60">
-          <CardContent className="py-2 px-0 text-center">
-            <p className="text-[14px] font-semibold text-gray-12">~{session.durationMin}</p>
-            <p className="text-[10px] text-gray-7">{t("minutesShort")}</p>
-          </CardContent>
-        </Card>
-        <Card className="flex-1 border-[#E80000]/20 bg-[#E80000]/6">
-          <CardContent className="py-2 px-0 text-center">
-            <p className="text-[14px] font-semibold text-[#FF6D6D]">+100</p>
-            <p className="text-[10px] text-gray-7">XP</p>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Session cards */}
+      <div className="space-y-3">
+        {program.sessions.map((session, sIdx) => {
+          const done = isSessionDone(session.id);
+          const archive = getLastArchive(session.id);
 
-      {/* Last session */}
-      {lastArchive && (
-        <Card className="border-gray-5/20 bg-gray-3/15 mb-4">
-          <CardContent className="px-3 py-2">
-            <p className="text-[11px] text-gray-7">
-              {t("trainingLastPerf")} {fmtDate(lastArchive.completedAt, locale)} · {t("trainingVolumeLabel")} {lastArchive.totalVolume.toFixed(0)}
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Exercise list */}
-      <Card className="border-gray-5/25 bg-gray-2/60 overflow-hidden mb-6">
-        <CardHeader className="px-3 py-2 border-b border-gray-5/15">
-          <p className="text-[12px] font-semibold text-gray-10 uppercase tracking-wider">{t("trainingExerciseList")}</p>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="divide-y divide-gray-5/12">
-            {session.exercises.map((ex, i) => (
-              <div key={ex.id} className="flex items-center gap-2.5 px-3 py-2.5">
-                <Badge variant="secondary" className="w-5 h-5 rounded-md p-0 flex items-center justify-center shrink-0 text-[11px] font-medium text-gray-8 bg-gray-4/40 border-0">
-                  {i + 1}
-                </Badge>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[13px] font-medium text-gray-12 truncate">{ex.name}</p>
-                  <p className="text-[11px] text-gray-7">{ex.muscles} · {ex.sets}x{ex.reps}</p>
+          return (
+            <Card key={session.id} className={cn("border-white/[0.06] bg-white/[0.03] overflow-hidden", done && "opacity-50")}>
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div className="min-w-0">
+                    <p className="text-[15px] font-semibold text-gray-12">{session.name}</p>
+                    <p className="text-[11px] text-gray-8 mt-0.5">{session.focus} · ~{session.durationMin} min</p>
+                    {archive && (
+                      <p className="text-[10px] text-gray-7 mt-1">
+                        {t("trainingLastPerf")} {fmtDate(archive.completedAt, locale)}
+                      </p>
+                    )}
+                  </div>
+                  <Badge className="shrink-0 bg-[#E80000]/10 text-[#FF6D6D] border-[#E80000]/15 text-[11px] font-semibold hover:bg-[#E80000]/10">
+                    +100 XP
+                  </Badge>
                 </div>
-                <a href={ex.videoUrl} target="_blank" rel="noopener noreferrer" className="text-gray-7 shrink-0">
-                  <ExternalLink size={13} />
-                </a>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
 
-      {/* Launch */}
-      <Button
-        onClick={onLaunch}
-        disabled={completed}
-        className={cn(
-          "w-full h-12 rounded-2xl font-semibold text-[15px] flex items-center justify-center gap-1.5 transition-all",
-          completed
-            ? "bg-gray-3 border border-gray-5/35 text-gray-7 hover:bg-gray-3"
-            : "optiz-gradient-bg text-white active:scale-[0.97] border-0 hover:opacity-90"
-        )}
-      >
-        {completed ? t("trainingDoneReopens") : <><Play size={16} /> {t("trainingStartSession")}</>}
-      </Button>
+                {/* Exercise preview */}
+                <div className="space-y-1 mb-3">
+                  {session.exercises.map((exercise, i) => (
+                    <div key={exercise.id} className="flex items-baseline gap-2 text-[11px]">
+                      <span className="text-gray-7 w-4 text-right shrink-0">{i + 1}.</span>
+                      <span className="text-gray-11 truncate">{exercise.name}</span>
+                      <span className="text-gray-7 shrink-0 ml-auto">
+                        {exercise.repsLabel || `${exercise.sets}x${exercise.reps}`}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Launch button */}
+                <Button
+                  onClick={() => onLaunchSession(session)}
+                  disabled={done}
+                  size="sm"
+                  className={cn(
+                    "w-full h-10 rounded-xl text-[13px] font-semibold",
+                    done
+                      ? "bg-gray-3 border border-gray-5/30 text-gray-7 hover:bg-gray-3"
+                      : "optiz-gradient-bg text-white border-0 hover:opacity-90 active:scale-[0.97]"
+                  )}
+                >
+                  {done ? t("trainingDoneReopens") : t("trainingLaunch")}
+                </Button>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -622,8 +595,8 @@ export function TrainingHubScreen({ userId, onAwardXpEvent, initialCompletionsTo
   const lastArchive = (pid: string, sid: string) => archives.find((a) => a.programId === pid && a.sessionId === sid) || null;
   const isDone = (pid: string, sid: string) => completions.has(sessionKey(pid, sid));
 
-  const launch = (p: ProgramTemplate) => {
-    const s = p.sessions[0];
+  const launch = (p: ProgramTemplate, session?: ProgramSessionTemplate) => {
+    const s = session || p.sessions[0];
     if (!s || isDone(p.id, s.id)) return;
     setTracker({ programId: p.id, programTitle: p.title, session: s });
     setView({ mode: "library" });
@@ -689,11 +662,14 @@ export function TrainingHubScreen({ userId, onAwardXpEvent, initialCompletionsTo
 
   // ── Program detail ──
   if (view.mode === "program-detail") {
-    const p = view.program; const s = p.sessions[0];
+    const p = view.program;
     return (
       <ProgramDetailView
-        program={p} completed={isDone(p.id, s.id)} lastArchive={lastArchive(p.id, s.id)}
-        onBack={() => setView({ mode: "library" })} onLaunch={() => launch(p)}
+        program={p}
+        isSessionDone={(sid) => isDone(p.id, sid)}
+        getLastArchive={(sid) => lastArchive(p.id, sid)}
+        onBack={() => setView({ mode: "library" })}
+        onLaunchSession={(session) => launch(p, session)}
       />
     );
   }
@@ -788,59 +764,45 @@ export function TrainingHubScreen({ userId, onAwardXpEvent, initialCompletionsTo
         )}
       </AnimatePresence>
 
-      {/* Program cards with images */}
+      {/* Program cards */}
       <div className="space-y-3 mb-5">
-        {MASS_PROGRAMS.map((prog, i) => {
-          const s = prog.sessions[0];
-          const comp = isDone(prog.id, s.id);
+        {MASS_PROGRAMS.map((prog) => {
+          const doneCount = prog.sessions.filter((s) => isDone(prog.id, s.id)).length;
+          const allDone = doneCount === prog.sessions.length;
 
           return (
-            <motion.button
+            <button
               key={prog.id}
               type="button"
               onClick={() => setView({ mode: "program-detail", program: prog })}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
               className={cn(
-                "w-full text-left rounded-2xl overflow-hidden border transition-all active:scale-[0.98] hover:border-gray-5/50",
-                comp ? "border-gray-5/15 opacity-45" : "border-gray-5/30"
+                "w-full text-left rounded-2xl overflow-hidden border transition-all active:scale-[0.98]",
+                allDone ? "border-white/[0.04] opacity-50" : "border-white/[0.06] hover:border-white/[0.12]"
               )}
             >
-              {/* Image */}
-              <div className="relative h-36">
-                <Image src={prog.image} alt={prog.title} fill className={`object-cover ${prog.id === "optiz-start" ? "object-[center_25%]" : "object-[center_70%]"}`} sizes="(max-width: 768px) 100vw, 600px" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-3.5">
-                  <div className="flex items-end justify-between gap-2">
-                    <div>
-                      <p className="text-[18px] font-bold text-white leading-tight">{prog.title}</p>
-                      <p className="text-[12px] text-white/65 mt-0.5">{prog.subtitle}</p>
-                    </div>
+              <div className="bg-white/[0.03] p-4">
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div>
+                    <p className="text-[17px] font-semibold text-gray-12 leading-tight">{prog.title}</p>
+                    <p className="text-[12px] text-gray-8 mt-0.5">{prog.subtitle}</p>
                   </div>
-                  <div className="flex gap-1.5 mt-2">
-                    <Badge className="rounded-full bg-white/10 text-[10px] text-white/80 border-0 hover:bg-white/15">
-                      {s.exercises.length} {t("exercises")}
-                    </Badge>
-                    <Badge className="rounded-full bg-white/10 text-[10px] text-white/80 border-0 hover:bg-white/15">
-                      ~{s.durationMin} {t("minutesShort")}
-                    </Badge>
-                    <Badge className="rounded-full bg-white/10 text-[10px] text-white/80 border-0 hover:bg-white/15">
-                      {prog.level === "beginner" ? t("trainingLevelBeginner") : t("trainingLevelIntermediate")}
-                    </Badge>
-                  </div>
+                  <span className="text-[11px] font-semibold text-gray-7 tabular-nums shrink-0">
+                    {doneCount}/{prog.sessions.length}
+                  </span>
+                </div>
+                <div className="flex gap-1.5 flex-wrap">
+                  <Badge className="rounded-full bg-white/[0.06] text-[10px] text-gray-9 border-0 hover:bg-white/[0.06]">
+                    {prog.sessions.length} séances
+                  </Badge>
+                  <Badge className="rounded-full bg-white/[0.06] text-[10px] text-gray-9 border-0 hover:bg-white/[0.06]">
+                    {prog.level === "beginner" ? t("trainingLevelBeginner") : t("trainingLevelIntermediate")}
+                  </Badge>
+                  <Badge className="rounded-full bg-white/[0.06] text-[10px] text-gray-9 border-0 hover:bg-white/[0.06]">
+                    {prog.location === "outdoor" ? "Street park" : prog.location === "gym" ? "Salle" : "Home"}
+                  </Badge>
                 </div>
               </div>
-
-              {/* Bottom bar */}
-              <div className={cn("px-3.5 py-2 flex items-center justify-between", comp ? "bg-gray-3/30" : "bg-gray-2/70")}>
-                {comp ? (
-                  <p className="text-[11px] text-gray-7 inline-flex items-center gap-1"><Check size={12} /> {t("trainingDoneReopens")}</p>
-                ) : (
-                  <p className="text-[12px] font-medium text-gray-11 inline-flex items-center gap-0.5">{t("trainingLaunch")} <ChevronRight size={14} /></p>
-                )}
-              </div>
-            </motion.button>
+            </button>
           );
         })}
       </div>

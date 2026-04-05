@@ -1,8 +1,16 @@
+// ═══════════════════════════════════════════════════════
+// OPTIZ Training Programs — Exercise Library + Programs
+// ═══════════════════════════════════════════════════════
+
 export interface ProgramExerciseTemplate {
   id: string;
   name: string;
   sets: number;
   reps: number;
+  /** Display label for reps (e.g. "Max", "30s", "30m") — overrides numeric reps in UI */
+  repsLabel?: string;
+  /** Note shown below exercise (e.g. "45s-1min récup", "EMOM 10min") */
+  note?: string;
   muscles: string;
   videoUrl: string;
 }
@@ -20,7 +28,7 @@ export interface ProgramTemplate {
   title: string;
   subtitle: string;
   level: "beginner" | "intermediate";
-  location: "gym" | "home" | "bodyweight";
+  location: "gym" | "home" | "bodyweight" | "outdoor";
   image: string;
   sessions: ProgramSessionTemplate[];
 }
@@ -32,122 +40,239 @@ export interface ExerciseLibraryItem {
   videoUrl: string;
 }
 
+// ═══════════════════════════════════════════════════════
+// Exercise Library
+// ═══════════════════════════════════════════════════════
+
 const BASE_LIBRARY: ExerciseLibraryItem[] = [
-  { id: "db-bench-press", name: "Developpe couche halteres", muscles: "Pectoraux, triceps", videoUrl: "https://www.youtube.com/watch?v=VmB1G1K7v94" },
-  { id: "db-incline-press", name: "Developpe incline halteres", muscles: "Pectoraux superieurs, triceps", videoUrl: "https://www.youtube.com/watch?v=8iPEnn-ltC8" },
-  { id: "db-floor-press", name: "Developpe couche au sol", muscles: "Pectoraux, triceps", videoUrl: "https://www.youtube.com/watch?v=uUGDRwge4F8" },
-  { id: "machine-chest-press", name: "Chest press machine", muscles: "Pectoraux, triceps", videoUrl: "https://www.youtube.com/watch?v=sqNwDkUU_Ps" },
-  { id: "pec-deck", name: "Pec deck", muscles: "Pectoraux", videoUrl: "https://www.youtube.com/watch?v=QENKPHhQVi4" },
-
-  { id: "overhead-press", name: "Developpe militaire", muscles: "Epaules, triceps", videoUrl: "https://www.youtube.com/watch?v=5pjcqP_nqRA" },
-  { id: "lateral-raise", name: "Elevations laterales", muscles: "Epaules", videoUrl: "https://www.youtube.com/watch?v=3VcKaXpzqRo" },
-  { id: "rear-delt-fly", name: "Oiseau halteres", muscles: "Arriere d'epaules", videoUrl: "https://www.youtube.com/watch?v=EA7u4Q_8HQ0" },
-  { id: "triceps-pushdown", name: "Extension triceps poulie", muscles: "Triceps", videoUrl: "https://www.youtube.com/watch?v=2-LAMcpzODU" },
-  { id: "skull-crusher", name: "Skull crusher halteres", muscles: "Triceps", videoUrl: "https://www.youtube.com/watch?v=d_KZxkY_0cM" },
-  { id: "overhead-triceps", name: "Extension triceps nuque", muscles: "Triceps", videoUrl: "https://www.youtube.com/watch?v=_gsUck-7M74" },
-
-  { id: "lat-pulldown", name: "Tirage vertical", muscles: "Dos, biceps", videoUrl: "https://www.youtube.com/watch?v=CAwf7n6Luuc" },
-  { id: "barbell-row", name: "Rowing barre", muscles: "Dos, biceps", videoUrl: "https://www.youtube.com/watch?v=vT2GjY_Umpw" },
-  { id: "db-row", name: "Rowing unilateral haltere", muscles: "Dos, biceps", videoUrl: "https://www.youtube.com/watch?v=pYcpY20QaE8" },
-  { id: "face-pull", name: "Face pull", muscles: "Arriere d'epaules, haut du dos", videoUrl: "https://www.youtube.com/watch?v=rep-qVOkqgk" },
-  { id: "pull-up", name: "Tractions pronation", muscles: "Dos, biceps", videoUrl: "https://www.youtube.com/watch?v=eGo4IYlbE5g" },
-  { id: "chin-up", name: "Tractions supination", muscles: "Dos, biceps", videoUrl: "https://www.youtube.com/watch?v=brhRXlOhsAM" },
-  { id: "negative-pull-up", name: "Tractions negatives", muscles: "Dos, biceps", videoUrl: "https://www.youtube.com/watch?v=gbPURTSxQLY" },
-  { id: "scapular-pull-up", name: "Tractions scapulaires", muscles: "Ceinture scapulaire, dos", videoUrl: "https://www.youtube.com/watch?v=AK8Lr8f0fUk" },
-  { id: "hammer-curl", name: "Curl marteau", muscles: "Biceps, avant-bras", videoUrl: "https://www.youtube.com/watch?v=zC3nLlEvin4" },
-  { id: "incline-curl", name: "Curl incline assis", muscles: "Biceps", videoUrl: "https://www.youtube.com/watch?v=soxrZlIl35U" },
-  { id: "cable-curl", name: "Curl poulie basse", muscles: "Biceps", videoUrl: "https://www.youtube.com/watch?v=NFzTWp2qpiE" },
-
-  { id: "leg-press", name: "Presse a jambes", muscles: "Quadriceps, fessiers", videoUrl: "https://www.youtube.com/watch?v=IZxyjW7MPJQ" },
-  { id: "goblet-squat", name: "Goblet squat", muscles: "Quadriceps, fessiers", videoUrl: "https://www.youtube.com/watch?v=6xwGFn-J_Qg" },
-  { id: "bodyweight-squat", name: "Squat poids du corps", muscles: "Quadriceps, fessiers", videoUrl: "https://www.youtube.com/watch?v=aclHkVaku9U" },
-  { id: "bulgarian-split-squat", name: "Fentes bulgares", muscles: "Quadriceps, fessiers", videoUrl: "https://www.youtube.com/watch?v=2C-uNgKwPLE" },
-  { id: "reverse-lunge", name: "Fentes arriere", muscles: "Quadriceps, fessiers", videoUrl: "https://www.youtube.com/watch?v=QOVaHwm-Q6U" },
-  { id: "romanian-deadlift", name: "Souleve de terre roumain", muscles: "Ischios, fessiers", videoUrl: "https://www.youtube.com/watch?v=JCXUYuzwNrM" },
-  { id: "leg-extension", name: "Leg extension", muscles: "Quadriceps", videoUrl: "https://www.youtube.com/watch?v=YyvSfVjQeL0" },
-  { id: "leg-curl", name: "Leg curl", muscles: "Ischios", videoUrl: "https://www.youtube.com/watch?v=1Tq3QdYUuHs" },
-  { id: "hip-thrust", name: "Hip thrust", muscles: "Fessiers", videoUrl: "https://www.youtube.com/watch?v=SEdqd1n0cvg" },
-  { id: "glute-bridge", name: "Glute bridge", muscles: "Fessiers, ischios", videoUrl: "https://www.youtube.com/watch?v=wPM8icPu6H8" },
-  { id: "calf-raise", name: "Mollets debout", muscles: "Mollets", videoUrl: "https://www.youtube.com/watch?v=-M4-G8p8fmc" },
-
-  { id: "dips", name: "Dips", muscles: "Pectoraux, triceps", videoUrl: "https://www.youtube.com/watch?v=2z8JmcrW-As" },
-  { id: "negative-dips", name: "Dips negatifs", muscles: "Pectoraux, triceps", videoUrl: "https://www.youtube.com/watch?v=4sA0fR2v6i0" },
+  // ── Pectoraux / Poussée ──
   { id: "push-up", name: "Pompes", muscles: "Pectoraux, triceps", videoUrl: "https://www.youtube.com/watch?v=IODxDxX7oi4" },
-  { id: "incline-push-up", name: "Pompes inclinees", muscles: "Pectoraux, triceps", videoUrl: "https://www.youtube.com/watch?v=cfns5VDVVvk" },
-  { id: "scapular-push-up", name: "Pompes scapulaires", muscles: "Ceinture scapulaire", videoUrl: "https://www.youtube.com/watch?v=9eOfgPrQ6xA" },
-  { id: "crunch", name: "Crunch", muscles: "Abdominaux", videoUrl: "https://www.youtube.com/watch?v=Xyd_fa5zoEU" },
-  { id: "knee-raise", name: "Releve de genoux", muscles: "Abdominaux, gainage", videoUrl: "https://www.youtube.com/watch?v=JB2oyawG9KI" },
-];
+  { id: "push-up-elevated", name: "Pompes pieds surélevés", muscles: "Pectoraux supérieurs, triceps", videoUrl: "https://www.youtube.com/watch?v=4dF1DOWzf20" },
+  { id: "push-up-close", name: "Pompes serrées", muscles: "Triceps, pectoraux", videoUrl: "https://www.youtube.com/watch?v=5L3gZ2UCLWE" },
+  { id: "dips", name: "Dips", muscles: "Pectoraux, triceps", videoUrl: "https://www.youtube.com/watch?v=2z8JmcrW-As" },
+  { id: "db-pullover", name: "Pull over haltère sur banc", muscles: "Haut de pec, dorsaux", videoUrl: "https://www.youtube.com/watch?v=FK4rHfWKEac" },
+  { id: "db-military-press", name: "Développé militaire barre", muscles: "Épaules, triceps", videoUrl: "https://www.youtube.com/watch?v=5pjcqP_nqRA" },
+  { id: "db-incline-fly", name: "Écarté couché incliné haltères", muscles: "Pectoraux supérieurs", videoUrl: "https://www.youtube.com/watch?v=DbFgADa2PL8" },
+  { id: "squeeze-press", name: "Squeeze press", muscles: "Pectoraux, triceps", videoUrl: "https://www.youtube.com/watch?v=gXmhw3hRfVg" },
+  { id: "high-chest-raise", name: "Élévation haut de pec haltères", muscles: "Pectoraux supérieurs, épaules", videoUrl: "https://www.youtube.com/watch?v=VCB4gvMVSZY" },
 
-const buildSession = (
-  programId: string,
-  sessionName: string,
-  focus: string,
-  durationMin: number,
-  exerciseList: Array<{ id: string; sets: number; reps: number }>,
-): ProgramSessionTemplate => {
-  const exercises: ProgramExerciseTemplate[] = exerciseList.map((item) => {
-    const base = BASE_LIBRARY.find((exercise) => exercise.id === item.id);
-    if (!base) {
-      throw new Error(`Missing exercise library item: ${item.id}`);
-    }
+  // ── Dos / Tirage ──
+  { id: "pull-up-prona", name: "Tractions pronation", muscles: "Dos, biceps", videoUrl: "https://www.youtube.com/watch?v=eGo4IYlbE5g" },
+  { id: "chin-up", name: "Tractions supination", muscles: "Dos, biceps", videoUrl: "https://www.youtube.com/watch?v=brhRXlOhsAM" },
+  { id: "australian-row", name: "Australienne prise large", muscles: "Dos, arrière d'épaules", videoUrl: "https://www.youtube.com/watch?v=OYUxXMGVuuU" },
+  { id: "inverted-deadlift", name: "Deadlift inversé (hold)", muscles: "Ischios, fessiers, gainage", videoUrl: "https://www.youtube.com/watch?v=oFxEDkxbPKs" },
+  { id: "band-uni-row", name: "Tirage uni élastique coude ouvert", muscles: "Dos, arrière d'épaules", videoUrl: "https://www.youtube.com/watch?v=xQNrFHEMhI4" },
+  { id: "lat-pulldown", name: "Tirage vertical", muscles: "Dos, biceps", videoUrl: "https://www.youtube.com/watch?v=CAwf7n6Luuc" },
+  { id: "upright-row", name: "Tirage menton haut à la barre", muscles: "Épaules, trapèzes", videoUrl: "https://www.youtube.com/watch?v=amCU-ziHITM" },
+  { id: "rack-pull", name: "Rack pulls", muscles: "Dos, trapèzes, ischios", videoUrl: "https://www.youtube.com/watch?v=V6JzmVlRnXY" },
 
-    return {
-      id: `${item.id}-${item.sets}x${item.reps}`,
-      name: base.name,
-      sets: item.sets,
-      reps: item.reps,
-      muscles: base.muscles,
-      videoUrl: base.videoUrl,
-    };
-  });
+  // ── Épaules ──
+  { id: "band-rear-delt", name: "Arrière d'épaule élastique", muscles: "Arrière d'épaules", videoUrl: "https://www.youtube.com/watch?v=HSoiEB7eSRs" },
+  { id: "band-rear-delt-uni", name: "Arrière d'épaule élastique unilatéral", muscles: "Arrière d'épaules", videoUrl: "https://www.youtube.com/watch?v=6vFwbjh88Uw" },
+  { id: "rear-delt-fly", name: "Oiseau haltères", muscles: "Arrière d'épaules", videoUrl: "https://www.youtube.com/watch?v=EA7u4Q_8HQ0" },
+  { id: "lateral-raise-mid", name: "Élévation latérale mi-amplitude", muscles: "Épaules", videoUrl: "https://www.youtube.com/watch?v=3VcKaXpzqRo" },
+  { id: "barbell-shrug", name: "Shrug barre", muscles: "Trapèzes", videoUrl: "https://www.youtube.com/watch?v=cJRVVxmytaM" },
 
-  return {
-    id: `${programId}-session`,
-    name: sessionName,
-    focus,
-    durationMin,
-    exercises,
-  };
-};
+  // ── Triceps ──
+  { id: "band-triceps-ext", name: "Extension triceps élastique haut→bas", muscles: "Triceps", videoUrl: "https://www.youtube.com/watch?v=nBuFkrhOcUE" },
+  { id: "skull-crusher", name: "Skull crushers", muscles: "Triceps", videoUrl: "https://www.youtube.com/watch?v=d_KZxkY_0cM" },
+  { id: "overhead-triceps", name: "Extension triceps nuque haltère", muscles: "Triceps", videoUrl: "https://www.youtube.com/watch?v=_gsUck-7M74" },
 
-export const MASS_PROGRAMS: ProgramTemplate[] = [
-  {
-    id: "optiz-start",
-    title: "OPTIZ Start",
-    subtitle: "Construis tes bases, pose les fondations.",
-    level: "beginner",
-    location: "gym",
-    image: "/images/optiz-start.jpeg",
-    sessions: [
-      buildSession("optiz-start", "Full Body Fondations", "Corps complet", 55, [
-        { id: "db-bench-press", sets: 3, reps: 10 },
-        { id: "lat-pulldown", sets: 3, reps: 10 },
-        { id: "goblet-squat", sets: 3, reps: 12 },
-        { id: "romanian-deadlift", sets: 3, reps: 10 },
-        { id: "overhead-press", sets: 3, reps: 10 },
-        { id: "hammer-curl", sets: 3, reps: 12 },
-      ]),
-    ],
-  },
-  {
-    id: "optiz-max",
-    title: "OPTIZ Max",
-    subtitle: "Force, volume, intensite. Aucune excuse.",
-    level: "intermediate",
-    location: "gym",
-    image: "/images/optiz-max.jpeg",
-    sessions: [
-      buildSession("optiz-max", "Full Body Intensif", "Corps complet", 70, [
-        { id: "dips", sets: 4, reps: 8 },
-        { id: "pull-up", sets: 4, reps: 6 },
-        { id: "barbell-row", sets: 4, reps: 8 },
-        { id: "leg-press", sets: 4, reps: 10 },
-        { id: "romanian-deadlift", sets: 4, reps: 8 },
-        { id: "overhead-press", sets: 3, reps: 8 },
-      ]),
-    ],
-  },
+  // ── Biceps ──
+  { id: "hammer-curl", name: "Curl marteau haltère", muscles: "Biceps, avant-bras", videoUrl: "https://www.youtube.com/watch?v=zC3nLlEvin4" },
+  { id: "band-hammer-curl", name: "Curl marteau élastique", muscles: "Biceps, avant-bras", videoUrl: "https://www.youtube.com/watch?v=ac9e4qddrh4" },
+
+  // ── Jambes ──
+  { id: "jump-lunge", name: "Fentes sautées alternées", muscles: "Quadriceps, fessiers", videoUrl: "https://www.youtube.com/watch?v=QE_3dMFOzBk" },
+  { id: "wall-sit", name: "Chaise contre le mur", muscles: "Quadriceps", videoUrl: "https://www.youtube.com/watch?v=y-wV4Lk_LIo" },
+  { id: "sissy-squat", name: "Sissy squat", muscles: "Quadriceps", videoUrl: "https://www.youtube.com/watch?v=1PHEC_-F9b0" },
+  { id: "duck-walk", name: "Marche en canard", muscles: "Quadriceps, fessiers", videoUrl: "https://www.youtube.com/watch?v=u4f0NUQK2T4" },
+  { id: "walking-lunge", name: "Fentes marchées haltères", muscles: "Quadriceps, fessiers", videoUrl: "https://www.youtube.com/watch?v=L8fvypPHRoc" },
+  { id: "walking-lunge-tempo", name: "Fentes marchées tempo lent", muscles: "Quadriceps, fessiers", videoUrl: "https://www.youtube.com/watch?v=L8fvypPHRoc" },
+  { id: "squat-jump", name: "Squats sautés", muscles: "Quadriceps, fessiers", videoUrl: "https://www.youtube.com/watch?v=A-cFYWvaHr0" },
+  { id: "step-up", name: "Step up banc haltère", muscles: "Quadriceps, fessiers", videoUrl: "https://www.youtube.com/watch?v=dQqApCGd5Ag" },
+  { id: "goblet-squat-elevated", name: "Goblet squat talons surélevés", muscles: "Quadriceps, fessiers", videoUrl: "https://www.youtube.com/watch?v=6xwGFn-J_Qg" },
+  { id: "romanian-deadlift-db", name: "Romanian deadlift haltère", muscles: "Ischios, fessiers", videoUrl: "https://www.youtube.com/watch?v=JCXUYuzwNrM" },
+  { id: "goblet-squat", name: "Goblet squat haltère", muscles: "Quadriceps, fessiers", videoUrl: "https://www.youtube.com/watch?v=6xwGFn-J_Qg" },
+  { id: "farmer-walk", name: "Marche du fermier", muscles: "Grip, trapèzes, gainage", videoUrl: "https://www.youtube.com/watch?v=Fkzk_RqlYig" },
 ];
 
 export const EXERCISE_LIBRARY: ExerciseLibraryItem[] = BASE_LIBRARY;
+
+// ═══════════════════════════════════════════════════════
+// Helper: build exercise from library
+// ═══════════════════════════════════════════════════════
+
+function ex(
+  id: string,
+  sets: number,
+  reps: number,
+  opts?: { repsLabel?: string; note?: string },
+): ProgramExerciseTemplate {
+  const base = BASE_LIBRARY.find((e) => e.id === id);
+  if (!base) throw new Error(`Missing exercise: ${id}`);
+  return {
+    id: `${id}-${sets}x${reps}`,
+    name: base.name,
+    sets,
+    reps,
+    repsLabel: opts?.repsLabel,
+    note: opts?.note,
+    muscles: base.muscles,
+    videoUrl: base.videoUrl,
+  };
+}
+
+// ═══════════════════════════════════════════════════════
+// Program 1: Street Park
+// Chaise romaine + 2 élastiques (résistance - et +)
+// 45s à 1min récup sauf EMOMs
+// ═══════════════════════════════════════════════════════
+
+const STREET_PARK: ProgramTemplate = {
+  id: "street-park",
+  title: "Street Park",
+  subtitle: "Chaise romaine + 2 élastiques. Aucun matériel de salle nécessaire.",
+  level: "intermediate",
+  location: "outdoor",
+  image: "/images/street-park.jpeg",
+  sessions: [
+    {
+      id: "street-park-s1",
+      name: "Séance 1",
+      focus: "Tractions, jambes, pompes",
+      durationMin: 50,
+      exercises: [
+        ex("pull-up-prona", 1, 10, { repsLabel: "EMOM 10 min", note: "1 traction par minute pendant 10 minutes" }),
+        ex("australian-row", 4, 20, { note: "Prise large, focus arrière d'épaule élastique. 45s-1min récup" }),
+        ex("inverted-deadlift", 4, 1, { repsLabel: "Max reps hold", note: "Commencer jambes pliées, déplier au fur et à mesure des semaines" }),
+        ex("jump-lunge", 4, 20, { note: "Superset avec chaise mur 30s. 45s-1min récup" }),
+        ex("wall-sit", 4, 1, { repsLabel: "30s", note: "Superset avec fentes sautées" }),
+        ex("push-up-elevated", 3, 1, { repsLabel: "Max reps", note: "Pieds surélevés. 45s-1min récup" }),
+      ],
+    },
+    {
+      id: "street-park-s2",
+      name: "Séance 2",
+      focus: "Pompes, dips, tirage, jambes",
+      durationMin: 50,
+      exercises: [
+        ex("push-up", 3, 1, { repsLabel: "Max reps", note: "45s-1min récup" }),
+        ex("band-rear-delt-uni", 4, 15, { note: "Superset avec extension triceps élastique. 45s-1min récup" }),
+        ex("band-triceps-ext", 4, 20, { note: "Superset avec arrière d'épaule" }),
+        ex("dips", 1, 10, { repsLabel: "EMOM 10 min", note: "1 série par minute pendant 10 minutes" }),
+        ex("band-uni-row", 4, 20, { note: "Coude ouvert, perpendiculaire au corps. 45s-1min récup" }),
+        ex("sissy-squat", 4, 10, { note: "Superset avec marche en canard 30m. 45s-1min récup" }),
+        ex("duck-walk", 4, 1, { repsLabel: "30m", note: "Superset avec sissy squat" }),
+      ],
+    },
+    {
+      id: "street-park-s3",
+      name: "Séance 3",
+      focus: "Tractions supi, pompes EMOM, bras, jambes",
+      durationMin: 50,
+      exercises: [
+        ex("chin-up", 3, 1, { repsLabel: "Max reps", note: "45s-1min récup" }),
+        ex("push-up-elevated", 1, 10, { repsLabel: "EMOM 10 min", note: "20s effort / 40s repos" }),
+        ex("band-hammer-curl", 4, 20, { note: "Superset avec extension triceps élastique. 45s-1min récup" }),
+        ex("band-triceps-ext", 4, 20, { note: "Superset avec curl marteau" }),
+        ex("walking-lunge-tempo", 4, 30, { note: "Superset avec squats sautés 15 reps. Tempo lent. 45s-1min récup" }),
+        ex("squat-jump", 4, 15, { note: "Superset avec fentes marchées" }),
+      ],
+    },
+    {
+      id: "street-park-s4",
+      name: "Séance 4",
+      focus: "EMOM 20 min + jambes",
+      durationMin: 45,
+      exercises: [
+        ex("pull-up-prona", 1, 20, { repsLabel: "EMOM 20 min", note: "40s effort / 20s repos. Min 1: tractions prona, Min 2: pompes serrées, Min 3: tractions prona. Boucle." }),
+        ex("push-up-close", 1, 20, { repsLabel: "Inclus EMOM", note: "Minute 2 du bloc EMOM ci-dessus" }),
+        ex("step-up", 4, 10, { note: "Superset avec goblet squat 15 reps. 45s-1min récup" }),
+        ex("goblet-squat", 4, 15, { note: "Superset avec step up" }),
+      ],
+    },
+  ],
+};
+
+// ═══════════════════════════════════════════════════════
+// Program 2: Salle
+// Haltères + barre + banc
+// 45s à 1min récup pour tous les exos
+// ═══════════════════════════════════════════════════════
+
+const SALLE: ProgramTemplate = {
+  id: "salle",
+  title: "Salle",
+  subtitle: "Programme complet haltères, barre et banc. 4 séances par semaine.",
+  level: "intermediate",
+  location: "gym",
+  image: "/images/salle.jpeg",
+  sessions: [
+    {
+      id: "salle-s1",
+      name: "Séance 1 — Push",
+      focus: "Pectoraux, épaules, triceps",
+      durationMin: 55,
+      exercises: [
+        ex("push-up", 3, 1, { repsLabel: "Max reps", note: "Échauffement. 45s-1min récup" }),
+        ex("db-pullover", 4, 20, { note: "Focus haut de pec. 45s-1min récup" }),
+        ex("db-military-press", 4, 15, { note: "Superset avec élévation haut de pec 15 reps. 45s-1min récup" }),
+        ex("high-chest-raise", 4, 15, { note: "Superset avec développé militaire" }),
+        ex("db-incline-fly", 4, 20, { repsLabel: "20/15/10/10", note: "Superset avec squeeze press. 45s-1min récup" }),
+        ex("squeeze-press", 4, 20, { repsLabel: "20/15/10/10", note: "Superset avec écarté incliné" }),
+        ex("skull-crusher", 4, 20, { note: "45s-1min récup" }),
+        ex("dips", 1, 5, { repsLabel: "5 min", note: "Pratiquer dips pendant 5 minutes en continu" }),
+      ],
+    },
+    {
+      id: "salle-s2",
+      name: "Séance 2 — Pull",
+      focus: "Dos, trapèzes, biceps",
+      durationMin: 55,
+      exercises: [
+        ex("pull-up-prona", 1, 10, { repsLabel: "EMOM 10 min", note: "Ou 4 séries tirage vertical 30/20/15/15" }),
+        ex("upright-row", 4, 30, { repsLabel: "30/20/20/15", note: "45s-1min récup" }),
+        ex("barbell-shrug", 4, 40, { repsLabel: "40/30/20/20", note: "Superset avec oiseau haltères 20/20/15/15. 45s-1min récup" }),
+        ex("rear-delt-fly", 4, 20, { repsLabel: "20/20/15/15", note: "Superset avec shrug barre" }),
+        ex("band-rear-delt", 4, 20, { note: "Récup active. Superset avec rack pulls 15 reps. 45s-1min récup" }),
+        ex("rack-pull", 4, 15, { note: "Superset avec arrière d'épaule élastique" }),
+        ex("hammer-curl", 3, 15, { note: "45s-1min récup" }),
+      ],
+    },
+    {
+      id: "salle-s3",
+      name: "Séance 3 — Legs",
+      focus: "Quadriceps, ischios, fessiers",
+      durationMin: 55,
+      exercises: [
+        ex("walking-lunge", 4, 40, { repsLabel: "40/30/20/20", note: "45s-1min récup" }),
+        ex("goblet-squat-elevated", 4, 15, { note: "Talons surélevés. 45s-1min récup" }),
+        ex("step-up", 4, 10, { note: "Superset avec élévation latérale mi-amplitude 20 reps. 45s-1min récup" }),
+        ex("lateral-raise-mid", 4, 20, { note: "Départ milieu d'amplitude jusqu'en haut. Superset avec step up" }),
+        ex("romanian-deadlift-db", 4, 20, { repsLabel: "20/20/15/15", note: "45s-1min récup" }),
+        ex("push-up", 3, 1, { repsLabel: "Max reps", note: "Finisher. 45s-1min récup" }),
+      ],
+    },
+    {
+      id: "salle-s4",
+      name: "Séance 4 — Upper + Legs",
+      focus: "Dips, triceps, tractions, jambes",
+      durationMin: 50,
+      exercises: [
+        ex("dips", 1, 10, { repsLabel: "EMOM 10 min", note: "1 série par minute pendant 10 minutes" }),
+        ex("overhead-triceps", 4, 15, { note: "Debout avec un haltère. 45s-1min récup" }),
+        ex("chin-up", 4, 1, { repsLabel: "Max reps", note: "4 séries. 45s-1min récup" }),
+        ex("hammer-curl", 3, 15, { note: "45s-1min récup" }),
+        ex("walking-lunge", 3, 30, { note: "Superset avec marche du fermier jusqu'à l'échec grip. 45s-1min récup" }),
+        ex("farmer-walk", 3, 1, { repsLabel: "Échec grip", note: "Superset avec fentes marchées" }),
+      ],
+    },
+  ],
+};
+
+// ═══════════════════════════════════════════════════════
+// Export
+// ═══════════════════════════════════════════════════════
+
+export const MASS_PROGRAMS: ProgramTemplate[] = [STREET_PARK, SALLE];
