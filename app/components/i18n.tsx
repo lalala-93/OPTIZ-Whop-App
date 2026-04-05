@@ -346,6 +346,7 @@ const translations = {
     homeToday: "Today",
     homeNoActivity: "No activity",
     homeMonths: "Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec",
+    homeStartTraining: "Start a workout",
   },
   fr: {
     home: "Accueil",
@@ -688,6 +689,7 @@ const translations = {
     homeToday: "Aujourd'hui",
     homeNoActivity: "Aucune activité",
     homeMonths: "Jan,Fév,Mar,Avr,Mai,Jun,Jul,Aoû,Sep,Oct,Nov,Déc",
+    homeStartTraining: "Lancer un entraînement",
   },
 } as const;
 

@@ -1,9 +1,8 @@
 "use client";
 
 import { useCallback, useState, useTransition } from "react";
-import { motion } from "framer-motion";
 import Image from "next/image";
-import { Info, MessageSquare, User } from "lucide-react";
+import { Info, User } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -288,29 +287,12 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
               <span className="text-[9px] font-extrabold text-[#E80000]">{t("xpLabel")}</span>
             </Badge>
 
-            <motion.div whileTap={{ scale: 0.9 }}>
-              <Button
-                variant="ghost"
-                size="icon"
-                asChild
-                className="w-8 h-8 rounded-full bg-gray-3/80 border border-gray-5/50 text-gray-7 hover:text-gray-11 hover:bg-gray-4 shrink-0"
-              >
-                <a
-                  href="https://docs.google.com/forms/d/e/1FAIpQLSclDqS1cdg0S_bFSyOf_0xP5MDVYAt2LBmvgKHhQP2BqJXYbw/viewform?usp=dialog"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <MessageSquare className="w-[14px] h-[14px]" strokeWidth={2} />
-                </a>
-              </Button>
-            </motion.div>
-
-            <motion.div whileTap={{ scale: 0.9 }}>
+            <div>
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setIsSettingsOpen(true)}
-                className="w-8 h-8 rounded-full p-0 overflow-hidden bg-gray-3/80 border border-gray-5/50 hover:brightness-125 shrink-0"
+                className="w-8 h-8 rounded-full p-0 overflow-hidden bg-gray-3/80 border border-gray-5/50 hover:brightness-125 shrink-0 active:scale-95 transition-transform"
               >
                 <Avatar className="w-8 h-8">
                   {userPhoto ? (
@@ -321,7 +303,7 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
                   </AvatarFallback>
                 </Avatar>
               </Button>
-            </motion.div>
+            </div>
           </div>
         </div>
 
@@ -341,9 +323,9 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
                 key={tab.value}
                 value={tab.value}
                 className={cn(
-                  "flex-1 rounded-none px-3 py-2 text-[11px] font-semibold transition-all",
+                  "flex-1 rounded-none px-3 py-2 text-[11px] font-semibold transition-all duration-150",
                   "data-[state=inactive]:text-gray-9 data-[state=inactive]:hover:text-gray-11",
-                  "data-[state=active]:shadow-none data-[state=active]:bg-transparent data-[state=active]:text-gray-12 data-[state=active]:border-b-2 data-[state=active]:border-[#E80000]"
+                  "data-[state=active]:shadow-none data-[state=active]:bg-transparent data-[state=active]:text-gray-12 data-[state=active]:border-b-[2px] data-[state=active]:border-[#E80000]"
                 )}
               >
                 {tab.label}
@@ -370,6 +352,7 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
             streakDays={streakDays}
             weeklyProgress={weeklyProgress}
             onXpRingClick={() => setIsXpModalOpen(true)}
+            onStartTraining={() => setActiveTab("training")}
           />
         ) : activeTab === "training" ? (
           <TrainingHubScreen

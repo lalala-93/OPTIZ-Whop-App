@@ -32,6 +32,7 @@ interface HomeScreenProps {
   streakDays: number;
   weeklyProgress: boolean[];
   onXpRingClick?: () => void;
+  onStartTraining?: () => void;
 }
 
 interface LeaderboardRow {
@@ -366,6 +367,7 @@ export function HomeScreen({
   streakDays,
   weeklyProgress,
   onXpRingClick,
+  onStartTraining,
 }: HomeScreenProps) {
   const { t } = useI18n();
   const [quoteIndex, setQuoteIndex] = useState(() => Math.floor(Date.now() / 86400000) % MOTIVATIONAL_QUOTES.length);
@@ -449,6 +451,18 @@ export function HomeScreen({
         </div>
       </div>
 
+      {/* Quick action */}
+      <div className="px-2">
+        <button
+          type="button"
+          onClick={() => onStartTraining?.()}
+          className="w-full h-11 rounded-xl bg-[#E80000] text-white text-[13px] font-semibold inline-flex items-center justify-center gap-2 active:scale-[0.97] transition-transform"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          {t("homeStartTraining") || "Start Training"}
+        </button>
+      </div>
+
       {/* ── Section 2: Streak Calendar ── */}
       <StreakCalendar streakDays={streakDays} />
 
@@ -460,17 +474,13 @@ export function HomeScreen({
               <Quote size={15} className="text-gray-8" />
               {t("homeQuote")}
             </p>
-            <Button
-              variant="ghost"
-              size="icon"
+            <button
+              type="button"
               onClick={() => setQuoteIndex((prev) => (prev + 1) % MOTIVATIONAL_QUOTES.length)}
-              className="h-8 w-8 rounded-full text-gray-7 hover:text-gray-12"
-              asChild
+              className="h-8 w-8 rounded-full text-gray-7 hover:text-gray-12 inline-flex items-center justify-center active:scale-90 transition-transform"
             >
-              <motion.button whileTap={{ scale: 0.85, rotate: 180 }}>
-                <RefreshCw size={13} />
-              </motion.button>
-            </Button>
+              <RefreshCw size={13} />
+            </button>
           </CardHeader>
           <CardContent className="px-4 pb-4 pt-0">
             <p className="text-[13px] text-gray-11 italic leading-relaxed">&ldquo;{quote.text}&rdquo;</p>
@@ -508,12 +518,7 @@ export function HomeScreen({
                   const podiumColor = PODIUM_COLORS[entry.position as 1 | 2 | 3];
 
                   return (
-                    <motion.div
-                      key={entry.whop_user_id}
-                      initial={{ opacity: 0, x: -6 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: entry.position * 0.035 }}
-                    >
+                    <div key={entry.whop_user_id}>
                       {showSeparator && <Separator className="my-2 bg-gray-5/20" />}
                       <div
                         className={cn(
@@ -549,12 +554,12 @@ export function HomeScreen({
                           <p className="text-[13px] font-bold tabular-nums text-gray-11">
                             {formatNumber(xp)}
                           </p>
-                          <Badge variant="destructive" className="px-1 py-0 text-[9px] font-extrabold bg-[#E80000]/15 text-[#E80000] border-0 hover:bg-[#E80000]/15">
+                          <Badge variant="outline" className="px-1 py-0 text-[9px] font-extrabold bg-[#E80000]/12 text-[#FF6666] border-[#E80000]/20 hover:bg-[#E80000]/12">
                             XP
                           </Badge>
                         </div>
                       </div>
-                    </motion.div>
+                    </div>
                   );
                 })}
               </div>

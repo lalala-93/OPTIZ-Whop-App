@@ -266,7 +266,7 @@ export function BreathworkScreen({ userId, initialSessionsToday }: BreathworkScr
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-2">
           <Wind size={16} className="text-gray-7" />
-          <h2 className="text-base font-semibold text-gray-12">{t("breathworkTitle")}</h2>
+          <h2 className="text-lg font-semibold text-gray-12">{t("breathworkTitle")}</h2>
         </div>
         <div className="flex items-center gap-2">
           {hasStarted && (
@@ -313,7 +313,7 @@ export function BreathworkScreen({ userId, initialSessionsToday }: BreathworkScr
       </div>
 
       {/* Main card */}
-      <div className="rounded-2xl border border-gray-5/15 bg-gray-2/40 overflow-hidden">
+      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] overflow-hidden">
         {/* Progress bar */}
         {hasStarted && (
           <div className="h-[2px] bg-gray-5/10">

@@ -264,18 +264,18 @@ export function StepsScreen({ userId, onAwardXpEvent, initialData }: StepsScreen
   };
 
   return (
-    <div className="pb-8 space-y-5 relative">
+    <div className="pb-8 space-y-4 relative">
       <XPToast toast={toast} />
 
       {/* Header */}
       <div>
-        <h2 className="text-[26px] leading-tight font-semibold text-gray-12 mb-1">{t("stepsTitle")}</h2>
-        <p className="text-sm text-gray-8 leading-relaxed">{t("stepsSubtitle")}</p>
+        <h2 className="text-lg font-semibold text-gray-12 mb-1">{t("stepsTitle")}</h2>
+        <p className="text-[13px] text-gray-8 leading-relaxed">{t("stepsSubtitle")}</p>
       </div>
 
       {/* Progress Card */}
       <motion.section initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-        <Card className="rounded-2xl border-white/[0.06] bg-white/[0.025] shadow-none">
+        <Card className="rounded-2xl border-white/[0.06] bg-white/[0.03] shadow-none">
           <CardContent className="p-5">
             <StepProgressBar
               progress={progress}
@@ -288,7 +288,7 @@ export function StepsScreen({ userId, onAwardXpEvent, initialData }: StepsScreen
       </motion.section>
 
       {/* Quick Add Card */}
-      <Card className="rounded-2xl border-white/[0.06] bg-white/[0.025] shadow-none">
+      <Card className="rounded-2xl border-white/[0.06] bg-white/[0.03] shadow-none">
         <CardContent className="p-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-[13px] font-semibold text-gray-11 inline-flex items-center gap-1.5">
@@ -348,7 +348,7 @@ export function StepsScreen({ userId, onAwardXpEvent, initialData }: StepsScreen
       </Card>
 
       {/* Goal Settings */}
-      <Card className="rounded-2xl border-white/[0.06] bg-white/[0.025] shadow-none">
+      <Card className="rounded-2xl border-white/[0.06] bg-white/[0.03] shadow-none">
         <CardContent className="p-4 space-y-3">
           <h3 className="text-[13px] font-semibold text-gray-11 inline-flex items-center gap-1.5">
             <Target size={14} className="text-gray-8" /> {t("stepsDailyGoal")}
@@ -376,12 +376,8 @@ export function StepsScreen({ userId, onAwardXpEvent, initialData }: StepsScreen
       </div>
 
       {/* Weekly History — matching nutrition screen design */}
-      <motion.section
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-      >
-        <Card className="rounded-3xl border-white/[0.06] bg-white/[0.02] shadow-none">
+      <div>
+        <Card className="rounded-2xl border-white/[0.06] bg-white/[0.03] shadow-none">
           <CardHeader className="p-5 pb-0">
             <h3 className="text-[14px] font-semibold text-gray-12">{t("stepsWeeklyView")}</h3>
           </CardHeader>
@@ -494,7 +490,7 @@ export function StepsScreen({ userId, onAwardXpEvent, initialData }: StepsScreen
             </div>
           </CardContent>
         </Card>
-      </motion.section>
+      </div>
     </div>
   );
 }

@@ -130,14 +130,14 @@ export function formatNumber(n: number): string {
 
 // ── Mock Data ──
 export const MOTIVATIONAL_QUOTES = [
-    { text: "The only bad workout is the one that didn't happen.", author: "Unknown" },
-    { text: "Your body can stand almost anything. It's your mind you have to convince.", author: "Unknown" },
-    { text: "Be stronger than your excuses.", author: "Unknown" },
-    { text: "1% better every day.", author: "OPTIZ" },
-    { text: "Champions are made when nobody's watching.", author: "Unknown" },
-    { text: "Discipline is choosing between what you want now and what you want most.", author: "Abraham Lincoln" },
-    { text: "The pain you feel today will be the strength you feel tomorrow.", author: "Unknown" },
-    { text: "Don't stop when you're tired. Stop when you're done.", author: "Unknown" },
+    { text: "Le seul mauvais entraînement, c'est celui que tu n'as pas fait.", author: "OPTIZ" },
+    { text: "La discipline, c'est choisir entre ce que tu veux maintenant et ce que tu veux vraiment.", author: "Abraham Lincoln" },
+    { text: "1% meilleur chaque jour.", author: "OPTIZ" },
+    { text: "Les champions se construisent quand personne ne regarde.", author: "OPTIZ" },
+    { text: "Ton corps peut encaisser presque tout. C'est ton mental qu'il faut convaincre.", author: "OPTIZ" },
+    { text: "Sois plus fort que tes excuses.", author: "OPTIZ" },
+    { text: "La douleur d'aujourd'hui sera ta force de demain.", author: "OPTIZ" },
+    { text: "N'arrête pas quand t'es fatigué. Arrête quand t'as fini.", author: "OPTIZ" },
 ];
 
 export const OPTIZ_MAX_CHALLENGE: Challenge = {
