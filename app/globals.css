@@ -203,6 +203,13 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes fire-flicker {
+  0%, 100% { transform: scale(1) rotate(0deg); filter: brightness(1); }
+  25% { transform: scale(1.06) rotate(-2deg); filter: brightness(1.1); }
+  50% { transform: scale(1.1) rotate(1deg); filter: brightness(1.2); }
+  75% { transform: scale(1.04) rotate(-1deg); filter: brightness(1.08); }
+}
+
 /* ── Animation Utilities ── */
 .animate-fade-in {
   animation: fade-in 0.3s ease-out both;

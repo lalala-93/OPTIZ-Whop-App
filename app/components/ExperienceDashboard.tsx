@@ -2,11 +2,8 @@
 
 import { useCallback, useState, useTransition } from "react";
 import Image from "next/image";
-import { Info, User } from "lucide-react";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
+import { Home, Dumbbell, Footprints, Apple, Wind, Info, User } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { HomeScreen } from "./HomeScreen";
 import { TrainingHubScreen } from "./TrainingHubScreen";
@@ -235,107 +232,60 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
 
   return (
     <div className="min-h-screen bg-gray-1 text-gray-12 flex flex-col w-full relative">
-      <header className={cn(
-        "px-4 sm:px-6 pt-2 pb-1 sticky top-0 z-30 border-b border-[var(--optiz-border)]",
-        "bg-gray-1/[0.97] isolate"
-      )}>
-        <div className="flex items-center justify-between mb-1">
-          {/* Left: Logo + Info */}
-          <div className="flex items-center gap-1.5">
-            <div className="flex items-center">
-              <Image
-                src="/Logo-optiz.png"
-                alt="OPTIZ"
-                width={40}
-                height={40}
-                className="object-contain"
-                style={{ borderRadius: 0 }}
-                priority
-              />
-            </div>
-
-            <div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsInfoOpen(true)}
-                className="w-8 h-8 rounded-full bg-gray-3/80 border border-gray-5/60 text-gray-7 hover:text-gray-11 hover:bg-gray-4"
-              >
-                <Info className="w-[14px] h-[14px]" strokeWidth={2.5} />
-              </Button>
-            </div>
+      {/* ── Header ── */}
+      <header className="px-4 sm:px-6 pt-3 pb-2 sticky top-0 z-30 bg-gray-1/[0.97] border-b border-white/[0.04]">
+        <div className="flex items-center justify-between">
+          {/* Left: Logo */}
+          <div className="flex items-center gap-2">
+            <Image
+              src="/Logo-optiz.png"
+              alt="OPTIZ"
+              width={36}
+              height={36}
+              className="object-contain"
+              style={{ borderRadius: 0 }}
+              priority
+            />
           </div>
 
-          {/* Right: Badges + Actions */}
-          <div className="flex items-center gap-1.5">
-            <Badge
-              variant="outline"
+          {/* Right: Streak + XP + Avatar */}
+          <div className="flex items-center gap-2">
+            <button
               onClick={() => setIsStreakModalOpen(true)}
-              className="flex items-center gap-1 px-2.5 h-8 rounded-full bg-gray-3/80 border-gray-5/50 hover:bg-gray-4 transition-all cursor-pointer"
+              className="flex items-center gap-1.5 h-9 px-3 rounded-full bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors active:scale-95"
             >
-              <AnimatedFireIcon size={16} />
-              <span className="text-[12px] font-bold text-gray-12 tabular-nums leading-none">{streakDays}</span>
-            </Badge>
+              <AnimatedFireIcon size={20} />
+              <span className="text-[13px] font-bold text-gray-12 tabular-nums">{streakDays}</span>
+            </button>
 
-            <Badge
-              variant="outline"
+            <button
               onClick={() => setIsXpModalOpen(true)}
-              className="flex items-center gap-1 px-2.5 h-8 rounded-full bg-gray-3/80 border-gray-5/50 hover:bg-gray-4 transition-all cursor-pointer"
+              className="flex items-center gap-1.5 h-9 px-3 rounded-full bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors active:scale-95"
             >
-              <AnimatedBoltIcon size={16} />
-              <span className="text-[12px] font-bold text-gray-12 tabular-nums">{totalXp}</span>
-              <span className="text-[9px] font-extrabold text-[#E80000]">{t("xpLabel")}</span>
-            </Badge>
+              <AnimatedBoltIcon size={18} />
+              <span className="text-[13px] font-bold text-gray-12 tabular-nums">{totalXp}</span>
+              <span className="text-[9px] font-extrabold text-[#E80000]">XP</span>
+            </button>
 
-            <div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsSettingsOpen(true)}
-                className="w-8 h-8 rounded-full p-0 overflow-hidden bg-gray-3/80 border border-gray-5/50 hover:brightness-125 shrink-0 active:scale-95 transition-transform"
-              >
-                <Avatar className="w-8 h-8">
-                  {userPhoto ? (
-                    <AvatarImage src={userPhoto} alt={t("profileAlt")} className="object-cover" />
-                  ) : null}
-                  <AvatarFallback className="bg-transparent text-gray-9">
-                    <User className="w-[15px] h-[15px]" strokeWidth={2} />
-                  </AvatarFallback>
-                </Avatar>
-              </Button>
-            </div>
+            <button
+              onClick={() => setIsSettingsOpen(true)}
+              className="w-9 h-9 rounded-full overflow-hidden bg-white/[0.04] border border-white/[0.06] hover:brightness-125 shrink-0 active:scale-95 transition-all"
+            >
+              <Avatar className="w-9 h-9">
+                {userPhoto ? (
+                  <AvatarImage src={userPhoto} alt={t("profileAlt")} className="object-cover" />
+                ) : null}
+                <AvatarFallback className="bg-transparent text-gray-9">
+                  <User className="w-4 h-4" strokeWidth={2} />
+                </AvatarFallback>
+              </Avatar>
+            </button>
           </div>
         </div>
-
-        {/* Underline-style Tabs */}
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabType)} className="w-full">
-          <TabsList className="w-full bg-transparent h-auto p-0 gap-0 overflow-x-auto">
-            {(
-              [
-                { value: "home", label: t("home") },
-                { value: "training", label: t("trainingTab") },
-                { value: "steps", label: t("stepsTab") },
-                { value: "diet", label: t("dietTab") },
-                { value: "breathwork", label: t("breathworkTab") },
-              ] as const
-            ).map((tab) => (
-              <TabsTrigger
-                key={tab.value}
-                value={tab.value}
-                className={cn(
-                  "flex-1 rounded-none px-3 py-2 text-[11px] font-semibold transition-all duration-150",
-                  "data-[state=inactive]:text-gray-9 data-[state=inactive]:hover:text-gray-11",
-                  "data-[state=active]:shadow-none data-[state=active]:bg-transparent data-[state=active]:text-gray-12 data-[state=active]:border-b-[2px] data-[state=active]:border-[#E80000]"
-                )}
-              >
-                {tab.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
       </header>
 
-      <main className="flex-1 overflow-y-auto px-4 sm:px-6 pt-2 pb-4 scroll-smooth">
+      {/* ── Main content ── */}
+      <main className="flex-1 overflow-y-auto px-4 sm:px-6 pt-3 pb-24 scroll-smooth">
         {activeTab === "home" ? (
           <HomeScreen
             userId={userId}
@@ -379,6 +329,34 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
           />
         )}
       </main>
+
+      {/* ── Bottom Navigation ── */}
+      <nav className="fixed bottom-0 inset-x-0 z-30 bg-gray-1/[0.97] border-t border-white/[0.06] pb-[env(safe-area-inset-bottom)]">
+        <div className="flex items-center justify-around h-14 max-w-lg mx-auto">
+          {([
+            { value: "home" as TabType, icon: Home, label: t("home") },
+            { value: "training" as TabType, icon: Dumbbell, label: t("trainingTab") },
+            { value: "steps" as TabType, icon: Footprints, label: t("stepsTab") },
+            { value: "diet" as TabType, icon: Apple, label: t("dietTab") },
+            { value: "breathwork" as TabType, icon: Wind, label: t("breathworkTab") },
+          ]).map((tab) => {
+            const active = activeTab === tab.value;
+            return (
+              <button
+                key={tab.value}
+                onClick={() => setActiveTab(tab.value)}
+                className={cn(
+                  "flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors active:scale-95",
+                  active ? "text-[#E80000]" : "text-gray-7"
+                )}
+              >
+                <tab.icon size={20} strokeWidth={active ? 2.2 : 1.8} />
+                <span className={cn("text-[10px] font-medium", active && "font-semibold")}>{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
 
       <SettingsSheet
         isOpen={isSettingsOpen}

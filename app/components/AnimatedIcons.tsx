@@ -7,7 +7,14 @@ interface AnimatedFireIconProps {
 
 export function AnimatedFireIcon({ size = 16, className = "" }: AnimatedFireIconProps) {
     return (
-        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
+        <svg
+            width={size}
+            height={size}
+            viewBox="0 0 24 24"
+            fill="none"
+            className={`${className}`}
+            style={{ animation: "fire-flicker 1.8s ease-in-out infinite" }}
+        >
             <path
                 d="M12 2C10.5 6 7 8 7 12.5C7 15.5 9.2 18 12 18C14.8 18 17 15.5 17 12.5C17 8 13.5 6 12 2Z"
                 fill="url(#fire-grad-outer)"
