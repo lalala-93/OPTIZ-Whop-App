@@ -9,6 +9,8 @@ export interface ProgramExerciseTemplate {
   reps: number;
   /** Display label for reps (e.g. "Max", "30s", "30m") — overrides numeric reps in UI */
   repsLabel?: string;
+  /** Per-set rep targets e.g. [20, 15, 10, 10] — overrides uniform `reps` per set */
+  perSetReps?: number[];
   /** Note shown below exercise (e.g. "45s-1min récup", "EMOM 10min") */
   note?: string;
   muscles: string;
@@ -107,7 +109,7 @@ function ex(
   id: string,
   sets: number,
   reps: number,
-  opts?: { repsLabel?: string; note?: string },
+  opts?: { repsLabel?: string; perSetReps?: number[]; note?: string },
 ): ProgramExerciseTemplate {
   const base = BASE_LIBRARY.find((e) => e.id === id);
   if (!base) throw new Error(`Missing exercise: ${id}`);
@@ -117,6 +119,7 @@ function ex(
     sets,
     reps,
     repsLabel: opts?.repsLabel,
+    perSetReps: opts?.perSetReps,
     note: opts?.note,
     muscles: base.muscles,
     videoUrl: base.videoUrl,
@@ -124,14 +127,14 @@ function ex(
 }
 
 // ═══════════════════════════════════════════════════════
-// Program 1: Street Park
+// Program 1: Street Workout
 // Chaise romaine + 2 élastiques (résistance - et +)
 // 45s à 1min récup sauf EMOMs
 // ═══════════════════════════════════════════════════════
 
 const STREET_PARK: ProgramTemplate = {
   id: "street-park",
-  title: "Street Park",
+  title: "Street Workout",
   subtitle: "Chaise romaine + élastiques. Zéro salle, zéro excuse.",
   level: "intermediate",
   location: "outdoor",
@@ -143,12 +146,12 @@ const STREET_PARK: ProgramTemplate = {
       focus: "Tractions, jambes, pompes",
       durationMin: 50,
       exercises: [
-        ex("pull-up-prona", 1, 10, { repsLabel: "EMOM 10 min", note: "1 traction par minute pendant 10 minutes" }),
-        ex("australian-row", 4, 20, { note: "Prise large, focus arrière d'épaule élastique. 45s-1min récup" }),
-        ex("inverted-deadlift", 4, 1, { repsLabel: "Max reps hold", note: "Commencer jambes pliées, déplier au fur et à mesure des semaines" }),
-        ex("jump-lunge", 4, 20, { note: "Superset avec chaise mur 30s. 45s-1min récup" }),
-        ex("wall-sit", 4, 1, { repsLabel: "30s", note: "Superset avec fentes sautées" }),
-        ex("push-up-elevated", 3, 1, { repsLabel: "Max reps", note: "Pieds surélevés. 45s-1min récup" }),
+        ex("pull-up-prona", 1, 0, { repsLabel: "EMOM 10 min", note: "1 série par minute pendant 10 minutes. Pas de récup imposée." }),
+        ex("australian-row", 4, 20, { note: "Ou focus arrière d'épaule élastique. 45s-1min récup" }),
+        ex("inverted-deadlift", 4, 0, { repsLabel: "Max reps hold", note: "Commencer jambes pliées, déplier progressivement. 45s-1min récup" }),
+        ex("jump-lunge", 4, 20, { note: "⚡ Superset avec chaise mur 30s. 45s-1min récup" }),
+        ex("wall-sit", 4, 0, { repsLabel: "30s", note: "⚡ Superset avec fentes sautées" }),
+        ex("push-up-elevated", 3, 0, { repsLabel: "Max reps", note: "45s-1min récup" }),
       ],
     },
     {
@@ -157,13 +160,13 @@ const STREET_PARK: ProgramTemplate = {
       focus: "Pompes, dips, tirage, jambes",
       durationMin: 50,
       exercises: [
-        ex("push-up", 3, 1, { repsLabel: "Max reps", note: "45s-1min récup" }),
-        ex("band-rear-delt-uni", 4, 15, { note: "Superset avec extension triceps élastique. 45s-1min récup" }),
-        ex("band-triceps-ext", 4, 20, { note: "Superset avec arrière d'épaule" }),
-        ex("dips", 1, 10, { repsLabel: "EMOM 10 min", note: "1 série par minute pendant 10 minutes" }),
+        ex("push-up", 3, 0, { repsLabel: "Max reps", note: "45s-1min récup" }),
+        ex("band-rear-delt-uni", 4, 15, { note: "⚡ Superset avec extension triceps. 45s-1min récup" }),
+        ex("band-triceps-ext", 4, 20, { note: "⚡ Superset avec arrière d'épaule" }),
+        ex("dips", 1, 0, { repsLabel: "EMOM 10 min", note: "1 série par minute pendant 10 minutes" }),
         ex("band-uni-row", 4, 20, { note: "Coude ouvert, perpendiculaire au corps. 45s-1min récup" }),
-        ex("sissy-squat", 4, 10, { note: "Superset avec marche en canard 30m. 45s-1min récup" }),
-        ex("duck-walk", 4, 1, { repsLabel: "30m", note: "Superset avec sissy squat" }),
+        ex("sissy-squat", 4, 10, { note: "⚡ Superset avec marche en canard 30m. 45s-1min récup" }),
+        ex("duck-walk", 4, 0, { repsLabel: "30m", note: "⚡ Superset avec sissy squat" }),
       ],
     },
     {
@@ -172,12 +175,12 @@ const STREET_PARK: ProgramTemplate = {
       focus: "Tractions supi, pompes EMOM, bras, jambes",
       durationMin: 50,
       exercises: [
-        ex("chin-up", 3, 1, { repsLabel: "Max reps", note: "45s-1min récup" }),
-        ex("push-up-elevated", 1, 10, { repsLabel: "EMOM 10 min", note: "20s effort / 40s repos" }),
-        ex("band-hammer-curl", 4, 20, { note: "Superset avec extension triceps élastique. 45s-1min récup" }),
-        ex("band-triceps-ext", 4, 20, { note: "Superset avec curl marteau" }),
-        ex("walking-lunge-tempo", 4, 30, { note: "Superset avec squats sautés 15 reps. Tempo lent. 45s-1min récup" }),
-        ex("squat-jump", 4, 15, { note: "Superset avec fentes marchées" }),
+        ex("chin-up", 3, 0, { repsLabel: "Max reps", note: "45s-1min récup" }),
+        ex("push-up-elevated", 1, 0, { repsLabel: "EMOM 10 min", note: "20s effort / 40s repos" }),
+        ex("band-hammer-curl", 4, 20, { note: "⚡ Superset avec extension triceps. 45s-1min récup" }),
+        ex("band-triceps-ext", 4, 20, { note: "⚡ Superset avec curl marteau" }),
+        ex("walking-lunge-tempo", 4, 30, { note: "⚡ Superset avec squats sautés. Tempo lent. 45s-1min récup" }),
+        ex("squat-jump", 4, 15, { note: "⚡ Superset avec fentes marchées" }),
       ],
     },
     {
@@ -186,24 +189,23 @@ const STREET_PARK: ProgramTemplate = {
       focus: "EMOM 20 min + jambes",
       durationMin: 45,
       exercises: [
-        ex("pull-up-prona", 1, 20, { repsLabel: "EMOM 20 min", note: "40s effort / 20s repos. Min 1: tractions prona, Min 2: pompes serrées, Min 3: tractions prona. Boucle." }),
-        ex("push-up-close", 1, 20, { repsLabel: "Inclus EMOM", note: "Minute 2 du bloc EMOM ci-dessus" }),
-        ex("step-up", 4, 10, { note: "Superset avec goblet squat 15 reps. 45s-1min récup" }),
-        ex("goblet-squat", 4, 15, { note: "Superset avec step up" }),
+        ex("pull-up-prona", 1, 0, { repsLabel: "EMOM 20 min", note: "40s effort / 20s repos. Min 1: tractions prona. Min 2: pompes serrées. Min 3: tractions prona. Boucle." }),
+        ex("step-up", 4, 10, { note: "⚡ Superset avec goblet squat. 45s-1min récup" }),
+        ex("goblet-squat", 4, 15, { note: "⚡ Superset avec step up" }),
       ],
     },
   ],
 };
 
 // ═══════════════════════════════════════════════════════
-// Program 2: Salle
+// Program 2: Salle de sport
 // Haltères + barre + banc
 // 45s à 1min récup pour tous les exos
 // ═══════════════════════════════════════════════════════
 
 const SALLE: ProgramTemplate = {
   id: "salle",
-  title: "Salle",
+  title: "Salle de sport",
   subtitle: "Haltères, barre, banc. Le programme complet.",
   level: "intermediate",
   location: "gym",
@@ -215,14 +217,14 @@ const SALLE: ProgramTemplate = {
       focus: "Pectoraux, épaules, triceps",
       durationMin: 55,
       exercises: [
-        ex("push-up", 3, 1, { repsLabel: "Max reps", note: "Échauffement. 45s-1min récup" }),
+        ex("push-up", 3, 0, { repsLabel: "Max reps", note: "Échauffement. 45s-1min récup" }),
         ex("db-pullover", 4, 20, { note: "Focus haut de pec. 45s-1min récup" }),
-        ex("db-military-press", 4, 15, { note: "Superset avec élévation haut de pec 15 reps. 45s-1min récup" }),
-        ex("high-chest-raise", 4, 15, { note: "Superset avec développé militaire" }),
-        ex("db-incline-fly", 4, 20, { repsLabel: "20/15/10/10", note: "Superset avec squeeze press. 45s-1min récup" }),
-        ex("squeeze-press", 4, 20, { repsLabel: "20/15/10/10", note: "Superset avec écarté incliné" }),
+        ex("db-military-press", 4, 15, { note: "⚡ Superset avec élévation haut de pec. 45s-1min récup" }),
+        ex("high-chest-raise", 4, 15, { note: "⚡ Superset avec développé militaire" }),
+        ex("db-incline-fly", 4, 20, { perSetReps: [20, 15, 10, 10], note: "⚡ Superset avec squeeze press. 45s-1min récup" }),
+        ex("squeeze-press", 4, 20, { perSetReps: [20, 15, 10, 10], note: "⚡ Superset avec écarté incliné" }),
         ex("skull-crusher", 4, 20, { note: "45s-1min récup" }),
-        ex("dips", 1, 5, { repsLabel: "5 min", note: "Pratiquer dips pendant 5 minutes en continu" }),
+        ex("dips", 1, 0, { repsLabel: "5 min", note: "Pratiquer dips pendant 5 minutes en continu" }),
       ],
     },
     {
@@ -231,12 +233,12 @@ const SALLE: ProgramTemplate = {
       focus: "Dos, trapèzes, biceps",
       durationMin: 55,
       exercises: [
-        ex("pull-up-prona", 1, 10, { repsLabel: "EMOM 10 min", note: "Ou 4 séries tirage vertical 30/20/15/15" }),
-        ex("upright-row", 4, 30, { repsLabel: "30/20/20/15", note: "45s-1min récup" }),
-        ex("barbell-shrug", 4, 40, { repsLabel: "40/30/20/20", note: "Superset avec oiseau haltères 20/20/15/15. 45s-1min récup" }),
-        ex("rear-delt-fly", 4, 20, { repsLabel: "20/20/15/15", note: "Superset avec shrug barre" }),
-        ex("band-rear-delt", 4, 20, { note: "Récup active. Superset avec rack pulls 15 reps. 45s-1min récup" }),
-        ex("rack-pull", 4, 15, { note: "Superset avec arrière d'épaule élastique" }),
+        ex("pull-up-prona", 1, 0, { repsLabel: "EMOM 10 min", note: "Ou 4 séries tirage vertical 30/20/15/15" }),
+        ex("upright-row", 4, 30, { perSetReps: [30, 20, 20, 15], note: "45s-1min récup" }),
+        ex("barbell-shrug", 4, 40, { perSetReps: [40, 30, 20, 20], note: "⚡ Superset avec oiseau haltères. 45s-1min récup" }),
+        ex("rear-delt-fly", 4, 20, { perSetReps: [20, 20, 15, 15], note: "⚡ Superset avec shrug barre" }),
+        ex("band-rear-delt", 4, 20, { note: "⚡ Superset avec rack pulls. Récup active. 45s-1min récup" }),
+        ex("rack-pull", 4, 15, { note: "⚡ Superset avec arrière d'épaule élastique" }),
         ex("hammer-curl", 3, 15, { note: "45s-1min récup" }),
       ],
     },
@@ -246,12 +248,12 @@ const SALLE: ProgramTemplate = {
       focus: "Quadriceps, ischios, fessiers",
       durationMin: 55,
       exercises: [
-        ex("walking-lunge", 4, 40, { repsLabel: "40/30/20/20", note: "45s-1min récup" }),
-        ex("goblet-squat-elevated", 4, 15, { note: "Talons surélevés. 45s-1min récup" }),
-        ex("step-up", 4, 10, { note: "Superset avec élévation latérale mi-amplitude 20 reps. 45s-1min récup" }),
-        ex("lateral-raise-mid", 4, 20, { note: "Départ milieu d'amplitude jusqu'en haut. Superset avec step up" }),
-        ex("romanian-deadlift-db", 4, 20, { repsLabel: "20/20/15/15", note: "45s-1min récup" }),
-        ex("push-up", 3, 1, { repsLabel: "Max reps", note: "Finisher. 45s-1min récup" }),
+        ex("walking-lunge", 4, 40, { perSetReps: [40, 30, 20, 20], note: "45s-1min récup" }),
+        ex("goblet-squat-elevated", 4, 15, { note: "45s-1min récup" }),
+        ex("step-up", 4, 10, { note: "⚡ Superset avec élévation latérale. 45s-1min récup" }),
+        ex("lateral-raise-mid", 4, 20, { note: "⚡ Superset avec step up. Départ mi-amplitude" }),
+        ex("romanian-deadlift-db", 4, 20, { perSetReps: [20, 20, 15, 15], note: "45s-1min récup" }),
+        ex("push-up", 3, 0, { repsLabel: "Max reps", note: "Finisher. 45s-1min récup" }),
       ],
     },
     {
@@ -260,12 +262,12 @@ const SALLE: ProgramTemplate = {
       focus: "Dips, triceps, tractions, jambes",
       durationMin: 50,
       exercises: [
-        ex("dips", 1, 10, { repsLabel: "EMOM 10 min", note: "1 série par minute pendant 10 minutes" }),
+        ex("dips", 1, 0, { repsLabel: "EMOM 10 min", note: "1 série par minute pendant 10 minutes" }),
         ex("overhead-triceps", 4, 15, { note: "Debout avec un haltère. 45s-1min récup" }),
-        ex("chin-up", 4, 1, { repsLabel: "Max reps", note: "4 séries. 45s-1min récup" }),
+        ex("chin-up", 4, 0, { repsLabel: "Max reps", note: "45s-1min récup" }),
         ex("hammer-curl", 3, 15, { note: "45s-1min récup" }),
-        ex("walking-lunge", 3, 30, { note: "Superset avec marche du fermier jusqu'à l'échec grip. 45s-1min récup" }),
-        ex("farmer-walk", 3, 1, { repsLabel: "Échec grip", note: "Superset avec fentes marchées" }),
+        ex("walking-lunge", 3, 30, { note: "⚡ Superset avec marche du fermier. 45s-1min récup" }),
+        ex("farmer-walk", 3, 0, { repsLabel: "Échec grip", note: "⚡ Superset avec fentes marchées" }),
       ],
     },
   ],

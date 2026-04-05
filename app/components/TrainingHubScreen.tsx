@@ -87,7 +87,7 @@ interface FreestyleTemplate {
   rows: Array<{ exerciseId: string; sets: number; reps: number }>;
 }
 
-interface DraftSet { load: string; reps: string; done: boolean; }
+interface DraftSet { load: string; reps: string; rpe: string; done: boolean; }
 
 type MainView =
   | { mode: "library" }
@@ -120,11 +120,17 @@ function buildSets(session: ProgramSessionTemplate, prev: SessionArchive | null)
   const m: Record<string, DraftSet[]> = {};
   session.exercises.forEach((ex) => {
     const ps = prev?.exercises.find((e) => e.exerciseId === ex.id)?.sets || [];
-    m[ex.id] = Array.from({ length: ex.sets }, (_, i) => ({
-      load: ps[i] ? String(ps[i].load) : "",
-      reps: ps[i] ? String(ps[i].reps) : String(ex.reps),
-      done: false,
-    }));
+    const rowCount = Math.max(ex.sets, ps.length);
+    m[ex.id] = Array.from({ length: rowCount }).map((_, idx) => {
+      const p = ps[idx];
+      const targetReps = (ex as any).perSetReps?.[idx] ?? ex.reps;
+      return {
+        load: p ? String(p.load) : "",
+        reps: p ? String(p.reps) : targetReps > 0 ? String(targetReps) : "",
+        rpe: "",
+        done: false,
+      };
+    });
   });
   return m;
 }
@@ -180,7 +186,7 @@ function WorkoutFunnel({
     upd(ex.id, i, { done: next });
     if (!next) return;
     if (soundOn) playCompleteSound();
-    const cur: SessionSetLog = { load: parseNum(r.load, 0), reps: parseNum(r.reps, ex.reps), rpe: 8 };
+    const cur: SessionSetLog = { load: parseNum(r.load, 0), reps: parseNum(r.reps, ex.reps), rpe: parseNum(r.rpe, 8) };
     const k = `${ex.id}-${i}`;
     if (!prKeys.includes(k) && isImproved(cur, prevRows[i])) setPrKeys((p) => [...p, k]);
   };
@@ -189,7 +195,7 @@ function WorkoutFunnel({
     const logs: ExerciseLog[] = session.exercises.map((e) => ({
       exerciseId: e.id,
       exerciseName: e.name,
-      sets: (sets[e.id] || []).map((r) => ({ load: parseNum(r.load, 0), reps: parseNum(r.reps, e.reps), rpe: 8 })),
+      sets: (sets[e.id] || []).map((r) => ({ load: parseNum(r.load, 0), reps: parseNum(r.reps, e.reps), rpe: parseNum(r.rpe, 8) })),
     }));
     const vol = logs.reduce((s, el) => s + el.sets.reduce((a, r) => a + r.load * r.reps, 0), 0);
     if (soundOn) playWorkoutCompleteSound();
@@ -346,10 +352,11 @@ function WorkoutFunnel({
           <Card className="border-gray-5/30 bg-gray-2/70 overflow-hidden">
             <CardContent className="p-0">
               {/* Header */}
-              <div className="grid grid-cols-[2.5rem_1fr_1fr_2.5rem] px-3 py-2 border-b border-gray-5/20">
+              <div className="grid grid-cols-[2.2rem_1fr_1fr_3rem_2.5rem] px-3 py-2 border-b border-gray-5/20">
                 <span className="text-[11px] uppercase tracking-wider text-gray-7 text-center">{t("trainingHeaderSet")}</span>
                 <span className="text-[11px] uppercase tracking-wider text-gray-7 text-center">{t("trainingHeaderKg")}</span>
                 <span className="text-[11px] uppercase tracking-wider text-gray-7 text-center">{t("trainingHeaderReps")}</span>
+                <span className="text-[11px] uppercase tracking-wider text-gray-7 text-center">RPE</span>
                 <span />
               </div>
 
@@ -359,7 +366,7 @@ function WorkoutFunnel({
                   const isPr = prKeys.includes(`${ex.id}-${i}`);
                   return (
                     <div key={i} className={cn(
-                      "grid grid-cols-[2.5rem_1fr_1fr_2.5rem] items-center px-3 py-1.5 transition-colors",
+                      "grid grid-cols-[2.2rem_1fr_1fr_3rem_2.5rem] items-center px-3 py-1.5 transition-colors",
                       row.done && "bg-[#E80000]/5"
                     )}>
                       <div className="flex items-center justify-center gap-0.5">
@@ -398,9 +405,23 @@ function WorkoutFunnel({
                           inputMode="numeric"
                           onChange={(e) => upd(ex.id, i, { reps: e.target.value })}
                           disabled={row.done}
-                          placeholder={String(ex.reps)}
+                          placeholder={ex.reps > 0 ? String((ex as any).perSetReps?.[i] ?? ex.reps) : "Max"}
                           className="w-full max-w-[5rem] h-9 rounded-lg bg-transparent text-center text-[14px] text-gray-12 placeholder:text-gray-6 disabled:opacity-50 border-0 focus:bg-gray-3/30 transition-colors"
                         />
+                      </div>
+
+                      <div className="flex justify-center">
+                        <select
+                          value={row.rpe || ""}
+                          onChange={(e) => upd(ex.id, i, { rpe: e.target.value })}
+                          disabled={row.done}
+                          className="h-9 w-full max-w-[3rem] rounded-lg bg-transparent text-center text-[13px] text-gray-12 disabled:opacity-50 border-0 focus:bg-gray-3/30 transition-colors appearance-none"
+                        >
+                          <option value="">-</option>
+                          {[6, 7, 8, 9, 10].map((v) => (
+                            <option key={v} value={v}>{v}</option>
+                          ))}
+                        </select>
                       </div>
 
                       <Button

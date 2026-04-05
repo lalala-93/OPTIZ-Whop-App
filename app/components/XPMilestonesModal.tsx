@@ -58,12 +58,12 @@ export function XPMilestonesModal({ isOpen, onClose, currentLevel, totalXp }: XP
             <DialogContent className="bg-gray-2 border-gray-5/40 text-gray-12 max-w-md p-0 gap-0">
                 <button
                     onClick={onClose}
-                    className="sticky top-8 float-right mr-4 w-7 h-7 rounded-full bg-gray-4/80 border border-gray-5/50 flex items-center justify-center text-gray-8 hover:text-gray-12 hover:bg-gray-5 transition-all z-20"
+                    className="absolute right-4 top-4 z-20 w-7 h-7 rounded-full bg-gray-4/80 border border-gray-5/50 flex items-center justify-center text-gray-8 hover:text-gray-12 hover:bg-gray-5 transition-all"
                 >
                     <X className="h-3.5 w-3.5" />
                 </button>
                 {/* Header */}
-                <div className="px-5 -mt-7 pb-4 border-b border-gray-4/40">
+                <div className="px-5 pt-5 pb-4 border-b border-gray-4/40">
                     <DialogHeader className="flex-row items-center gap-3 space-y-0 mb-3">
                         <RankBadge
                             colors={currentRank.tier.gradient}
