@@ -68,26 +68,32 @@ export function RankBadge({ colors, glowColor, tierName, size = 80, className = 
 
             <SvgWrapper viewBox="0 0 100 100" className={`w-full h-full relative z-0 ${isStatic ? "" : "drop-shadow-2xl"}`} {...({} as Record<string, unknown>)}>
                 <defs>
-                    <linearGradient id={`${id}-metal`} x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0%" stopColor="#6B7280" />
-                        <stop offset="50%" stopColor="#374151" />
-                        <stop offset="100%" stopColor="#111827" />
-                    </linearGradient>
-                    <linearGradient id={`${id}-bronze`} x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0%" stopColor="#F5A623" />
-                        <stop offset="50%" stopColor="#92400E" />
-                        <stop offset="100%" stopColor="#451A03" />
-                    </linearGradient>
-                    <linearGradient id={`${id}-crimson`} x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0%" stopColor="#FF5252" />
-                        <stop offset="40%" stopColor="#DC2626" />
+                    {/* Tier 1: Dark red — simple */}
+                    <linearGradient id={`${id}-t1`} x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stopColor="#7F1D1D" />
                         <stop offset="100%" stopColor="#450A0A" />
                     </linearGradient>
+                    {/* Tier 2: Medium red — bolder */}
+                    <linearGradient id={`${id}-t2`} x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stopColor="#DC2626" />
+                        <stop offset="50%" stopColor="#991B1B" />
+                        <stop offset="100%" stopColor="#450A0A" />
+                    </linearGradient>
+                    {/* Tier 3: Bright crimson — intense */}
+                    <linearGradient id={`${id}-t3`} x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stopColor="#FF5252" />
+                        <stop offset="40%" stopColor="#E80000" />
+                        <stop offset="100%" stopColor="#7F1D1D" />
+                    </linearGradient>
+                    {/* Tier 4: Red to gold — legendary */}
+                    <linearGradient id={`${id}-t4`} x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stopColor="#FF5252" />
+                        <stop offset="50%" stopColor="#E80000" />
+                        <stop offset="100%" stopColor="#FFD700" />
+                    </linearGradient>
                     <linearGradient id={`${id}-gold`} x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0%" stopColor="#FFF7B0" />
-                        <stop offset="30%" stopColor="#F5A623" />
-                        <stop offset="70%" stopColor="#B45309" />
-                        <stop offset="100%" stopColor="#78350F" />
+                        <stop offset="0%" stopColor="#FFD700" />
+                        <stop offset="100%" stopColor="#FF8C00" />
                     </linearGradient>
                     {/* SVG filters only in non-static mode (heavy on GPU) */}
                     {!isStatic && (
@@ -123,89 +129,78 @@ export function RankBadge({ colors, glowColor, tierName, size = 80, className = 
     );
 }
 
-// ── TIER 1: INITIATE (Raw Steel, Hexagon) ──
+// ── TIER 1: RECRUE — Simple dark red hexagon, minimal detail ──
 function InitiateBadge({ id, noFilter }: { id: string; noFilter?: boolean }) {
     return (
         <g filter={noFilter ? undefined : `url(#${id}-drop)`}>
-            {/* Heavy Base Hexagon */}
-            <path d="M50 10 L85 25 L85 75 L50 90 L15 75 L15 25 Z" fill={`url(#${id}-metal)`} stroke="#4B5563" strokeWidth="2" />
-
-            {/* Inner Dark Cutout */}
-            <path d="M50 18 L76 30 L76 70 L50 82 L24 70 L24 30 Z" fill="#111827" stroke="#374151" strokeWidth="1" />
-
-            {/* Center Monolith */}
-            <path d="M45 35 L55 35 L50 65 Z" fill="#9CA3AF" />
+            <path d="M50 12 L82 28 L82 72 L50 88 L18 72 L18 28 Z" fill={`url(#${id}-t1)`} stroke="#991B1B" strokeWidth="2" />
+            <path d="M50 22 L72 34 L72 66 L50 78 L28 66 L28 34 Z" fill="#0A0A0A" stroke="#7F1D1D" strokeWidth="1" />
+            {/* Simple center diamond */}
+            <path d="M50 38 L58 50 L50 62 L42 50 Z" fill="#991B1B" />
         </g>
     );
 }
 
-// ── TIER 2: GRINDER (Forged Bronze, Heavy Shield) ──
+// ── TIER 2: SOLDAT — Bigger shield, red gradient, inner ring ──
 function GrinderBadge({ id, noFilter }: { id: string; noFilter?: boolean }) {
     return (
         <g filter={noFilter ? undefined : `url(#${id}-drop)`}>
-            {/* Aggressive Wide Shield Base */}
-            <path d="M50 5 L95 25 L85 80 L50 95 L15 80 L5 25 Z" fill={`url(#${id}-bronze)`} stroke="#D97706" strokeWidth="2.5" />
-
-            {/* Dark Inner Shield Core */}
-            <path d="M50 14 L84 30 L76 74 L50 86 L24 74 L16 30 Z" fill="#18181B" stroke="#78350F" strokeWidth="1.5" />
-
-            {/* Center Geometry */}
-            <g>
-                <path d="M50 25 L65 50 L50 75 L35 50 Z" fill={`url(#${id}-bronze)`} />
-                <path d="M50 35 L58 50 L50 65 L42 50 Z" fill="#FBBF24" opacity="0.8" />
-            </g>
+            <path d="M50 6 L92 26 L82 80 L50 94 L18 80 L8 26 Z" fill={`url(#${id}-t2)`} stroke="#DC2626" strokeWidth="2.5" />
+            <path d="M50 16 L80 32 L72 74 L50 84 L28 74 L20 32 Z" fill="#0A0A0A" stroke="#991B1B" strokeWidth="1.5" />
+            {/* Center diamond with inner highlight */}
+            <path d="M50 28 L66 50 L50 72 L34 50 Z" fill={`url(#${id}-t2)`} />
+            <path d="M50 36 L58 50 L50 64 L42 50 Z" fill="#FF5252" opacity="0.7" />
+            {/* Corner accents */}
+            <circle cx="50" cy="18" r="2" fill="#DC2626" />
         </g>
     );
 }
 
-// ── TIER 3: ELITE (OPTIZ Red & Black, Demon Shield) ──
+// ── TIER 3: VÉTÉRAN — Winged shield, bolt center, red glow ──
 function EliteBadge({ id, noFilter }: { id: string; noFilter?: boolean }) {
     return (
         <g filter={noFilter ? undefined : `url(#${id}-drop)`}>
-            {/* Winged Demon Base */}
-            <path d="M50 5 L95 20 L80 55 L95 65 L50 95 L5 65 L20 55 L5 20 Z" fill={`url(#${id}-crimson)`} stroke="#DC2626" strokeWidth="2" />
-
-            {/* Inner Obsidian Core */}
-            <path d="M50 14 L82 26 L70 55 L82 62 L50 85 L18 62 L30 55 L18 26 Z" fill="#000000" />
-
-            {/* Red Core Light */}
-            <circle cx="50" cy="50" r="15" fill="#DC2626" filter={noFilter ? undefined : `url(#${id}-glow-red)`} opacity="0.6" />
-
-            {/* The "Optiz" Spark/Bolt */}
-            <path d="M45 25 L65 25 L55 50 L70 50 L35 80 L45 55 L30 55 Z" fill="#FF5252" filter={noFilter ? undefined : `url(#${id}-glow-red)`} opacity="0.9" />
+            {/* Winged shape */}
+            <path d="M50 4 L94 20 L78 55 L92 65 L50 96 L8 65 L22 55 L6 20 Z" fill={`url(#${id}-t3)`} stroke="#E80000" strokeWidth="2" />
+            <path d="M50 14 L80 26 L68 54 L78 62 L50 85 L22 62 L32 54 L20 26 Z" fill="#0A0A0A" />
+            {/* Red core glow */}
+            <circle cx="50" cy="48" r="14" fill="#E80000" filter={noFilter ? undefined : `url(#${id}-glow-red)`} opacity="0.5" />
+            {/* Lightning bolt */}
+            <path d="M46 24 L62 24 L54 46 L66 46 L38 78 L46 52 L34 52 Z" fill="#FF5252" filter={noFilter ? undefined : `url(#${id}-glow-red)`} opacity="0.9" />
+            {/* Wing tip accents */}
+            <circle cx="8" cy="22" r="2" fill="#FF5252" opacity="0.6" />
+            <circle cx="92" cy="22" r="2" fill="#FF5252" opacity="0.6" />
         </g>
     );
 }
 
-// ── TIER 4: APEX (Floating Obsidian & Gold, Masterpiece) ──
+// ── TIER 4: PRESTIGE — Obsidian + gold crown, red/gold glow, particles ──
 function ApexBadge({ id, noFilter }: { id: string; noFilter?: boolean }) {
     return (
         <g>
-            {/* Gold Back-Arc */}
-            <path d="M20 30 Q50 0 80 30" fill="none" stroke={`url(#${id}-gold)`} strokeWidth="4" strokeLinecap="round" filter={noFilter ? undefined : `url(#${id}-glow-gold)`} />
+            {/* Gold crown arc */}
+            <path d="M22 28 Q50 2 78 28" fill="none" stroke={`url(#${id}-gold)`} strokeWidth="3.5" strokeLinecap="round" filter={noFilter ? undefined : `url(#${id}-glow-gold)`} />
+            {/* Crown points */}
+            <circle cx="35" cy="16" r="2.5" fill="#FFD700" opacity="0.8" />
+            <circle cx="50" cy="8" r="3" fill="#FFD700" />
+            <circle cx="65" cy="16" r="2.5" fill="#FFD700" opacity="0.8" />
 
-            {/* Main Obsidian Shield with Gold Border */}
             <g filter={noFilter ? undefined : `url(#${id}-drop)`}>
-                <path d="M50 10 L90 35 L75 85 L50 100 L25 85 L10 35 Z" fill="#09090B" stroke={`url(#${id}-gold)`} strokeWidth="3" />
-
-                {/* Gold Inner Carvings */}
-                <path d="M50 20 L80 40 L68 80 L50 91 L32 80 L20 40 Z" fill="none" stroke="#F5A623" strokeWidth="1" opacity="0.5" />
-
-                {/* Center Core Gem */}
-                <g>
-                    <circle cx="50" cy="55" r="18" fill="#FBBF24" filter={noFilter ? undefined : `url(#${id}-glow-gold)`} opacity="0.6" />
-                    <path d="M50 35 L65 55 L50 75 L35 55 Z" fill={`url(#${id}-gold)`} />
-                    <path d="M50 42 L58 55 L50 68 L42 55 Z" fill="#FEF08A" />
-                </g>
+                {/* Main shield */}
+                <path d="M50 12 L88 34 L74 84 L50 98 L26 84 L12 34 Z" fill="#0A0A0A" stroke={`url(#${id}-t4)`} strokeWidth="3" />
+                {/* Inner carving */}
+                <path d="M50 22 L78 38 L66 78 L50 88 L34 78 L22 38 Z" fill="none" stroke="#E80000" strokeWidth="1" opacity="0.4" />
+                {/* Red glow center */}
+                <circle cx="50" cy="54" r="16" fill="#E80000" filter={noFilter ? undefined : `url(#${id}-glow-red)`} opacity="0.4" />
+                {/* Gold gem */}
+                <path d="M50 36 L64 54 L50 72 L36 54 Z" fill={`url(#${id}-t4)`} />
+                <path d="M50 43 L57 54 L50 65 L43 54 Z" fill="#FFD700" opacity="0.9" />
             </g>
 
-            {/* Static Halo Particles */}
-            <g>
-                <circle cx="20" cy="50" r="2.5" fill="#FFF7B0" opacity="0.7" />
-                <circle cx="80" cy="50" r="2.5" fill="#FFF7B0" opacity="0.7" />
-                <circle cx="50" cy="20" r="2.5" fill="#FFF7B0" opacity="0.7" />
-                <circle cx="50" cy="80" r="2.5" fill="#FFF7B0" opacity="0.7" />
-            </g>
+            {/* Halo particles */}
+            <circle cx="18" cy="50" r="2" fill="#FF5252" opacity="0.6" />
+            <circle cx="82" cy="50" r="2" fill="#FF5252" opacity="0.6" />
+            <circle cx="50" cy="100" r="2" fill="#FFD700" opacity="0.5" />
         </g>
     );
 }
