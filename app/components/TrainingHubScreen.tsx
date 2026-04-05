@@ -281,7 +281,7 @@ function WorkoutFunnel({
   const progressPercent = session.exercises.length > 0 ? ((exIdx) / session.exercises.length) * 100 : 0;
 
   return (
-    <div className="pb-[100px]">
+    <div className="pb-[160px]">
       {/* Top bar */}
       <div className="flex items-center justify-between mb-3">
         <Button
@@ -449,7 +449,7 @@ function WorkoutFunnel({
       )}
 
       {/* Bottom CTA */}
-      <div className="fixed inset-x-0 bottom-0 z-20 px-4 sm:px-6 pb-[calc(var(--safe-bottom)+10px)] bg-gradient-to-t from-[var(--gray-1)] via-[var(--gray-1)]/95 to-transparent pointer-events-none">
+      <div className="fixed inset-x-0 bottom-0 z-40 px-4 sm:px-6 pb-[calc(env(safe-area-inset-bottom)+70px)] bg-gradient-to-t from-[var(--gray-1)] via-[var(--gray-1)]/95 to-transparent pointer-events-none">
         <div className="mx-auto max-w-4xl pointer-events-auto">
           <Button
             onClick={next}

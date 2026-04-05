@@ -24,7 +24,7 @@ export function StreakEarnedAnimation({ isVisible, onComplete }: StreakEarnedAni
 
     return (
         <div
-            className={`fixed top-4 left-0 right-0 z-[90] flex justify-center pointer-events-none px-4 transition-all duration-300 ease-out ${
+            className={`fixed top-16 left-0 right-0 z-50 flex justify-center pointer-events-none px-4 transition-all duration-300 ease-out ${
                 show ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-10"
             }`}
         >

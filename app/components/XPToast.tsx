@@ -18,7 +18,6 @@ export function XPToast({ toast }: XPToastProps) {
 
   useEffect(() => {
     if (toast) {
-      // Force reflow then show
       requestAnimationFrame(() => setVisible(true));
     } else {
       setVisible(false);
@@ -29,22 +28,20 @@ export function XPToast({ toast }: XPToastProps) {
 
   return (
     <div
-      className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[min(88vw,380px)] transition-all duration-200 ease-out ${
-        visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
+      className={`fixed top-16 left-1/2 -translate-x-1/2 z-50 w-[min(92vw,400px)] transition-all duration-300 ease-out ${
+        visible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"
       }`}
     >
-      <div className="rounded-2xl border border-[#E80000]/20 bg-gray-2 px-4 py-3 shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-[#E80000]/12 border border-[#E80000]/20 flex items-center justify-center shrink-0">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FF6D6D" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-            </svg>
-          </div>
+      <div className="rounded-xl bg-[#E80000] px-4 py-2.5 shadow-[0_4px_20px_rgba(232,0,0,0.3)]">
+        <div className="flex items-center gap-2.5">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+          </svg>
           <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-semibold text-gray-12 truncate">{toast.title}</p>
-            {toast.subtitle ? <p className="text-[11px] text-gray-8 truncate">{toast.subtitle}</p> : null}
+            <p className="text-[13px] font-semibold text-white truncate">{toast.title}</p>
+            {toast.subtitle ? <p className="text-[11px] text-white/70 truncate">{toast.subtitle}</p> : null}
           </div>
-          <span className="shrink-0 text-[14px] font-bold tabular-nums text-[#FF6D6D]">
+          <span className="shrink-0 text-[15px] font-bold tabular-nums text-white">
             +{toast.xp} XP
           </span>
         </div>
