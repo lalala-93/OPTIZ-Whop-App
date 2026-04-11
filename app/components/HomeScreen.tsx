@@ -513,7 +513,7 @@ export function HomeScreen({
 
       {/* Optiz Store promo — compact card */}
       <a
-        href="https://optiz.store/"
+        href="https://optiz.store/collections/produits"
         target="_blank"
         rel="noopener noreferrer"
         className="block rounded-xl overflow-hidden border border-white/[0.06] relative group active:scale-[0.98] transition-transform"
@@ -526,17 +526,17 @@ export function HomeScreen({
             className="object-cover object-center"
             sizes="(max-width: 768px) 100vw, 600px"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/50 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/60 to-black/20" />
           <div className="absolute inset-0 px-4 flex items-center justify-between gap-3">
             <div className="min-w-0">
               <p className="text-[9px] font-bold text-[#FF6D6D] uppercase tracking-widest mb-0.5">
                 Optiz Store
               </p>
-              <h3 className="text-[15px] font-bold text-white leading-tight truncate">
-                Rituels naturels, effets réels
+              <h3 className="text-[16px] font-bold text-white leading-tight truncate">
+                Meilleur naturellement
               </h3>
               <p className="text-[11px] text-white/55 truncate">
-                Siwak, mastic de Chios, packs rituels
+                Produits naturels sélectionnés
               </p>
             </div>
             <div className="shrink-0 w-9 h-9 rounded-full bg-white/[0.08] border border-white/[0.15] flex items-center justify-center group-hover:bg-white/[0.15] transition-colors">
