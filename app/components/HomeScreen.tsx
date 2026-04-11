@@ -476,6 +476,27 @@ export function HomeScreen({
 
   return (
     <div className="flex flex-col gap-4 pb-8">
+      {/* ── Contest Announcement ── */}
+      <div className="rounded-xl border border-[#E80000]/25 bg-gradient-to-r from-[#E80000]/10 via-[#E80000]/5 to-transparent px-3.5 py-2.5 flex items-center gap-3 animate-fade-in">
+        <div className="shrink-0 w-9 h-9 rounded-lg bg-[#E80000]/15 border border-[#E80000]/30 flex items-center justify-center">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FF6D6D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M6 9H3.5a.5.5 0 0 0-.5.5V12c0 1.5 1.5 3 3 3" />
+            <path d="M18 9h2.5a.5.5 0 0 1 .5.5V12c0 1.5-1.5 3-3 3" />
+            <path d="M6 4h12v7a6 6 0 0 1-12 0V4Z" />
+            <path d="M10 20h4" />
+            <path d="M12 15v5" />
+          </svg>
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[9px] font-bold text-[#FF6D6D] uppercase tracking-widest leading-none mb-0.5">
+            Concours hebdo · en live
+          </p>
+          <p className="text-[12px] font-semibold text-gray-12 leading-tight">
+            Top 3 cette semaine = cadeaux offerts
+          </p>
+        </div>
+      </div>
+
       {/* ── Section 1: Rank Ring ── */}
       <div className="flex flex-col items-center pt-1 animate-fade-in">
         <div>
@@ -501,35 +522,36 @@ export function HomeScreen({
         </div>
       </div>
 
-      {/* Optiz Store promo */}
+      {/* Optiz Store promo — compact card */}
       <a
         href="https://optiz.store/collections/produits"
         target="_blank"
         rel="noopener noreferrer"
-        className="block rounded-2xl overflow-hidden border border-white/[0.06] relative group active:scale-[0.98] transition-transform"
+        className="block rounded-xl overflow-hidden border border-white/[0.06] relative group active:scale-[0.98] transition-transform"
       >
-        <div className="relative h-32 w-full">
+        <div className="relative h-[86px] w-full">
           <Image
             src="/images/optiz-store.jpeg"
             alt="Optiz Store"
             fill
-            className="object-cover"
+            className="object-cover object-[75%_45%]"
             sizes="(max-width: 768px) 100vw, 600px"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/40 to-transparent" />
-          <div className="absolute inset-0 p-4 flex flex-col justify-center">
-            <p className="text-[9px] font-bold text-[#FF6D6D] uppercase tracking-widest mb-1">
-              Optiz Store
-            </p>
-            <h3 className="text-[17px] font-bold text-white leading-tight mb-0.5">
-              Équipe-toi pour performer
-            </h3>
-            <p className="text-[11px] text-white/60 mb-2.5">
-              Vêtements, accessoires, suppléments
-            </p>
-            <div className="inline-flex items-center gap-1 text-[11px] font-bold text-white">
-              Découvrir
-              <ArrowRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/55 to-black/10" />
+          <div className="absolute inset-0 px-4 flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[9px] font-bold text-[#FF6D6D] uppercase tracking-widest mb-0.5">
+                Optiz Store
+              </p>
+              <h3 className="text-[15px] font-bold text-white leading-tight truncate">
+                Le game passe un cap
+              </h3>
+              <p className="text-[11px] text-white/55 truncate">
+                Streetwear, gear, suppléments
+              </p>
+            </div>
+            <div className="shrink-0 w-9 h-9 rounded-full bg-white/[0.08] border border-white/[0.15] flex items-center justify-center group-hover:bg-white/[0.15] transition-colors">
+              <ArrowRight size={15} className="text-white group-hover:translate-x-0.5 transition-transform" />
             </div>
           </div>
         </div>
