@@ -35,10 +35,13 @@ export async function GET(request: NextRequest) {
   let forumPostsProcessed = 0;
   let chatXpAwarded = 0;
   let forumXpAwarded = 0;
+  let chatChannelsFound = 0;
+  const chatErrors: string[] = [];
 
   // ── CHAT MESSAGES ──
   try {
     for await (const channel of whop.chatChannels.list({ company_id: companyId })) {
+      chatChannelsFound++;
       try {
         for await (const msg of whop.messages.list({ channel_id: channel.id })) {
           const msgDate = new Date(msg.created_at);
@@ -58,11 +61,15 @@ export async function GET(request: NextRequest) {
           if (result.awarded) chatXpAwarded++;
         }
       } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
         console.error(`[sync-engagement] Chat channel ${channel.id} error:`, err);
+        chatErrors.push(`channel ${channel.id}: ${msg}`);
       }
     }
   } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
     console.error("[sync-engagement] Chat channels iteration error:", err);
+    chatErrors.push(`list: ${msg}`);
   }
 
   // ── FORUM POSTS ──
@@ -114,10 +121,14 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     ok: true,
     stats: {
+      chat_channels_found: chatChannelsFound,
       chat_messages_processed: chatMessagesProcessed,
       chat_xp_awarded: chatXpAwarded,
       forum_posts_processed: forumPostsProcessed,
       forum_xp_awarded: forumXpAwarded,
+      last_chat_sync: lastChatSync.toISOString(),
     },
+    errors: chatErrors.length > 0 ? chatErrors : undefined,
+    company_id: companyId,
   });
 }
