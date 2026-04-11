@@ -16,6 +16,7 @@ import { LevelUpAnimation } from "./LevelUpAnimation";
 import { InfoModal } from "./InfoModal";
 import { StreakModal } from "./StreakModal";
 import { XPMilestonesModal } from "./XPMilestonesModal";
+import { EngagementRulesModal } from "./EngagementRulesModal";
 import { StreakEarnedAnimation } from "./StreakEarnedAnimation";
 import { AnimatedFireIcon, AnimatedBoltIcon } from "./AnimatedIcons";
 import { I18nProvider, useI18n } from "./i18n";
@@ -127,6 +128,7 @@ function DashboardInner({ userId, initialData, initialEngagementStats }: Experie
   const [isInfoOpen, setIsInfoOpen] = useState(false);
   const [isStreakModalOpen, setIsStreakModalOpen] = useState(false);
   const [isXpModalOpen, setIsXpModalOpen] = useState(false);
+  const [isEngagementModalOpen, setIsEngagementModalOpen] = useState(false);
   const [streakAnim, setStreakAnim] = useState(false);
   const [deletingData, setDeletingData] = useState(false);
 
@@ -271,20 +273,20 @@ function DashboardInner({ userId, initialData, initialEngagementStats }: Experie
               <span className="text-[13px] font-bold text-gray-12 tabular-nums">{streakDays}</span>
             </button>
 
-            {initialEngagementStats && initialEngagementStats.totalEngagementXp > 0 && (
-              <button
-                onClick={() => setIsStreakModalOpen(true)}
-                className="flex items-center gap-1.5 h-9 px-3 rounded-full bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors active:scale-95"
-                title={`${initialEngagementStats.chatMessages} messages, ${initialEngagementStats.forumPosts} posts`}
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FF6D6D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                </svg>
-                <span className="text-[13px] font-bold text-gray-12 tabular-nums">
-                  {initialEngagementStats.chatMessages + initialEngagementStats.forumPosts + initialEngagementStats.forumComments}
-                </span>
-              </button>
-            )}
+            <button
+              onClick={() => setIsEngagementModalOpen(true)}
+              className="flex items-center gap-1.5 h-9 px-3 rounded-full bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors active:scale-95"
+              title="XP d'engagement"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FF6D6D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+              <span className="text-[13px] font-bold text-gray-12 tabular-nums">
+                {(initialEngagementStats?.chatMessages ?? 0) +
+                  (initialEngagementStats?.forumPosts ?? 0) +
+                  (initialEngagementStats?.forumComments ?? 0)}
+              </span>
+            </button>
 
             <button
               onClick={() => setIsXpModalOpen(true)}
@@ -414,6 +416,11 @@ function DashboardInner({ userId, initialData, initialEngagementStats }: Experie
         onClose={() => setIsXpModalOpen(false)}
         currentLevel={levelData.level}
         totalXp={totalXp}
+      />
+      <EngagementRulesModal
+        isOpen={isEngagementModalOpen}
+        onClose={() => setIsEngagementModalOpen(false)}
+        stats={initialEngagementStats}
       />
       <TaskCompleteAnimation
         isVisible={taskCompleteAnim.visible}
