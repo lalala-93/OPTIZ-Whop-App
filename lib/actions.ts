@@ -1131,9 +1131,10 @@ export async function deleteUserData(userId: string) {
 // ══════════════════════════════════════
 
 const ENGAGEMENT_XP_CONFIG = {
-  chat_message: { xp: 2, dailyCap: 30, minLength: 10 },
-  forum_post: { xp: 10, dailyCap: 50, minLength: 20 },
-  forum_comment: { xp: 5, dailyCap: 20, minLength: 10 },
+  chat_message: { xp: 3, dailyCap: 60, minLength: 5 },
+  forum_post: { xp: 15, dailyCap: 75, minLength: 10 },
+  forum_comment: { xp: 8, dailyCap: 40, minLength: 5 },
+  daily_visit: { xp: 5, dailyCap: 5, minLength: 0 },
 } as const;
 
 export type EngagementSource = keyof typeof ENGAGEMENT_XP_CONFIG;

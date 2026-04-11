@@ -16,28 +16,28 @@ interface EngagementRulesModalProps {
 
 const RULES = [
   {
+    icon: Zap,
+    title: "Visite quotidienne",
+    xp: 5,
+    subtitle: "1x / jour, juste en ouvrant l'app",
+  },
+  {
     icon: MessageSquare,
     title: "Message chat",
-    xp: 2,
-    cap: 30,
-    minChars: 10,
-    subtitle: "15 messages max / jour",
+    xp: 3,
+    subtitle: "Min 5 caractères · 60 XP max / jour",
   },
   {
     icon: FileText,
     title: "Post forum",
-    xp: 10,
-    cap: 50,
-    minChars: 20,
-    subtitle: "5 posts max / jour",
+    xp: 15,
+    subtitle: "Min 10 caractères · 75 XP max / jour",
   },
   {
     icon: MessagesSquare,
     title: "Commentaire forum",
-    xp: 5,
-    cap: 20,
-    minChars: 10,
-    subtitle: "4 comments max / jour",
+    xp: 8,
+    subtitle: "Min 5 caractères · 40 XP max / jour",
   },
 ];
 
@@ -122,7 +122,7 @@ export function EngagementRulesModal({ isOpen, onClose, stats }: EngagementRules
                     {rule.title}
                   </p>
                   <p className="text-[10px] text-gray-7 mt-0.5">
-                    Min {rule.minChars} caractères · {rule.subtitle}
+                    {rule.subtitle}
                   </p>
                 </div>
                 <div className="flex items-baseline gap-0.5 shrink-0">

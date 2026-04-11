@@ -292,7 +292,7 @@ function TrophyIcon() {
   );
 }
 
-/* Podium slot for top 3 — clean, no glow */
+/* Podium slot for top 3 — premium gamified */
 function PodiumSlot({
   entry,
   position,
@@ -305,65 +305,84 @@ function PodiumSlot({
   crown?: boolean;
 }) {
   const xp = entry.total_xp ?? 0;
-  const barShade =
-    position === 1 ? "#E80000" : position === 2 ? "#B91818" : "#8B1515";
-  const avatarSize = position === 1 ? "h-16 w-16" : "h-14 w-14";
+  const avatarSize = position === 1 ? "h-[72px] w-[72px]" : "h-[60px] w-[60px]";
+  const badgeColor =
+    position === 1 ? "#E80000" : position === 2 ? "#9CA3AF" : "#B45309";
 
   return (
-    <div className="flex-1 flex flex-col items-center max-w-[120px]">
+    <div className="flex-1 flex flex-col items-center max-w-[110px]">
       {/* Crown for #1 */}
-      <div className="h-4 mb-1 flex items-center justify-center">
+      <div className="h-5 mb-1 flex items-center justify-center">
         {crown && (
-          <svg width="20" height="14" viewBox="0 0 22 16" fill="none">
+          <svg width="24" height="18" viewBox="0 0 24 18" fill="none">
             <path
-              d="M2 4 L6 8 L11 2 L16 8 L20 4 L18 14 L4 14 Z"
+              d="M3 5 L7 10 L12 2 L17 10 L21 5 L19 16 L5 16 Z"
               fill="#FFD700"
-              stroke="#FF8C00"
-              strokeWidth="0.8"
+              stroke="#B45309"
+              strokeWidth="1"
               strokeLinejoin="round"
             />
-            <circle cx="4" cy="4" r="1.2" fill="#FFD700" />
-            <circle cx="11" cy="2" r="1.2" fill="#FFD700" />
-            <circle cx="18" cy="4" r="1.2" fill="#FFD700" />
+            <circle cx="5" cy="5" r="1.4" fill="#FFF5CC" />
+            <circle cx="12" cy="2" r="1.6" fill="#FFF5CC" />
+            <circle cx="19" cy="5" r="1.4" fill="#FFF5CC" />
           </svg>
         )}
       </div>
 
-      {/* Avatar — neutral border, no red ring, no glow */}
+      {/* Avatar */}
       <div className="relative mb-2">
-        <Avatar className={cn(avatarSize, "border-2 border-white/[0.12]")}>
+        <Avatar className={cn(avatarSize, "border-2 border-white/[0.14] bg-white/[0.04]")}>
           <AvatarImage src={entry.avatar_url || undefined} alt="" />
           <AvatarFallback className="bg-white/[0.04]">
-            <User size={20} className="text-gray-7" />
+            <User size={position === 1 ? 28 : 24} className="text-gray-7" />
           </AvatarFallback>
         </Avatar>
-        {/* Position badge */}
+        {/* Position medal */}
         <div
-          className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black text-white border-2 border-gray-1"
-          style={{ background: barShade }}
+          className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black text-white border-[3px] border-gray-1"
+          style={{ background: badgeColor }}
         >
           {position}
         </div>
       </div>
 
       {/* Name */}
-      <p className="text-[12px] font-semibold text-gray-12 truncate max-w-full text-center mt-1">
+      <p className={cn(
+        "font-semibold text-gray-12 truncate max-w-full text-center mt-1.5 leading-tight",
+        position === 1 ? "text-[13px]" : "text-[12px]"
+      )}>
         {entry.display_name || "..."}
       </p>
 
       {/* XP */}
-      <p className="text-[10px] font-bold tabular-nums text-gray-9 mb-1.5">
+      <p className={cn(
+        "font-bold tabular-nums text-[#FF6D6D] leading-none mt-0.5 mb-2",
+        position === 1 ? "text-[12px]" : "text-[11px]"
+      )}>
         {formatNumber(xp)} XP
       </p>
 
-      {/* Bar — flat red, no glow */}
+      {/* Bar — gradient with depth + shine */}
       <div
-        className="w-full rounded-t-md"
+        className="w-full rounded-t-lg relative overflow-hidden border-t border-x border-white/[0.08]"
         style={{
           height: `${barHeight}px`,
-          background: barShade,
+          background: "linear-gradient(to top, #7F1D1D 0%, #B91818 30%, #E80000 70%, #FF2D2D 100%)",
         }}
-      />
+      >
+        {/* Top shine */}
+        <div className="absolute inset-x-0 top-0 h-1/4 bg-gradient-to-b from-white/[0.18] to-transparent" />
+        {/* Left edge highlight */}
+        <div className="absolute top-0 left-0 w-px h-full bg-white/[0.12]" />
+        {/* Right edge shadow */}
+        <div className="absolute top-0 right-0 w-px h-full bg-black/[0.25]" />
+        {/* Rank number inside bar (subtle) */}
+        {position === 1 && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="text-[48px] font-black text-black/[0.12] leading-none">1</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -567,26 +586,10 @@ export function HomeScreen({
               <>
                 {/* Top 3 Podium */}
                 {entries.length >= 3 && (
-                  <div className="flex items-end justify-center gap-2 mb-5 pt-4 px-2">
-                    {/* 2nd place — left, medium bar */}
-                    <PodiumSlot
-                      entry={entries[1]}
-                      position={2}
-                      barHeight={70}
-                    />
-                    {/* 1st place — center, tallest bar + crown */}
-                    <PodiumSlot
-                      entry={entries[0]}
-                      position={1}
-                      barHeight={100}
-                      crown
-                    />
-                    {/* 3rd place — right, shortest bar */}
-                    <PodiumSlot
-                      entry={entries[2]}
-                      position={3}
-                      barHeight={50}
-                    />
+                  <div className="flex items-end justify-center gap-2.5 mb-6 pt-4 px-1">
+                    <PodiumSlot entry={entries[1]} position={2} barHeight={64} />
+                    <PodiumSlot entry={entries[0]} position={1} barHeight={92} crown />
+                    <PodiumSlot entry={entries[2]} position={3} barHeight={48} />
                   </div>
                 )}
 
