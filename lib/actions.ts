@@ -1214,7 +1214,7 @@ export async function getLeaderboardPeriod(
     display_name: string | null;
     avatar_url: string | null;
     period_xp: number;
-    position: number;
+    rank_position: number;
   }>;
 
   const leaderboard = rows.map((r) => ({
@@ -1223,7 +1223,7 @@ export async function getLeaderboardPeriod(
     avatar_url: r.avatar_url,
     total_xp: r.period_xp,
     streak_days: 0,
-    position: r.position,
+    position: r.rank_position,
   }));
 
   // Find user's position
@@ -1237,8 +1237,8 @@ export async function getLeaderboardPeriod(
       p_end_date: endStr,
       p_limit: 10000,
     });
-    const myRow = (myData ?? []).find((r: { user_id: string }) => r.user_id === userId);
-    userPosition = myRow?.position ?? null;
+    const myRow = (myData ?? []).find((r: { user_id: string; rank_position: number }) => r.user_id === userId);
+    userPosition = myRow?.rank_position ?? null;
   }
 
   return { leaderboard, userPosition };

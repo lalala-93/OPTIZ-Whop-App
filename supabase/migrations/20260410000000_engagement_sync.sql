@@ -29,7 +29,7 @@ RETURNS TABLE(
   display_name text,
   avatar_url text,
   period_xp bigint,
-  position integer
+  rank_position integer
 )
 LANGUAGE sql STABLE AS $$
   SELECT
@@ -37,7 +37,7 @@ LANGUAGE sql STABLE AS $$
     p.display_name,
     p.avatar_url,
     SUM(e.xp_amount)::bigint AS period_xp,
-    RANK() OVER (ORDER BY SUM(e.xp_amount) DESC)::integer AS position
+    RANK() OVER (ORDER BY SUM(e.xp_amount) DESC)::integer AS rank_position
   FROM xp_events e
   LEFT JOIN user_profiles p ON p.whop_user_id = e.user_id
   WHERE e.reference_date BETWEEN p_start_date AND p_end_date
