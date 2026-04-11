@@ -518,29 +518,36 @@ export function HomeScreen({
         rel="noopener noreferrer"
         className="block rounded-xl overflow-hidden border border-white/[0.06] relative group active:scale-[0.98] transition-transform"
       >
-        <div className="relative h-[88px] w-full">
+        <div className="relative h-[92px] w-full">
           <Image
             src="/images/optiz-store.jpeg"
             alt="Optiz Store"
             fill
-            className="object-cover object-center"
+            className="object-cover object-[70%_40%]"
             sizes="(max-width: 768px) 100vw, 600px"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/60 to-black/20" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/65 to-black/20" />
           <div className="absolute inset-0 px-4 flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-[9px] font-bold text-[#FF6D6D] uppercase tracking-widest mb-0.5">
-                Optiz Store
-              </p>
+              <div className="inline-flex items-center gap-1.5 mb-1">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#FF6D6D" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="9" cy="21" r="1" />
+                  <circle cx="20" cy="21" r="1" />
+                  <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+                </svg>
+                <p className="text-[9px] font-bold text-[#FF6D6D] uppercase tracking-widest leading-none">
+                  Boutique · Optiz Store
+                </p>
+              </div>
               <h3 className="text-[16px] font-bold text-white leading-tight truncate">
                 Meilleur naturellement
               </h3>
-              <p className="text-[11px] text-white/55 truncate">
-                Produits naturels sélectionnés
+              <p className="text-[11px] text-white/60 truncate">
+                Shop produits naturels sélectionnés
               </p>
             </div>
-            <div className="shrink-0 w-9 h-9 rounded-full bg-white/[0.08] border border-white/[0.15] flex items-center justify-center group-hover:bg-white/[0.15] transition-colors">
-              <ArrowRight size={15} className="text-white group-hover:translate-x-0.5 transition-transform" />
+            <div className="shrink-0 w-10 h-10 rounded-full bg-[#E80000] flex items-center justify-center group-hover:bg-[#FF2D2D] transition-colors shadow-lg shadow-[#E80000]/20">
+              <ArrowRight size={16} className="text-white group-hover:translate-x-0.5 transition-transform" strokeWidth={2.5} />
             </div>
           </div>
         </div>
