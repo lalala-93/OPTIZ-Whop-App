@@ -279,20 +279,20 @@ function StreakCalendar({
    Section 3 — Leaderboard
    ══════════════════════════════════════════════════ */
 
-/* Trophy icon */
+/* Trophy icon — red */
 function TrophyIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-      <path d="M6 9H3.5C3.5 9 3 9 3 9.5C3 12 4.5 13.5 6 14" stroke="#FFD700" strokeWidth="1.5" strokeLinecap="round" />
-      <path d="M18 9H20.5C20.5 9 21 9 21 9.5C21 12 19.5 13.5 18 14" stroke="#FFD700" strokeWidth="1.5" strokeLinecap="round" />
-      <path d="M6 4H18V11C18 14.3137 15.3137 17 12 17C8.68629 17 6 14.3137 6 11V4Z" fill="#FFD700" fillOpacity="0.15" stroke="#FFD700" strokeWidth="1.5" />
-      <path d="M10 20H14" stroke="#FFD700" strokeWidth="1.5" strokeLinecap="round" />
-      <path d="M12 17V20" stroke="#FFD700" strokeWidth="1.5" />
+      <path d="M6 9H3.5C3.5 9 3 9 3 9.5C3 12 4.5 13.5 6 14" stroke="#E80000" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M18 9H20.5C20.5 9 21 9 21 9.5C21 12 19.5 13.5 18 14" stroke="#E80000" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M6 4H18V11C18 14.3137 15.3137 17 12 17C8.68629 17 6 14.3137 6 11V4Z" fill="#E80000" fillOpacity="0.15" stroke="#E80000" strokeWidth="1.5" />
+      <path d="M10 20H14" stroke="#E80000" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M12 17V20" stroke="#E80000" strokeWidth="1.5" />
     </svg>
   );
 }
 
-/* Podium slot for top 3 */
+/* Podium slot for top 3 — clean, no glow */
 function PodiumSlot({
   entry,
   position,
@@ -301,78 +301,69 @@ function PodiumSlot({
 }: {
   entry: LeaderboardRow;
   position: number;
-  barHeight: number; // pixel height of the red bar
+  barHeight: number;
   crown?: boolean;
 }) {
   const xp = entry.total_xp ?? 0;
-  const shade = position === 1 ? "#E80000" : position === 2 ? "#C41818" : "#991818";
-  const glow = position === 1 ? "0 0 20px rgba(232,0,0,0.5)" : "0 0 12px rgba(232,0,0,0.25)";
+  const barShade =
+    position === 1 ? "#E80000" : position === 2 ? "#B91818" : "#8B1515";
+  const avatarSize = position === 1 ? "h-16 w-16" : "h-14 w-14";
 
   return (
-    <div className="flex-1 flex flex-col items-center gap-1.5 max-w-[110px]">
+    <div className="flex-1 flex flex-col items-center max-w-[120px]">
       {/* Crown for #1 */}
-      {crown && (
-        <svg width="22" height="16" viewBox="0 0 22 16" fill="none" className="-mb-0.5">
-          <path d="M2 4 L6 8 L11 2 L16 8 L20 4 L18 14 L4 14 Z" fill="#FFD700" stroke="#FF8C00" strokeWidth="0.8" strokeLinejoin="round"/>
-          <circle cx="4" cy="4" r="1.2" fill="#FFD700"/>
-          <circle cx="11" cy="2" r="1.2" fill="#FFD700"/>
-          <circle cx="18" cy="4" r="1.2" fill="#FFD700"/>
-        </svg>
-      )}
+      <div className="h-4 mb-1 flex items-center justify-center">
+        {crown && (
+          <svg width="20" height="14" viewBox="0 0 22 16" fill="none">
+            <path
+              d="M2 4 L6 8 L11 2 L16 8 L20 4 L18 14 L4 14 Z"
+              fill="#FFD700"
+              stroke="#FF8C00"
+              strokeWidth="0.8"
+              strokeLinejoin="round"
+            />
+            <circle cx="4" cy="4" r="1.2" fill="#FFD700" />
+            <circle cx="11" cy="2" r="1.2" fill="#FFD700" />
+            <circle cx="18" cy="4" r="1.2" fill="#FFD700" />
+          </svg>
+        )}
+      </div>
 
-      {/* Avatar with red ring */}
-      <div className="relative">
-        <div
-          className="rounded-full p-[2px]"
-          style={{
-            background: `linear-gradient(135deg, ${shade}, ${shade}99)`,
-            boxShadow: glow,
-          }}
-        >
-          <Avatar className={cn(
-            "border border-black/20",
-            position === 1 ? "h-14 w-14" : "h-12 w-12"
-          )}>
-            <AvatarImage src={entry.avatar_url || undefined} alt="" />
-            <AvatarFallback className="bg-white/[0.04]">
-              <User size={18} className="text-gray-7" />
-            </AvatarFallback>
-          </Avatar>
-        </div>
+      {/* Avatar — neutral border, no red ring, no glow */}
+      <div className="relative mb-2">
+        <Avatar className={cn(avatarSize, "border-2 border-white/[0.12]")}>
+          <AvatarImage src={entry.avatar_url || undefined} alt="" />
+          <AvatarFallback className="bg-white/[0.04]">
+            <User size={20} className="text-gray-7" />
+          </AvatarFallback>
+        </Avatar>
         {/* Position badge */}
         <div
-          className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black text-white border-2 border-gray-1"
-          style={{ background: shade, boxShadow: glow }}
+          className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black text-white border-2 border-gray-1"
+          style={{ background: barShade }}
         >
           {position}
         </div>
       </div>
 
       {/* Name */}
-      <p className="text-[11px] font-semibold text-gray-12 truncate max-w-full mt-1 text-center">
+      <p className="text-[12px] font-semibold text-gray-12 truncate max-w-full text-center mt-1">
         {entry.display_name || "..."}
       </p>
 
-      {/* XP text */}
-      <p className="text-[10px] font-bold tabular-nums text-[#FF6D6D] -mb-0.5">
+      {/* XP */}
+      <p className="text-[10px] font-bold tabular-nums text-gray-9 mb-1.5">
         {formatNumber(xp)} XP
       </p>
 
-      {/* Red bar — gradient from dark red at bottom to bright red at top */}
+      {/* Bar — flat red, no glow */}
       <div
-        className="w-full rounded-t-lg relative overflow-hidden"
+        className="w-full rounded-t-md"
         style={{
           height: `${barHeight}px`,
-          background: `linear-gradient(to top, ${shade}, #FF2D2D)`,
-          borderTop: `2px solid #FF5252`,
-          boxShadow: `inset 0 0 20px rgba(0,0,0,0.3), ${glow}`,
+          background: barShade,
         }}
-      >
-        {/* Shine effect */}
-        <div className="absolute inset-x-0 top-0 h-1/3 bg-gradient-to-b from-white/15 to-transparent" />
-        {/* Vertical shine line */}
-        <div className="absolute left-1/4 inset-y-0 w-px bg-white/10" />
-      </div>
+      />
     </div>
   );
 }
@@ -535,7 +526,7 @@ export function HomeScreen({
             </div>
 
             {/* Period toggle */}
-            <div className="flex items-center gap-1 p-1 rounded-lg bg-white/[0.03] border border-white/[0.06]">
+            <div className="grid grid-cols-3 gap-1 p-1 rounded-lg bg-white/[0.03] border border-white/[0.06]">
               {([
                 { value: "week" as const, label: "Semaine" },
                 { value: "month" as const, label: "Mois" },
@@ -545,9 +536,9 @@ export function HomeScreen({
                   key={opt.value}
                   onClick={() => setPeriod(opt.value)}
                   className={cn(
-                    "flex-1 h-8 rounded-md text-[11px] font-semibold transition-all",
+                    "h-8 rounded-md text-[11px] font-semibold transition-colors text-center",
                     period === opt.value
-                      ? "bg-[#E80000] text-white shadow-[0_2px_8px_rgba(232,0,0,0.3)]"
+                      ? "bg-[#E80000] text-white"
                       : "text-gray-8 hover:text-gray-12"
                   )}
                 >
@@ -599,43 +590,39 @@ export function HomeScreen({
                   </div>
                 )}
 
-                {/* Rest 4-10 */}
+                {/* Rest from #4 onwards — ALL users, no limit */}
                 <div className="space-y-1.5">
-                  {entries.slice(3, 10).map((entry) => {
+                  {(entries.length >= 3 ? entries.slice(3) : entries).map((entry) => {
                     const xp = entry.total_xp ?? 0;
-                    const leaderXp = entries[0]?.total_xp ?? 1;
-                    const xpPct = Math.max(5, (xp / leaderXp) * 100);
                     return (
                       <div
                         key={entry.whop_user_id}
                         className={cn(
-                          "relative rounded-xl px-3 py-2.5 flex items-center gap-2.5 overflow-hidden",
+                          "rounded-xl px-3 py-2.5 flex items-center gap-2.5",
                           entry.isMe
-                            ? "bg-[#E80000]/8 border border-[#E80000]/20"
+                            ? "bg-[#E80000]/10 border border-[#E80000]/25"
                             : "bg-white/[0.02] border border-white/[0.04]"
                         )}
                       >
-                        {/* XP progress bar background */}
-                        <div
-                          className="absolute inset-y-0 left-0 bg-white/[0.02]"
-                          style={{ width: `${xpPct}%` }}
-                        />
-                        <span className="relative w-5 text-[11px] font-bold text-gray-8 tabular-nums shrink-0">
+                        <span className={cn(
+                          "w-6 text-[11px] font-bold tabular-nums shrink-0 text-center",
+                          entry.isMe ? "text-[#FF6D6D]" : "text-gray-8"
+                        )}>
                           {entry.position}
                         </span>
-                        <Avatar className="relative h-7 w-7 border border-white/[0.06] shrink-0">
+                        <Avatar className="h-8 w-8 border border-white/[0.08] shrink-0">
                           <AvatarImage src={entry.avatar_url || undefined} alt="" />
                           <AvatarFallback className="bg-white/[0.04]">
                             <User size={14} className="text-gray-7" />
                           </AvatarFallback>
                         </Avatar>
                         <p className={cn(
-                          "relative flex-1 min-w-0 text-[12px] font-semibold truncate",
+                          "flex-1 min-w-0 text-[12px] font-semibold truncate",
                           entry.isMe ? "text-[#FF6D6D]" : "text-gray-11"
                         )}>
                           {entry.display_name || t("anonymousUser")}
                         </p>
-                        <div className="relative flex items-baseline gap-0.5 shrink-0">
+                        <div className="flex items-baseline gap-0.5 shrink-0">
                           <p className="text-[12px] font-bold tabular-nums text-gray-11">
                             {formatNumber(xp)}
                           </p>
@@ -645,36 +632,6 @@ export function HomeScreen({
                     );
                   })}
                 </div>
-
-                {/* "You are here" — outside top 10 */}
-                {entries.length > 10 && !entries.slice(0, 10).some((e) => e.isMe) && entries.some((e) => e.isMe) && (() => {
-                  const me = entries.find((e) => e.isMe)!;
-                  return (
-                    <>
-                      <div className="text-center text-[10px] text-gray-7 my-2">•  •  •</div>
-                      <div className="rounded-xl px-3 py-2.5 flex items-center gap-2.5 bg-[#E80000]/8 border border-[#E80000]/20">
-                        <span className="w-5 text-[11px] font-bold text-[#FF6D6D] tabular-nums shrink-0">
-                          {me.position}
-                        </span>
-                        <Avatar className="h-7 w-7 border border-[#E80000]/30">
-                          <AvatarImage src={me.avatar_url || undefined} alt="" />
-                          <AvatarFallback className="bg-[#E80000]/10">
-                            <User size={14} className="text-[#FF6D6D]" />
-                          </AvatarFallback>
-                        </Avatar>
-                        <p className="flex-1 min-w-0 text-[12px] font-semibold truncate text-[#FF6D6D]">
-                          {me.display_name || t("anonymousUser")}
-                        </p>
-                        <div className="flex items-baseline gap-0.5 shrink-0">
-                          <p className="text-[12px] font-bold tabular-nums text-[#FF6D6D]">
-                            {formatNumber(me.total_xp ?? 0)}
-                          </p>
-                          <span className="text-[8px] font-extrabold text-[#FF6D6D]">XP</span>
-                        </div>
-                      </div>
-                    </>
-                  );
-                })()}
               </>
             )}
           </CardContent>
