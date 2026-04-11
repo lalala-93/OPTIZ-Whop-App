@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { ChevronDown, ChevronLeft, ChevronRight, Quote, RefreshCw, User } from "lucide-react";
+import Image from "next/image";
+import { ChevronDown, ChevronLeft, ChevronRight, Quote, RefreshCw, User, ArrowRight } from "lucide-react";
 import { XPRing } from "./XPRing";
 import type { RankTier } from "./rankSystem";
 import { MOTIVATIONAL_QUOTES, getRankNameKey, formatNumber } from "./rankSystem";
@@ -305,26 +306,28 @@ function PodiumSlot({
   crown?: boolean;
 }) {
   const xp = entry.total_xp ?? 0;
-  const avatarSize = position === 1 ? "h-[72px] w-[72px]" : "h-[60px] w-[60px]";
+  const avatarSize = position === 1 ? "h-[72px] w-[72px]" : position === 2 ? "h-[60px] w-[60px]" : "h-[56px] w-[56px]";
   const badgeColor =
     position === 1 ? "#E80000" : position === 2 ? "#9CA3AF" : "#B45309";
+  const rankFontSize =
+    position === 1 ? "text-[56px]" : position === 2 ? "text-[44px]" : "text-[38px]";
 
   return (
-    <div className="flex-1 flex flex-col items-center max-w-[110px]">
+    <div className="flex-1 flex flex-col items-center max-w-[115px]">
       {/* Crown for #1 */}
       <div className="h-5 mb-1 flex items-center justify-center">
         {crown && (
-          <svg width="24" height="18" viewBox="0 0 24 18" fill="none">
+          <svg width="26" height="20" viewBox="0 0 26 20" fill="none">
             <path
-              d="M3 5 L7 10 L12 2 L17 10 L21 5 L19 16 L5 16 Z"
+              d="M3 6 L8 12 L13 2 L18 12 L23 6 L21 18 L5 18 Z"
               fill="#FFD700"
               stroke="#B45309"
-              strokeWidth="1"
+              strokeWidth="1.2"
               strokeLinejoin="round"
             />
-            <circle cx="5" cy="5" r="1.4" fill="#FFF5CC" />
-            <circle cx="12" cy="2" r="1.6" fill="#FFF5CC" />
-            <circle cx="19" cy="5" r="1.4" fill="#FFF5CC" />
+            <circle cx="5" cy="6" r="1.5" fill="#FFF5CC" />
+            <circle cx="13" cy="2" r="1.8" fill="#FFF5CC" />
+            <circle cx="21" cy="6" r="1.5" fill="#FFF5CC" />
           </svg>
         )}
       </div>
@@ -334,12 +337,12 @@ function PodiumSlot({
         <Avatar className={cn(avatarSize, "border-2 border-white/[0.14] bg-white/[0.04]")}>
           <AvatarImage src={entry.avatar_url || undefined} alt="" />
           <AvatarFallback className="bg-white/[0.04]">
-            <User size={position === 1 ? 28 : 24} className="text-gray-7" />
+            <User size={position === 1 ? 28 : 22} className="text-gray-7" />
           </AvatarFallback>
         </Avatar>
         {/* Position medal */}
         <div
-          className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black text-white border-[3px] border-gray-1"
+          className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black text-white border-[3px] border-gray-1 shadow-md"
           style={{ background: badgeColor }}
         >
           {position}
@@ -362,7 +365,7 @@ function PodiumSlot({
         {formatNumber(xp)} XP
       </p>
 
-      {/* Bar — gradient with depth + shine */}
+      {/* Bar — gradient with depth + shine + rank number */}
       <div
         className="w-full rounded-t-lg relative overflow-hidden border-t border-x border-white/[0.08]"
         style={{
@@ -373,15 +376,18 @@ function PodiumSlot({
         {/* Top shine */}
         <div className="absolute inset-x-0 top-0 h-1/4 bg-gradient-to-b from-white/[0.18] to-transparent" />
         {/* Left edge highlight */}
-        <div className="absolute top-0 left-0 w-px h-full bg-white/[0.12]" />
+        <div className="absolute top-0 left-0 w-px h-full bg-white/[0.14]" />
         {/* Right edge shadow */}
-        <div className="absolute top-0 right-0 w-px h-full bg-black/[0.25]" />
-        {/* Rank number inside bar (subtle) */}
-        {position === 1 && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-[48px] font-black text-black/[0.12] leading-none">1</span>
-          </div>
-        )}
+        <div className="absolute top-0 right-0 w-px h-full bg-black/[0.3]" />
+        {/* Rank number inside bar (subtle) — shown for all 3 positions */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className={cn(
+            "font-black text-black/[0.18] leading-none",
+            rankFontSize
+          )}>
+            {position}
+          </span>
+        </div>
       </div>
     </div>
   );
@@ -495,17 +501,39 @@ export function HomeScreen({
         </div>
       </div>
 
-      {/* Quick action */}
-      <div className="px-2">
-        <button
-          type="button"
-          onClick={() => onStartTraining?.()}
-          className="w-full h-11 rounded-xl bg-[#E80000] text-white text-[13px] font-semibold inline-flex items-center justify-center gap-2 active:scale-[0.97] transition-transform"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-          {t("homeStartTraining") || "Start Training"}
-        </button>
-      </div>
+      {/* Optiz Store promo */}
+      <a
+        href="https://optiz.store/collections/produits"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block rounded-2xl overflow-hidden border border-white/[0.06] relative group active:scale-[0.98] transition-transform"
+      >
+        <div className="relative h-32 w-full">
+          <Image
+            src="/images/optiz-store.jpeg"
+            alt="Optiz Store"
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, 600px"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/40 to-transparent" />
+          <div className="absolute inset-0 p-4 flex flex-col justify-center">
+            <p className="text-[9px] font-bold text-[#FF6D6D] uppercase tracking-widest mb-1">
+              Optiz Store
+            </p>
+            <h3 className="text-[17px] font-bold text-white leading-tight mb-0.5">
+              Équipe-toi pour performer
+            </h3>
+            <p className="text-[11px] text-white/60 mb-2.5">
+              Vêtements, accessoires, suppléments
+            </p>
+            <div className="inline-flex items-center gap-1 text-[11px] font-bold text-white">
+              Découvrir
+              <ArrowRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
+            </div>
+          </div>
+        </div>
+      </a>
 
       {/* ── Section 2: Streak Calendar ── */}
       <StreakCalendar streakDays={streakDays} />
