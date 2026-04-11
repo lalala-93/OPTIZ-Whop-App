@@ -147,8 +147,8 @@ function StreakCalendar({
             className="w-full flex items-center justify-between px-4 pt-4 pb-3"
           >
             <div className="flex items-center gap-2.5">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FF6666" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="#E80000" fillOpacity="0.15" />
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FF6D6D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="#FF6D6D" fillOpacity="0.18" />
               </svg>
               <span className="text-[15px] font-semibold text-gray-12">{t("homeActivity")}</span>
               <Badge variant="destructive" className="px-1.5 py-0 text-[11px] font-bold tabular-nums bg-[#E80000]/15 text-[#FF6D6D] border-[#E80000]/20 hover:bg-[#E80000]/15">
@@ -284,11 +284,11 @@ function StreakCalendar({
 function TrophyIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-      <path d="M6 9H3.5C3.5 9 3 9 3 9.5C3 12 4.5 13.5 6 14" stroke="#E80000" strokeWidth="1.5" strokeLinecap="round" />
-      <path d="M18 9H20.5C20.5 9 21 9 21 9.5C21 12 19.5 13.5 18 14" stroke="#E80000" strokeWidth="1.5" strokeLinecap="round" />
-      <path d="M6 4H18V11C18 14.3137 15.3137 17 12 17C8.68629 17 6 14.3137 6 11V4Z" fill="#E80000" fillOpacity="0.15" stroke="#E80000" strokeWidth="1.5" />
-      <path d="M10 20H14" stroke="#E80000" strokeWidth="1.5" strokeLinecap="round" />
-      <path d="M12 17V20" stroke="#E80000" strokeWidth="1.5" />
+      <path d="M6 9H3.5C3.5 9 3 9 3 9.5C3 12 4.5 13.5 6 14" stroke="#FF6D6D" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M18 9H20.5C20.5 9 21 9 21 9.5C21 12 19.5 13.5 18 14" stroke="#FF6D6D" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M6 4H18V11C18 14.3137 15.3137 17 12 17C8.68629 17 6 14.3137 6 11V4Z" fill="#FF6D6D" fillOpacity="0.18" stroke="#FF6D6D" strokeWidth="1.5" />
+      <path d="M10 20H14" stroke="#FF6D6D" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M12 17V20" stroke="#FF6D6D" strokeWidth="1.5" />
     </svg>
   );
 }
@@ -523,7 +523,7 @@ export function HomeScreen({
             src="/images/optiz-store.jpeg"
             alt="Optiz Store"
             fill
-            className="object-cover object-[70%_15%]"
+            className="object-cover object-[70%_35%]"
             sizes="(max-width: 768px) 100vw, 600px"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/65 to-black/20" />
@@ -540,7 +540,7 @@ export function HomeScreen({
                 </p>
               </div>
               <h3 className="text-[16px] font-bold text-white leading-tight truncate">
-                Meilleur naturellement
+                Deviens meilleur naturellement
               </h3>
               <p className="text-[11px] text-white/60 truncate">
                 Nos produits naturels
@@ -561,7 +561,7 @@ export function HomeScreen({
         <Card className="border-gray-5/50 bg-gray-2/80 border-l-[3px] border-l-gray-6">
           <CardHeader className="flex flex-row items-center justify-between p-4 pb-2.5">
             <p className="text-[15px] text-gray-12 font-semibold inline-flex items-center gap-1.5">
-              <Quote size={15} className="text-[#FF6666]" />
+              <Quote size={15} className="text-[#FF6D6D]" />
               {t("homeQuote")}
             </p>
             <button
