@@ -46,44 +46,50 @@ export async function GET(request: NextRequest) {
 
   const experienceIds: string[] = (experiences ?? []).map((e: { experience_id: string }) => e.experience_id);
 
-  // ── CHAT MESSAGES — iterate by experience_id ──
-  for (const experienceId of experienceIds) {
-    try {
+  // ── CHAT MESSAGES — list channels by company, then filter by our experiences ──
+  const allowedExperienceIds = new Set(experienceIds);
+
+  try {
+    for await (const channel of whop.chatChannels.list({ company_id: companyId })) {
+      // If channel has an experience_id, only process it if we're tracking it
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      for await (const channel of whop.chatChannels.list({ experience_id: experienceId } as any)) {
-        chatChannelsFound++;
-        try {
-          for await (const msg of whop.messages.list({ channel_id: channel.id })) {
-            const msgDate = new Date(msg.created_at);
-            if (msgDate <= lastChatSync) break;
-
-            chatMessagesProcessed++;
-            const contentLength = (msg.content ?? "").trim().length;
-            const eventDate = msg.created_at.split("T")[0];
-
-            const result = await awardEngagementXp(
-              msg.user.id,
-              "chat_message",
-              msg.id,
-              contentLength,
-              eventDate,
-            );
-            if (result.awarded) chatXpAwarded++;
-          }
-        } catch (err) {
-          const message = err instanceof Error ? err.message : String(err);
-          console.error(`[sync-engagement] Chat channel ${channel.id} error:`, err);
-          chatErrors.push(`channel ${channel.id}: ${message}`);
-        }
+      const channelExpId = (channel as any).experience_id ?? (channel as any).experience?.id;
+      if (channelExpId && allowedExperienceIds.size > 0 && !allowedExperienceIds.has(channelExpId)) {
+        continue; // skip channels outside our tracked experiences
       }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      console.error(`[sync-engagement] Chat list for exp ${experienceId} error:`, err);
-      chatErrors.push(`exp ${experienceId}: ${message}`);
+
+      chatChannelsFound++;
+      try {
+        for await (const msg of whop.messages.list({ channel_id: channel.id })) {
+          const msgDate = new Date(msg.created_at);
+          if (msgDate <= lastChatSync) break;
+
+          chatMessagesProcessed++;
+          const contentLength = (msg.content ?? "").trim().length;
+          const eventDate = msg.created_at.split("T")[0];
+
+          const result = await awardEngagementXp(
+            msg.user.id,
+            "chat_message",
+            msg.id,
+            contentLength,
+            eventDate,
+          );
+          if (result.awarded) chatXpAwarded++;
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        console.error(`[sync-engagement] Chat channel ${channel.id} error:`, err);
+        chatErrors.push(`channel ${channel.id}: ${message}`);
+      }
     }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[sync-engagement] Chat channels list error:", err);
+    chatErrors.push(`list: ${message}`);
   }
 
-  // ── FORUM POSTS — iterate by experience_id ──
+  // ── FORUM POSTS — iterate experiences, ignore non-forum ones silently ──
   for (const experienceId of experienceIds) {
     try {
       for await (const post of whop.forumPosts.list({
@@ -108,8 +114,11 @@ export async function GET(request: NextRequest) {
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      console.error(`[sync-engagement] Forum exp ${experienceId} error:`, err);
-      forumErrors.push(`exp ${experienceId}: ${message}`);
+      // Silently ignore "not a forum experience" — it's expected for chat experiences
+      if (!message.includes("not a forum experience")) {
+        console.error(`[sync-engagement] Forum exp ${experienceId} error:`, err);
+        forumErrors.push(`exp ${experienceId}: ${message}`);
+      }
     }
   }
 
