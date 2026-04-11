@@ -100,7 +100,18 @@ export interface InitialData {
   workoutCompletionsToday: { programId: string; sessionId: string }[];
 }
 
-function DashboardInner({ userId, initialData }: { userId: string; initialData: InitialData }) {
+export interface ExperienceDashboardProps {
+  userId: string;
+  initialData: InitialData;
+  initialEngagementStats?: {
+    chatMessages: number;
+    forumPosts: number;
+    forumComments: number;
+    totalEngagementXp: number;
+  };
+}
+
+function DashboardInner({ userId, initialData, initialEngagementStats }: ExperienceDashboardProps) {
   const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<TabType>("home");
   const [, startTransition] = useTransition();
@@ -260,6 +271,21 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
               <span className="text-[13px] font-bold text-gray-12 tabular-nums">{streakDays}</span>
             </button>
 
+            {initialEngagementStats && initialEngagementStats.totalEngagementXp > 0 && (
+              <button
+                onClick={() => setIsStreakModalOpen(true)}
+                className="flex items-center gap-1.5 h-9 px-3 rounded-full bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors active:scale-95"
+                title={`${initialEngagementStats.chatMessages} messages, ${initialEngagementStats.forumPosts} posts`}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FF6D6D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </svg>
+                <span className="text-[13px] font-bold text-gray-12 tabular-nums">
+                  {initialEngagementStats.chatMessages + initialEngagementStats.forumPosts + initialEngagementStats.forumComments}
+                </span>
+              </button>
+            )}
+
             <button
               onClick={() => setIsXpModalOpen(true)}
               className="flex items-center gap-1.5 h-9 px-3 rounded-full bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06] transition-colors active:scale-95"
@@ -404,10 +430,10 @@ function DashboardInner({ userId, initialData }: { userId: string; initialData: 
   );
 }
 
-export function ExperienceDashboard({ userId, initialData }: { userId: string; initialData: InitialData }) {
+export function ExperienceDashboard({ userId, initialData, initialEngagementStats }: ExperienceDashboardProps) {
   return (
     <I18nProvider>
-      <DashboardInner userId={userId} initialData={initialData} />
+      <DashboardInner userId={userId} initialData={initialData} initialEngagementStats={initialEngagementStats} />
     </I18nProvider>
   );
 }

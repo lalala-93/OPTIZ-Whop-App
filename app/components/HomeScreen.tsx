@@ -296,52 +296,82 @@ function TrophyIcon() {
 function PodiumSlot({
   entry,
   position,
-  height,
-  color,
+  barHeight,
   crown,
 }: {
   entry: LeaderboardRow;
   position: number;
-  height: string;
-  color: string;
+  barHeight: number; // pixel height of the red bar
   crown?: boolean;
 }) {
   const xp = entry.total_xp ?? 0;
+  const shade = position === 1 ? "#E80000" : position === 2 ? "#C41818" : "#991818";
+  const glow = position === 1 ? "0 0 20px rgba(232,0,0,0.5)" : "0 0 12px rgba(232,0,0,0.25)";
+
   return (
-    <div className="flex-1 flex flex-col items-center gap-1.5 max-w-[100px]">
-      {/* Avatar with rank badge */}
+    <div className="flex-1 flex flex-col items-center gap-1.5 max-w-[110px]">
+      {/* Crown for #1 */}
+      {crown && (
+        <svg width="22" height="16" viewBox="0 0 22 16" fill="none" className="-mb-0.5">
+          <path d="M2 4 L6 8 L11 2 L16 8 L20 4 L18 14 L4 14 Z" fill="#FFD700" stroke="#FF8C00" strokeWidth="0.8" strokeLinejoin="round"/>
+          <circle cx="4" cy="4" r="1.2" fill="#FFD700"/>
+          <circle cx="11" cy="2" r="1.2" fill="#FFD700"/>
+          <circle cx="18" cy="4" r="1.2" fill="#FFD700"/>
+        </svg>
+      )}
+
+      {/* Avatar with red ring */}
       <div className="relative">
-        {crown && (
-          <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-lg">👑</div>
-        )}
-        <Avatar className="h-12 w-12 border-2" style={{ borderColor: color }}>
-          <AvatarImage src={entry.avatar_url || undefined} alt="" />
-          <AvatarFallback className="bg-white/[0.04]">
-            <User size={18} className="text-gray-7" />
-          </AvatarFallback>
-        </Avatar>
         <div
-          className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black text-black"
-          style={{ backgroundColor: color }}
+          className="rounded-full p-[2px]"
+          style={{
+            background: `linear-gradient(135deg, ${shade}, ${shade}99)`,
+            boxShadow: glow,
+          }}
+        >
+          <Avatar className={cn(
+            "border border-black/20",
+            position === 1 ? "h-14 w-14" : "h-12 w-12"
+          )}>
+            <AvatarImage src={entry.avatar_url || undefined} alt="" />
+            <AvatarFallback className="bg-white/[0.04]">
+              <User size={18} className="text-gray-7" />
+            </AvatarFallback>
+          </Avatar>
+        </div>
+        {/* Position badge */}
+        <div
+          className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black text-white border-2 border-gray-1"
+          style={{ background: shade, boxShadow: glow }}
         >
           {position}
         </div>
       </div>
+
       {/* Name */}
-      <p className="text-[11px] font-semibold text-gray-12 truncate max-w-full">
+      <p className="text-[11px] font-semibold text-gray-12 truncate max-w-full mt-1 text-center">
         {entry.display_name || "..."}
       </p>
-      {/* XP pillar */}
+
+      {/* XP text */}
+      <p className="text-[10px] font-bold tabular-nums text-[#FF6D6D] -mb-0.5">
+        {formatNumber(xp)} XP
+      </p>
+
+      {/* Red bar — gradient from dark red at bottom to bright red at top */}
       <div
-        className={`w-full ${height} rounded-t-lg flex items-end justify-center pb-1.5`}
+        className="w-full rounded-t-lg relative overflow-hidden"
         style={{
-          background: `linear-gradient(to top, ${color}22 0%, ${color}44 100%)`,
-          borderTop: `2px solid ${color}`,
+          height: `${barHeight}px`,
+          background: `linear-gradient(to top, ${shade}, #FF2D2D)`,
+          borderTop: `2px solid #FF5252`,
+          boxShadow: `inset 0 0 20px rgba(0,0,0,0.3), ${glow}`,
         }}
       >
-        <p className="text-[11px] font-bold tabular-nums text-gray-12">
-          {formatNumber(xp)}
-        </p>
+        {/* Shine effect */}
+        <div className="absolute inset-x-0 top-0 h-1/3 bg-gradient-to-b from-white/15 to-transparent" />
+        {/* Vertical shine line */}
+        <div className="absolute left-1/4 inset-y-0 w-px bg-white/10" />
       </div>
     </div>
   );
@@ -546,28 +576,25 @@ export function HomeScreen({
               <>
                 {/* Top 3 Podium */}
                 {entries.length >= 3 && (
-                  <div className="flex items-end justify-center gap-2 mb-4 pt-2">
-                    {/* 2nd place — left */}
+                  <div className="flex items-end justify-center gap-2 mb-5 pt-4 px-2">
+                    {/* 2nd place — left, medium bar */}
                     <PodiumSlot
                       entry={entries[1]}
                       position={2}
-                      height="h-20"
-                      color="#C0C0C0"
+                      barHeight={70}
                     />
-                    {/* 1st place — center, tallest */}
+                    {/* 1st place — center, tallest bar + crown */}
                     <PodiumSlot
                       entry={entries[0]}
                       position={1}
-                      height="h-24"
-                      color="#FFD700"
+                      barHeight={100}
                       crown
                     />
-                    {/* 3rd place — right */}
+                    {/* 3rd place — right, shortest bar */}
                     <PodiumSlot
                       entry={entries[2]}
                       position={3}
-                      height="h-16"
-                      color="#CD7F32"
+                      barHeight={50}
                     />
                   </div>
                 )}

@@ -1243,3 +1243,33 @@ export async function getLeaderboardPeriod(
 
   return { leaderboard, userPosition };
 }
+
+/**
+ * Get user's engagement stats (chat + forum XP breakdown)
+ */
+export async function getUserEngagementStats(userId: string) {
+  const db = createServerSupabase();
+
+  const { data } = await db
+    .from("xp_events")
+    .select("source, xp_amount")
+    .eq("user_id", userId)
+    .in("source", ["chat_message", "forum_post", "forum_comment"]);
+
+  const stats = {
+    chatMessages: 0,
+    forumPosts: 0,
+    forumComments: 0,
+    totalEngagementXp: 0,
+  };
+
+  for (const event of data ?? []) {
+    const xp = (event.xp_amount as number) ?? 0;
+    stats.totalEngagementXp += xp;
+    if (event.source === "chat_message") stats.chatMessages++;
+    else if (event.source === "forum_post") stats.forumPosts++;
+    else if (event.source === "forum_comment") stats.forumComments++;
+  }
+
+  return stats;
+}

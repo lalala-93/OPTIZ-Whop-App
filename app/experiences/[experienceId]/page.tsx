@@ -2,7 +2,7 @@ import { headers } from "next/headers";
 import { verifyUser, checkExperienceAccess } from "@/lib/authentication";
 import { ExperienceDashboard } from "@/app/components/ExperienceDashboard";
 import type { InitialData } from "@/app/components/ExperienceDashboard";
-import { loadUserData } from "@/lib/actions";
+import { loadUserData, getUserEngagementStats } from "@/lib/actions";
 import Link from "next/link";
 
 /** Retry a function up to `maxAttempts` times with a delay between attempts. */
@@ -124,7 +124,14 @@ export default async function ExperiencePage({
     };
   }
 
+  const engagementStats = await getUserEngagementStats(userId).catch(() => ({
+    chatMessages: 0,
+    forumPosts: 0,
+    forumComments: 0,
+    totalEngagementXp: 0,
+  }));
+
   return (
-    <ExperienceDashboard userId={userId} initialData={initialData} />
+    <ExperienceDashboard userId={userId} initialData={initialData} initialEngagementStats={engagementStats} />
   );
 }
