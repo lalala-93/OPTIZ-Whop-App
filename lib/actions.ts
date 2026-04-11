@@ -1125,3 +1125,121 @@ export async function deleteUserData(userId: string) {
 
     return { success: true };
 }
+
+// ══════════════════════════════════════
+// V2: Engagement XP (chat + forum)
+// ══════════════════════════════════════
+
+const ENGAGEMENT_XP_CONFIG = {
+  chat_message: { xp: 2, dailyCap: 30, minLength: 10 },
+  forum_post: { xp: 10, dailyCap: 50, minLength: 20 },
+  forum_comment: { xp: 5, dailyCap: 20, minLength: 10 },
+} as const;
+
+export type EngagementSource = keyof typeof ENGAGEMENT_XP_CONFIG;
+
+/**
+ * Award XP for a chat message or forum post.
+ * Enforces: min content length, daily cap per source, idempotency via xp_events.
+ * Returns { awarded, reason? }
+ */
+export async function awardEngagementXp(
+  userId: string,
+  source: EngagementSource,
+  referenceId: string,
+  contentLength: number,
+  eventDate: string, // ISO date YYYY-MM-DD
+) {
+  const config = ENGAGEMENT_XP_CONFIG[source];
+  if (contentLength < config.minLength) {
+    return { awarded: false, reason: "too_short" as const };
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = createServerSupabase() as any;
+
+  // Check daily cap via RPC
+  const { data: currentTotal } = await db.rpc("check_daily_engagement_cap", {
+    p_user_id: userId,
+    p_source: source,
+    p_date: eventDate,
+  });
+
+  if ((currentTotal ?? 0) + config.xp > config.dailyCap) {
+    return { awarded: false, reason: "daily_cap" as const };
+  }
+
+  // Award via existing idempotent system
+  const result = await awardXpEvent(userId, source, referenceId, eventDate, config.xp);
+  return { awarded: result.awarded, reason: result.awarded ? undefined : ("duplicate" as const) };
+}
+
+/**
+ * Get a period-based leaderboard (week, month, all-time).
+ * Uses get_leaderboard_period RPC.
+ */
+export async function getLeaderboardPeriod(
+  userId: string,
+  period: "week" | "month" | "all",
+  limit: number = 50,
+) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = createServerSupabase() as any;
+  const today = new Date();
+  let startDate: Date;
+
+  if (period === "week") {
+    const day = today.getDay();
+    const diff = day === 0 ? 6 : day - 1;
+    startDate = new Date(today);
+    startDate.setDate(today.getDate() - diff);
+    startDate.setHours(0, 0, 0, 0);
+  } else if (period === "month") {
+    startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+  } else {
+    startDate = new Date("2020-01-01");
+  }
+
+  const startStr = startDate.toISOString().split("T")[0];
+  const endStr = today.toISOString().split("T")[0];
+
+  const { data } = await db.rpc("get_leaderboard_period", {
+    p_start_date: startStr,
+    p_end_date: endStr,
+    p_limit: limit,
+  });
+
+  const rows = (data ?? []) as Array<{
+    user_id: string;
+    display_name: string | null;
+    avatar_url: string | null;
+    period_xp: number;
+    position: number;
+  }>;
+
+  const leaderboard = rows.map((r) => ({
+    whop_user_id: r.user_id,
+    display_name: r.display_name,
+    avatar_url: r.avatar_url,
+    total_xp: r.period_xp,
+    streak_days: 0,
+    position: r.position,
+  }));
+
+  // Find user's position
+  let userPosition: number | null = null;
+  const me = leaderboard.find((l) => l.whop_user_id === userId);
+  if (me) userPosition = me.position;
+  else {
+    // Fetch user's period XP separately
+    const { data: myData } = await db.rpc("get_leaderboard_period", {
+      p_start_date: startStr,
+      p_end_date: endStr,
+      p_limit: 10000,
+    });
+    const myRow = (myData ?? []).find((r: { user_id: string }) => r.user_id === userId);
+    userPosition = myRow?.position ?? null;
+  }
+
+  return { leaderboard, userPosition };
+}

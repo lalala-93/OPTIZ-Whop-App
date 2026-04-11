@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { ChevronDown, ChevronLeft, ChevronRight, Quote, RefreshCw, User } from "lucide-react";
 import { XPRing } from "./XPRing";
 import type { RankTier } from "./rankSystem";
-import { MOTIVATIONAL_QUOTES, getLevelProgress, getRankForLevel, getRankNameKey, formatNumber } from "./rankSystem";
-import { RankBadge } from "./RankBadge";
-import { getLeaderboard } from "@/lib/actions";
+import { MOTIVATIONAL_QUOTES, getRankNameKey, formatNumber } from "./rankSystem";
+import { getLeaderboard, getLeaderboardPeriod } from "@/lib/actions";
 import { useI18n } from "./i18n";
 import { cn } from "@/lib/utils";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
@@ -14,7 +13,6 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Separator } from "@/components/ui/separator";
 
 interface HomeScreenProps {
   userId: string;
@@ -41,19 +39,6 @@ interface LeaderboardRow {
   total_xp: number | null;
   position: number;
   isMe?: boolean;
-}
-
-/* ── Inline Rank Icon ── */
-function InlineRankIcon({ level, size = 20 }: { level: number; size?: number }) {
-  const rank = getRankForLevel(level);
-  return (
-    <RankBadge
-      colors={rank.tier.gradient}
-      glowColor={rank.tier.glowColor}
-      tierName={rank.tier.name}
-      size={size}
-    />
-  );
 }
 
 /* ══════════════════════════════════════════════════
@@ -294,35 +279,6 @@ function StreakCalendar({
    Section 3 — Leaderboard
    ══════════════════════════════════════════════════ */
 
-const PODIUM_COLORS = {
-  1: { accent: "#FFD700", bg: "rgba(255,215,0,0.06)", border: "rgba(255,215,0,0.15)" },
-  2: { accent: "#B0B0B0", bg: "rgba(176,176,176,0.04)", border: "rgba(176,176,176,0.12)" },
-  3: { accent: "#CD7F32", bg: "rgba(205,127,50,0.04)", border: "rgba(205,127,50,0.12)" },
-} as const;
-
-/* Position number badge — using shadcn Badge */
-function PositionBadge({ position }: { position: number }) {
-  const theme = PODIUM_COLORS[position as 1 | 2 | 3];
-  if (theme) {
-    return (
-      <Badge
-        className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 px-0 py-0 border-0"
-        style={{ background: theme.accent, color: position === 1 ? "#1A1000" : "#FFF" }}
-      >
-        {position}
-      </Badge>
-    );
-  }
-  return (
-    <Badge
-      variant="secondary"
-      className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-semibold shrink-0 px-0 py-0 bg-gray-4/50 text-gray-8 border-0 tabular-nums"
-    >
-      {position}
-    </Badge>
-  );
-}
-
 /* Trophy icon */
 function TrophyIcon() {
   return (
@@ -333,6 +289,61 @@ function TrophyIcon() {
       <path d="M10 20H14" stroke="#FFD700" strokeWidth="1.5" strokeLinecap="round" />
       <path d="M12 17V20" stroke="#FFD700" strokeWidth="1.5" />
     </svg>
+  );
+}
+
+/* Podium slot for top 3 */
+function PodiumSlot({
+  entry,
+  position,
+  height,
+  color,
+  crown,
+}: {
+  entry: LeaderboardRow;
+  position: number;
+  height: string;
+  color: string;
+  crown?: boolean;
+}) {
+  const xp = entry.total_xp ?? 0;
+  return (
+    <div className="flex-1 flex flex-col items-center gap-1.5 max-w-[100px]">
+      {/* Avatar with rank badge */}
+      <div className="relative">
+        {crown && (
+          <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-lg">👑</div>
+        )}
+        <Avatar className="h-12 w-12 border-2" style={{ borderColor: color }}>
+          <AvatarImage src={entry.avatar_url || undefined} alt="" />
+          <AvatarFallback className="bg-white/[0.04]">
+            <User size={18} className="text-gray-7" />
+          </AvatarFallback>
+        </Avatar>
+        <div
+          className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black text-black"
+          style={{ backgroundColor: color }}
+        >
+          {position}
+        </div>
+      </div>
+      {/* Name */}
+      <p className="text-[11px] font-semibold text-gray-12 truncate max-w-full">
+        {entry.display_name || "..."}
+      </p>
+      {/* XP pillar */}
+      <div
+        className={`w-full ${height} rounded-t-lg flex items-end justify-center pb-1.5`}
+        style={{
+          background: `linear-gradient(to top, ${color}22 0%, ${color}44 100%)`,
+          borderTop: `2px solid ${color}`,
+        }}
+      >
+        <p className="text-[11px] font-bold tabular-nums text-gray-12">
+          {formatNumber(xp)}
+        </p>
+      </div>
+    </div>
   );
 }
 
@@ -360,15 +371,20 @@ export function HomeScreen({
   const [quoteIndex, setQuoteIndex] = useState(() => Math.floor(Date.now() / 86400000) % MOTIVATIONAL_QUOTES.length);
   const [entries, setEntries] = useState<LeaderboardRow[]>([]);
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(true);
-  const [, startTransition] = useTransition();
+  const [period, setPeriod] = useState<"week" | "month" | "all">("all");
 
   useEffect(() => {
-    let canceled = false;
+    let cancelled = false;
+    setLoadingLeaderboard(true);
 
-    startTransition(async () => {
-      try {
-        const data = await getLeaderboard(userId);
-        if (canceled) return;
+    const fetcher =
+      period === "all"
+        ? getLeaderboard(userId)
+        : getLeaderboardPeriod(userId, period, 50);
+
+    fetcher
+      .then((data) => {
+        if (cancelled) return;
 
         const rows: LeaderboardRow[] = (data.leaderboard || []).map((item) => ({
           whop_user_id: item.whop_user_id,
@@ -379,7 +395,7 @@ export function HomeScreen({
           isMe: item.whop_user_id === userId,
         }));
 
-        if (!rows.some((row) => row.whop_user_id === userId)) {
+        if (period === "all" && !rows.some((row) => row.whop_user_id === userId)) {
           rows.push({
             whop_user_id: userId,
             display_name: userName,
@@ -396,17 +412,18 @@ export function HomeScreen({
         });
 
         setEntries(rows);
-      } catch (error) {
+      })
+      .catch((error) => {
         console.error("Failed to load leaderboard preview", error);
-      } finally {
-        if (!canceled) setLoadingLeaderboard(false);
-      }
-    });
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingLeaderboard(false);
+      });
 
     return () => {
-      canceled = true;
+      cancelled = true;
     };
-  }, [totalXp, userId, userName, userPhoto, startTransition]);
+  }, [totalXp, userId, userName, userPhoto, period]);
 
   const quote = useMemo(() => MOTIVATIONAL_QUOTES[quoteIndex], [quoteIndex]);
   const translatedRank = t(getRankNameKey(tier.name) as Parameters<typeof t>[0]);
@@ -478,78 +495,160 @@ export function HomeScreen({
 
       {/* ── Section 3: Leaderboard ── */}
       <div className="animate-fade-in">
-        <Card className="border-gray-5/50 bg-gray-2/80">
-          <CardHeader className="flex flex-row items-center justify-between p-4 pb-0">
-            <h3 className="text-[15px] font-semibold text-gray-12 inline-flex items-center gap-1.5">
-              <TrophyIcon />
-              {t("homeLeaderboard")}
-            </h3>
-            <span className="text-[11px] text-gray-7">{t("homeGlobalRanking")}</span>
+        <Card className="border-white/[0.06] bg-white/[0.03]">
+          <CardHeader className="flex flex-col gap-3 p-4 pb-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-[15px] font-semibold text-gray-12 inline-flex items-center gap-2">
+                <TrophyIcon />
+                {t("homeLeaderboard")}
+              </h3>
+            </div>
+
+            {/* Period toggle */}
+            <div className="flex items-center gap-1 p-1 rounded-lg bg-white/[0.03] border border-white/[0.06]">
+              {([
+                { value: "week" as const, label: "Semaine" },
+                { value: "month" as const, label: "Mois" },
+                { value: "all" as const, label: "Global" },
+              ]).map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => setPeriod(opt.value)}
+                  className={cn(
+                    "flex-1 h-8 rounded-md text-[11px] font-semibold transition-all",
+                    period === opt.value
+                      ? "bg-[#E80000] text-white shadow-[0_2px_8px_rgba(232,0,0,0.3)]"
+                      : "text-gray-8 hover:text-gray-12"
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
           </CardHeader>
 
-          <CardContent className="p-4 pt-4">
+          <CardContent className="p-4 pt-1">
             {loadingLeaderboard ? (
               <div className="space-y-2.5">
                 {[1, 2, 3].map((i) => (
                   <Skeleton key={i} className="h-[52px] rounded-xl" />
                 ))}
               </div>
+            ) : entries.length === 0 ? (
+              <div className="py-8 flex flex-col items-center gap-2">
+                <div className="w-12 h-12 rounded-full bg-white/[0.03] border border-white/[0.06] flex items-center justify-center">
+                  <TrophyIcon />
+                </div>
+                <p className="text-[13px] font-semibold text-gray-11">Pas encore de classement</p>
+                <p className="text-[11px] text-gray-7 text-center">Sois le premier à gagner de l&apos;XP cette {period === "week" ? "semaine" : period === "month" ? "mois" : "période"}</p>
+              </div>
             ) : (
-              <div className="space-y-1.5">
-                {entries.map((entry) => {
-                  const xp = entry.total_xp ?? 0;
-                  const entryLevel = getLevelProgress(xp).level;
-                  const isTop3 = entry.position <= 3;
-                  const showSeparator = entry.position === 4 && entries.some((e) => e.position <= 3);
+              <>
+                {/* Top 3 Podium */}
+                {entries.length >= 3 && (
+                  <div className="flex items-end justify-center gap-2 mb-4 pt-2">
+                    {/* 2nd place — left */}
+                    <PodiumSlot
+                      entry={entries[1]}
+                      position={2}
+                      height="h-20"
+                      color="#C0C0C0"
+                    />
+                    {/* 1st place — center, tallest */}
+                    <PodiumSlot
+                      entry={entries[0]}
+                      position={1}
+                      height="h-24"
+                      color="#FFD700"
+                      crown
+                    />
+                    {/* 3rd place — right */}
+                    <PodiumSlot
+                      entry={entries[2]}
+                      position={3}
+                      height="h-16"
+                      color="#CD7F32"
+                    />
+                  </div>
+                )}
 
-                  const podiumColor = PODIUM_COLORS[entry.position as 1 | 2 | 3];
-
-                  return (
-                    <div key={entry.whop_user_id}>
-                      {showSeparator && <Separator className="my-2 bg-gray-5/20" />}
+                {/* Rest 4-10 */}
+                <div className="space-y-1.5">
+                  {entries.slice(3, 10).map((entry) => {
+                    const xp = entry.total_xp ?? 0;
+                    const leaderXp = entries[0]?.total_xp ?? 1;
+                    const xpPct = Math.max(5, (xp / leaderXp) * 100);
+                    return (
                       <div
+                        key={entry.whop_user_id}
                         className={cn(
-                          "rounded-xl px-3 py-2.5 flex items-center gap-2.5 transition-colors hover:bg-gray-3/40",
+                          "relative rounded-xl px-3 py-2.5 flex items-center gap-2.5 overflow-hidden",
                           entry.isMe
-                            ? "bg-gray-3/60 border border-gray-5/40"
-                            : isTop3
-                              ? "border border-transparent"
-                              : "border border-transparent"
+                            ? "bg-[#E80000]/8 border border-[#E80000]/20"
+                            : "bg-white/[0.02] border border-white/[0.04]"
                         )}
-                        style={isTop3 && !entry.isMe ? { background: podiumColor?.bg } : undefined}
                       >
-                        <PositionBadge position={entry.position} />
-
-                        <Avatar className="h-8 w-8 border border-gray-5/20">
+                        {/* XP progress bar background */}
+                        <div
+                          className="absolute inset-y-0 left-0 bg-white/[0.02]"
+                          style={{ width: `${xpPct}%` }}
+                        />
+                        <span className="relative w-5 text-[11px] font-bold text-gray-8 tabular-nums shrink-0">
+                          {entry.position}
+                        </span>
+                        <Avatar className="relative h-7 w-7 border border-white/[0.06] shrink-0">
                           <AvatarImage src={entry.avatar_url || undefined} alt="" />
-                          <AvatarFallback className="bg-gray-4/40">
-                            <User size={16} className="text-gray-7" />
+                          <AvatarFallback className="bg-white/[0.04]">
+                            <User size={14} className="text-gray-7" />
                           </AvatarFallback>
                         </Avatar>
-
-                        <div className="flex-1 min-w-0 flex items-center gap-1.5">
-                          <p className={cn(
-                            "text-[13px] font-semibold truncate",
-                            entry.isMe ? "text-gray-12" : "text-gray-11"
-                          )}>
-                            {entry.display_name || t("anonymousUser")}
-                          </p>
-                          <InlineRankIcon level={entryLevel} size={16} />
-                        </div>
-
-                        <div className="flex items-baseline gap-0.5 shrink-0">
-                          <p className="text-[13px] font-bold tabular-nums text-gray-11">
+                        <p className={cn(
+                          "relative flex-1 min-w-0 text-[12px] font-semibold truncate",
+                          entry.isMe ? "text-[#FF6D6D]" : "text-gray-11"
+                        )}>
+                          {entry.display_name || t("anonymousUser")}
+                        </p>
+                        <div className="relative flex items-baseline gap-0.5 shrink-0">
+                          <p className="text-[12px] font-bold tabular-nums text-gray-11">
                             {formatNumber(xp)}
                           </p>
-                          <Badge variant="outline" className="px-1 py-0 text-[9px] font-extrabold bg-[#E80000]/12 text-[#FF6666] border-[#E80000]/20 hover:bg-[#E80000]/12">
-                            XP
-                          </Badge>
+                          <span className="text-[8px] font-extrabold text-[#FF6D6D]">XP</span>
                         </div>
                       </div>
-                    </div>
+                    );
+                  })}
+                </div>
+
+                {/* "You are here" — outside top 10 */}
+                {entries.length > 10 && !entries.slice(0, 10).some((e) => e.isMe) && entries.some((e) => e.isMe) && (() => {
+                  const me = entries.find((e) => e.isMe)!;
+                  return (
+                    <>
+                      <div className="text-center text-[10px] text-gray-7 my-2">•  •  •</div>
+                      <div className="rounded-xl px-3 py-2.5 flex items-center gap-2.5 bg-[#E80000]/8 border border-[#E80000]/20">
+                        <span className="w-5 text-[11px] font-bold text-[#FF6D6D] tabular-nums shrink-0">
+                          {me.position}
+                        </span>
+                        <Avatar className="h-7 w-7 border border-[#E80000]/30">
+                          <AvatarImage src={me.avatar_url || undefined} alt="" />
+                          <AvatarFallback className="bg-[#E80000]/10">
+                            <User size={14} className="text-[#FF6D6D]" />
+                          </AvatarFallback>
+                        </Avatar>
+                        <p className="flex-1 min-w-0 text-[12px] font-semibold truncate text-[#FF6D6D]">
+                          {me.display_name || t("anonymousUser")}
+                        </p>
+                        <div className="flex items-baseline gap-0.5 shrink-0">
+                          <p className="text-[12px] font-bold tabular-nums text-[#FF6D6D]">
+                            {formatNumber(me.total_xp ?? 0)}
+                          </p>
+                          <span className="text-[8px] font-extrabold text-[#FF6D6D]">XP</span>
+                        </div>
+                      </div>
+                    </>
                   );
-                })}
-              </div>
+                })()}
+              </>
             )}
           </CardContent>
         </Card>

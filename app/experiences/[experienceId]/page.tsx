@@ -97,6 +97,18 @@ export default async function ExperiencePage({
   let initialData: InitialData;
   try {
     initialData = await loadUserData(userId);
+    // Register experience for engagement sync (idempotent)
+    try {
+      const { createServerSupabase } = await import("@/lib/supabase");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const db = createServerSupabase() as any;
+      await db.from("app_experiences").upsert(
+        { experience_id: experienceId },
+        { onConflict: "experience_id" }
+      );
+    } catch (err) {
+      console.warn("[OPTIZ] Failed to register experience:", err);
+    }
   } catch (err) {
     console.error("[OPTIZ] SSR loadUserData failed:", err);
     initialData = {
