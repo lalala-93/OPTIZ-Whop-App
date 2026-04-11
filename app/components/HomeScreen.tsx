@@ -523,7 +523,7 @@ export function HomeScreen({
             src="/images/optiz-store.jpeg"
             alt="Optiz Store"
             fill
-            className="object-cover object-[70%_40%]"
+            className="object-cover object-[70%_15%]"
             sizes="(max-width: 768px) 100vw, 600px"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/65 to-black/20" />
@@ -543,7 +543,7 @@ export function HomeScreen({
                 Meilleur naturellement
               </h3>
               <p className="text-[11px] text-white/60 truncate">
-                Shop produits naturels sélectionnés
+                Nos produits naturels
               </p>
             </div>
             <div className="shrink-0 w-10 h-10 rounded-full bg-[#E80000] flex items-center justify-center group-hover:bg-[#FF2D2D] transition-colors shadow-lg shadow-[#E80000]/20">
@@ -561,7 +561,7 @@ export function HomeScreen({
         <Card className="border-gray-5/50 bg-gray-2/80 border-l-[3px] border-l-gray-6">
           <CardHeader className="flex flex-row items-center justify-between p-4 pb-2.5">
             <p className="text-[15px] text-gray-12 font-semibold inline-flex items-center gap-1.5">
-              <Quote size={15} className="text-gray-8" />
+              <Quote size={15} className="text-[#FF6666]" />
               {t("homeQuote")}
             </p>
             <button
@@ -593,8 +593,8 @@ export function HomeScreen({
             {/* Period toggle */}
             <div className="grid grid-cols-3 gap-1 p-1 rounded-lg bg-white/[0.03] border border-white/[0.06]">
               {([
-                { value: "week" as const, label: "Semaine" },
-                { value: "month" as const, label: "Mois" },
+                { value: "week" as const, label: "Hebdo" },
+                { value: "month" as const, label: "Mensuel" },
                 { value: "all" as const, label: "Global" },
               ]).map((opt) => (
                 <button
