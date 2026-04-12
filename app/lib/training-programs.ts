@@ -176,7 +176,7 @@ const STREET_PARK: ProgramTemplate = {
         ex("inverted-deadlift", 4, 0, { repsLabel: "Max reps hold", note: "Commencer jambes pliées, déplier progressivement. 45s-1min récup" }),
         ex("jump-lunge", 4, 20, { note: "⚡ Superset avec chaise mur 30s. 45s-1min récup" }),
         ex("wall-sit", 4, 0, { repsLabel: "30s", note: "⚡ Superset avec fentes sautées" }),
-        ex("push-up-elevated", 3, 0, { repsLabel: "Max reps", note: "45s-1min récup" }),
+        ex("push-up-elevated", 3, 0, { repsLabel: "3x Max reps", note: "45s-1min récup" }),
       ],
     },
     {
@@ -185,7 +185,7 @@ const STREET_PARK: ProgramTemplate = {
       focus: "Pompes, dips, tirage, jambes",
       durationMin: 50,
       exercises: [
-        ex("push-up", 3, 0, { repsLabel: "Max reps", note: "45s-1min récup" }),
+        ex("push-up", 3, 0, { repsLabel: "3x Max reps", note: "45s-1min récup" }),
         ex("band-rear-delt-uni", 4, 15, { note: "⚡ Superset avec extension triceps. 45s-1min récup" }),
         ex("band-triceps-ext", 4, 20, { note: "⚡ Superset avec arrière d'épaule" }),
         ex("dips", 1, 0, { repsLabel: "EMOM 10 min", note: "1 série par minute pendant 10 minutes" }),
@@ -200,7 +200,7 @@ const STREET_PARK: ProgramTemplate = {
       focus: "Tractions supi, pompes EMOM, bras, jambes",
       durationMin: 50,
       exercises: [
-        ex("chin-up", 3, 0, { repsLabel: "Max reps", note: "45s-1min récup" }),
+        ex("chin-up", 3, 0, { repsLabel: "3x Max reps", note: "45s-1min récup" }),
         ex("push-up-elevated", 1, 0, { repsLabel: "EMOM 10 min", note: "20s effort / 40s repos" }),
         ex("band-hammer-curl", 4, 20, { note: "⚡ Superset avec extension triceps. 45s-1min récup" }),
         ex("band-triceps-ext", 4, 20, { note: "⚡ Superset avec curl marteau" }),
@@ -230,9 +230,9 @@ const STREET_PARK: ProgramTemplate = {
 
 const SALLE: ProgramTemplate = {
   id: "salle",
-  title: "Salle de sport",
-  subtitle: "Haltères, barre, banc. Le programme complet.",
-  level: "intermediate",
+  title: "Programme Salle",
+  subtitle: "9 séances · Débutant → Intermédiaire. Le programme complet.",
+  level: "beginner",
   location: "gym",
   image: "/images/salle.jpeg",
   sessions: [
@@ -242,7 +242,7 @@ const SALLE: ProgramTemplate = {
       focus: "Pectoraux, épaules, triceps",
       durationMin: 55,
       exercises: [
-        ex("push-up", 3, 0, { repsLabel: "Max reps", note: "Échauffement. 45s-1min récup" }),
+        ex("push-up", 3, 0, { repsLabel: "3x Max reps", note: "Échauffement. 45s-1min récup" }),
         ex("db-pullover", 4, 20, { defaultLoad: 12, note: "Focus haut de pec. 45s-1min récup" }),
         ex("db-military-press", 4, 15, { defaultLoad: 14, note: "⚡ Superset avec élévation haut de pec. 45s-1min récup" }),
         ex("high-chest-raise", 4, 15, { defaultLoad: 6, note: "⚡ Superset avec développé militaire" }),
@@ -278,7 +278,7 @@ const SALLE: ProgramTemplate = {
         ex("step-up", 4, 10, { defaultLoad: 10, note: "⚡ Superset avec élévation latérale. 45s-1min récup" }),
         ex("lateral-raise-mid", 4, 20, { defaultLoad: 4, note: "⚡ Superset avec step up. Départ mi-amplitude" }),
         ex("romanian-deadlift-db", 4, 20, { defaultLoad: 14, perSetReps: [20, 20, 15, 15], note: "45s-1min récup" }),
-        ex("push-up", 3, 0, { repsLabel: "Max reps", note: "Finisher. 45s-1min récup" }),
+        ex("push-up", 3, 0, { repsLabel: "3x Max reps", note: "Finisher. 45s-1min récup" }),
       ],
     },
     {
@@ -289,32 +289,17 @@ const SALLE: ProgramTemplate = {
       exercises: [
         ex("dips", 1, 0, { repsLabel: "EMOM 10 min", note: "1 série par minute pendant 10 minutes" }),
         ex("overhead-triceps", 4, 15, { defaultLoad: 10, note: "Debout avec un haltère. 45s-1min récup" }),
-        ex("chin-up", 4, 0, { repsLabel: "Max reps", note: "45s-1min récup" }),
+        ex("chin-up", 4, 0, { repsLabel: "4x Max reps", note: "45s-1min récup" }),
         ex("hammer-curl", 3, 15, { defaultLoad: 10, note: "45s-1min récup" }),
         ex("walking-lunge", 3, 30, { defaultLoad: 10, note: "⚡ Superset avec marche du fermier. 45s-1min récup" }),
         ex("farmer-walk", 3, 0, { defaultLoad: 16, repsLabel: "Échec grip", note: "⚡ Superset avec fentes marchées" }),
       ],
     },
-  ],
-};
-
-// ═══════════════════════════════════════════════════════
-// Program 3: Salle Débutant (sans dips / sans tractions)
-// 5 séances — idéal pour démarrer en salle
-// ═══════════════════════════════════════════════════════
-
-const SALLE_DEBUTANT: ProgramTemplate = {
-  id: "salle-debutant",
-  title: "Salle Débutant",
-  subtitle: "5 séances sans dips ni tractions. Pose tes bases en salle.",
-  level: "beginner",
-  location: "gym",
-  image: "/images/salle.jpeg",
-  sessions: [
+    // ── Séances Débutant (5-9) — sans dips/tractions, pose tes bases ──
     {
-      id: "salle-deb-s1",
-      name: "Séance 1 — Upper",
-      focus: "Pectoraux, dos, bras",
+      id: "salle-s5",
+      name: "Séance 5 — Débutant Upper",
+      focus: "Pectoraux, dos, bras (débutant)",
       durationMin: 50,
       exercises: [
         ex("db-bench-press", 3, 10, { defaultLoad: 12, note: "3 séries 8 à 12 reps. Échec musculaire. Repos 2-3 min" }),
@@ -326,22 +311,22 @@ const SALLE_DEBUTANT: ProgramTemplate = {
       ],
     },
     {
-      id: "salle-deb-s2",
-      name: "Séance 2 — Lower",
-      focus: "Jambes",
+      id: "salle-s6",
+      name: "Séance 6 — Débutant Lower",
+      focus: "Jambes (débutant)",
       durationMin: 50,
       exercises: [
         ex("bulgarian-split-squat", 3, 16, { defaultLoad: 10, note: "16 reps (8 par jambe). +2 reps par semaine, puis augmente la charge. Repos 2-3 min" }),
         ex("romanian-deadlift-db", 3, 10, { defaultLoad: 14, note: "3 séries 8 à 12 reps. Passe à la barre quand tu gères. Repos 2-3 min" }),
         ex("leg-extension", 3, 10, { defaultLoad: 25, perSetReps: [8, 11, 13], note: "Reps croissantes. Repos 2-3 min" }),
         ex("leg-curl", 3, 10, { defaultLoad: 25, perSetReps: [8, 11, 13], note: "Reps croissantes. Repos 2-3 min" }),
-        ex("dead-hang", 3, 0, { repsLabel: "Max", note: "Suspension passive à la barre. Prépare tes tractions futures" }),
+        ex("dead-hang", 3, 0, { repsLabel: "3x Max", note: "Suspension passive à la barre. Prépare tes tractions futures" }),
       ],
     },
     {
-      id: "salle-deb-s3",
-      name: "Séance 3 — Pull & Push",
-      focus: "Dos, épaules, bras, pectoraux",
+      id: "salle-s7",
+      name: "Séance 7 — Débutant Pull & Push",
+      focus: "Dos, épaules, bras, pectoraux (débutant)",
       durationMin: 55,
       exercises: [
         ex("lat-pulldown-neutral", 3, 10, { defaultLoad: 30, perSetReps: [9, 11, 13], note: "Prise neutre. Reps croissantes. Repos 2-3 min" }),
@@ -354,9 +339,9 @@ const SALLE_DEBUTANT: ProgramTemplate = {
       ],
     },
     {
-      id: "salle-deb-s4",
-      name: "Séance 4 — Full Body",
-      focus: "Corps complet",
+      id: "salle-s8",
+      name: "Séance 8 — Débutant Full Body",
+      focus: "Corps complet (débutant)",
       durationMin: 55,
       exercises: [
         ex("db-incline-press", 3, 10, { defaultLoad: 12, note: "3 séries 8 à 12 reps. Repos 2-3 min" }),
@@ -368,16 +353,16 @@ const SALLE_DEBUTANT: ProgramTemplate = {
       ],
     },
     {
-      id: "salle-deb-s5",
-      name: "Séance 5 — Dips & Tractions",
+      id: "salle-s9",
+      name: "Séance 9 — Dips & Tractions",
       focus: "Transition vers dips et tractions",
       durationMin: 55,
       exercises: [
-        ex("negative-pull-up", 3, 0, { repsLabel: "Max", note: "Descente contrôlée jusqu'à l'échec. Avec élastique si besoin. Repos 2-3 min" }),
-        ex("dips", 3, 0, { repsLabel: "Max", note: "Assistés sur machine ou négatives si besoin. Repos 2-3 min" }),
+        ex("negative-pull-up", 3, 0, { repsLabel: "3x Max", note: "Descente contrôlée jusqu'à l'échec. Avec élastique si besoin. Repos 2-3 min" }),
+        ex("dips", 3, 0, { repsLabel: "3x Max", note: "Assistés sur machine ou négatives si besoin. Repos 2-3 min" }),
         ex("lat-pulldown", 3, 10, { defaultLoad: 30, perSetReps: [9, 11, 13], note: "Supination, assis, poulie basse. Reps croissantes. Repos 2-3 min" }),
         ex("pull-up-prona", 1, 10, { repsLabel: "EMOM 10 min", note: "EMOM : 1 série par minute pendant 10 minutes" }),
-        ex("scapular-pull-up", 3, 0, { repsLabel: "Max", note: "3 séries max reps. Repos 2-3 min" }),
+        ex("scapular-pull-up", 3, 0, { repsLabel: "3x Max", note: "3 séries max reps. Repos 2-3 min" }),
         ex("face-pull", 3, 13, { defaultLoad: 15, note: "3 séries 12 à 15 reps. Repos 2-3 min" }),
         ex("pec-deck", 3, 13, { defaultLoad: 30, note: "3 séries 12 à 15 reps. Repos 2-3 min" }),
       ],
@@ -385,8 +370,10 @@ const SALLE_DEBUTANT: ProgramTemplate = {
   ],
 };
 
+// (Beginner sessions merged into SALLE program below as Séances 5-9)
+
 // ═══════════════════════════════════════════════════════
 // Export
 // ═══════════════════════════════════════════════════════
 
-export const MASS_PROGRAMS: ProgramTemplate[] = [STREET_PARK, SALLE_DEBUTANT, SALLE];
+export const MASS_PROGRAMS: ProgramTemplate[] = [STREET_PARK, SALLE];
