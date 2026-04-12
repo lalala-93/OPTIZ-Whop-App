@@ -6,7 +6,7 @@ import { ChevronDown, ChevronLeft, ChevronRight, Quote, RefreshCw, User } from "
 import { XPRing } from "./XPRing";
 import type { RankTier } from "./rankSystem";
 import { MOTIVATIONAL_QUOTES, getRankNameKey, formatNumber } from "./rankSystem";
-import { getLeaderboard, getLeaderboardPeriod } from "@/lib/actions";
+import { getLeaderboardPeriod } from "@/lib/actions";
 import { useI18n } from "./i18n";
 import { cn } from "@/lib/utils";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
@@ -423,12 +423,8 @@ export function HomeScreen({
     let cancelled = false;
     setLoadingLeaderboard(true);
 
-    const fetcher =
-      period === "all"
-        ? getLeaderboard(userId)
-        : getLeaderboardPeriod(userId, period, 50);
-
-    fetcher
+    // Always use period-based RPC so all views are consistent (sourced from xp_events)
+    getLeaderboardPeriod(userId, period, 50)
       .then((data) => {
         if (cancelled) return;
 
@@ -440,17 +436,6 @@ export function HomeScreen({
           position: item.position,
           isMe: item.whop_user_id === userId,
         }));
-
-        if (period === "all" && !rows.some((row) => row.whop_user_id === userId)) {
-          rows.push({
-            whop_user_id: userId,
-            display_name: userName,
-            avatar_url: userPhoto,
-            total_xp: totalXp,
-            position: rows.length + 1,
-            isMe: true,
-          });
-        }
 
         rows.sort((a, b) => (b.total_xp ?? 0) - (a.total_xp ?? 0));
         rows.forEach((row, idx) => {

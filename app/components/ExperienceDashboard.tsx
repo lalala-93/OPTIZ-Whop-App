@@ -11,7 +11,6 @@ import { StepsScreen } from "./StepsScreen";
 import { DietScreen } from "./DietScreen";
 import { BreathworkScreen } from "./BreathworkScreen";
 import { SettingsSheet } from "./SettingsSheet";
-import { TaskCompleteAnimation } from "./TaskCompleteAnimation";
 import { LevelUpAnimation } from "./LevelUpAnimation";
 import { InfoModal } from "./InfoModal";
 import { StreakModal } from "./StreakModal";
@@ -130,7 +129,6 @@ function DashboardInner({ userId, initialData, initialEngagementStats }: Experie
   const [streakAnim, setStreakAnim] = useState(false);
   const [deletingData, setDeletingData] = useState(false);
 
-  const [taskCompleteAnim, setTaskCompleteAnim] = useState({ visible: false, xp: 0 });
   const [levelUpAnim, setLevelUpAnim] = useState({ visible: false, newLevel: 0 });
 
   const levelData = getLevelProgress(totalXp);
@@ -210,7 +208,6 @@ function DashboardInner({ userId, initialData, initialEngagementStats }: Experie
 
       if (isWorkout) {
         setWorkoutsDone((prev) => prev + 1);
-        setTaskCompleteAnim({ visible: true, xp: xpAmount });
       }
 
       startTransition(async () => {
@@ -400,11 +397,6 @@ function DashboardInner({ userId, initialData, initialEngagementStats }: Experie
         onClose={() => setIsXpModalOpen(false)}
         currentLevel={levelData.level}
         totalXp={totalXp}
-      />
-      <TaskCompleteAnimation
-        isVisible={taskCompleteAnim.visible}
-        onComplete={() => setTaskCompleteAnim({ ...taskCompleteAnim, visible: false })}
-        xpEarned={taskCompleteAnim.xp}
       />
       <LevelUpAnimation
         isVisible={levelUpAnim.visible}

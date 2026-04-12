@@ -219,52 +219,55 @@ function WorkoutFunnel({
   // ── Completion ──
   if (done && result) {
     return (
-      <motion.div className="pb-8 flex flex-col items-center pt-12" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+      <motion.div className="pb-8 flex flex-col items-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+        {/* Session complete image — compact */}
         <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ type: "spring", stiffness: 200, damping: 14, delay: 0.1 }}
-          className="w-16 h-16 rounded-full bg-[#E80000]/12 border border-[#E80000]/25 flex items-center justify-center mb-5"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.4 }}
+          className="w-full rounded-2xl overflow-hidden mb-6 relative"
+          style={{ aspectRatio: "16/10" }}
         >
-          <Trophy size={28} className="text-[#FF6D6D]" />
+          <Image
+            src="/images/session-complete.png"
+            alt="Session Complete"
+            fill
+            className="object-cover"
+            priority
+          />
         </motion.div>
 
-        <motion.h2 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="text-xl font-bold text-gray-12">
-          {t("trainingCongrats")}
-        </motion.h2>
-        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.35 }} className="text-[13px] text-gray-8 mt-1">
-          {t("trainingCongratsSubtitle")}
-        </motion.p>
-
-        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }} className="w-full mt-6 grid grid-cols-3 gap-2.5">
-          <Card className="border-gray-5/30 bg-gray-2/70">
+        {/* Stats row */}
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="w-full grid grid-cols-3 gap-2.5 mb-6">
+          <Card className="border-white/[0.06] bg-white/[0.03]">
             <CardContent className="p-3 text-center">
-              <Clock size={15} className="text-gray-7 mx-auto mb-1" />
+              <Clock size={14} className="text-gray-7 mx-auto mb-1" />
               <p className="text-[15px] font-bold text-gray-12 tabular-nums">{fmtTimer(elapsed)}</p>
               <p className="text-[10px] text-gray-7 mt-0.5">{t("trainingDuration")}</p>
             </CardContent>
           </Card>
-          <Card className="border-gray-5/30 bg-gray-2/70">
+          <Card className="border-white/[0.06] bg-white/[0.03]">
             <CardContent className="p-3 text-center">
-              <Dumbbell size={15} className="text-gray-7 mx-auto mb-1" />
+              <Dumbbell size={14} className="text-gray-7 mx-auto mb-1" />
               <p className="text-[15px] font-bold text-gray-12 tabular-nums">{result.totalVolume.toLocaleString()}</p>
               <p className="text-[10px] text-gray-7 mt-0.5">{t("trainingKg")}</p>
             </CardContent>
           </Card>
-          <Card className="border-gray-5/30 bg-gray-2/70">
+          <Card className="border-white/[0.06] bg-white/[0.03]">
             <CardContent className="p-3 text-center">
-              <Sparkles size={15} className="text-[#FFD700] mx-auto mb-1" />
+              <Sparkles size={14} className="text-[#FFD700] mx-auto mb-1" />
               <p className="text-[15px] font-bold text-gray-12 tabular-nums">{result.improvedSets}</p>
               <p className="text-[10px] text-gray-7 mt-0.5">{t("trainingRecordsLabel")}</p>
             </CardContent>
           </Card>
         </motion.div>
 
+        {/* CTA */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-          className="w-full mt-7"
+          transition={{ delay: 0.35 }}
+          className="w-full"
         >
           <Button
             onClick={() => onSave(result)}
@@ -648,8 +651,6 @@ export function TrainingHubScreen({ userId, onAwardXpEvent, initialCompletionsTo
     try { await deleteFreestyleTemplateAction(userId, id); } catch {}
   };
 
-  const [sessionCompleteModal, setSessionCompleteModal] = useState(false);
-
   const onSaved = async (a: SessionArchive) => {
     setArchives((p) => [a, ...p].slice(0, 160));
     if (!a.programId.startsWith("freestyle-")) setCompletions((p) => new Set([...p, sessionKey(a.programId, a.sessionId)]));
@@ -663,55 +664,8 @@ export function TrainingHubScreen({ userId, onAwardXpEvent, initialCompletionsTo
     } catch (err) { console.error("[OPTIZ] Save workout", err); }
     const today = new Date().toISOString().split("T")[0];
     await onAwardXpEvent("workout_complete", `workout-${a.programId}-${a.sessionId}-${today}`, a.xpEarned);
-    // Show session complete modal
-    setSessionCompleteModal(true);
-    playWorkoutCompleteSound();
-  };
-
-  const closeSessionCompleteModal = () => {
-    setSessionCompleteModal(false);
-    setFlash("");
     setTracker(null);
   };
-
-  // ── Session Complete Modal ──
-  if (sessionCompleteModal) {
-    return (
-      <div className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center">
-        <motion.div
-          initial={{ opacity: 0, scale: 1.05 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
-          className="relative w-full h-full"
-        >
-          <Image
-            src="/images/session-complete.png"
-            alt="Session Complete"
-            fill
-            className="object-cover"
-            priority
-          />
-          {/* Subtle overlay for contrast */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-          {/* Bottom CTA */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.8, duration: 0.4 }}
-            className="absolute bottom-0 inset-x-0 p-6 pb-10 flex flex-col items-center gap-3"
-          >
-            <p className="text-white/70 text-[13px] font-medium">+100 XP</p>
-            <Button
-              onClick={closeSessionCompleteModal}
-              className="w-full max-w-xs h-12 rounded-2xl bg-white text-black font-bold text-[15px] active:scale-[0.97] transition-transform border-0 hover:bg-white/90"
-            >
-              Continuer
-            </Button>
-          </motion.div>
-        </motion.div>
-      </div>
-    );
-  }
 
   // ── Workout funnel ──
   if (tracker) {

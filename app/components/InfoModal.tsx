@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { Zap, Trophy, Flame, Target, Shield, Gift, X } from "lucide-react";
+import { Dumbbell, Footprints, Flame, Wind, Gift, X } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 interface InfoModalProps {
@@ -10,24 +10,16 @@ interface InfoModalProps {
 }
 
 const XP_SOURCES = [
-  { icon: Target, label: "Séance complétée", xp: "+50 à 120" },
-  { icon: Flame, label: "Streak quotidien", xp: "+10 / jour" },
-  { icon: Zap, label: "Pas quotidiens (objectif)", xp: "+15" },
-  { icon: Trophy, label: "Nutrition trackée", xp: "+10" },
-];
-
-const RULES = [
-  "Chaque action te rapporte de l'XP",
-  "L'XP détermine ton niveau et ton rang",
-  "4 rangs : Recrue → Soldat → Vétéran → Prestige",
-  "20 niveaux à débloquer au total",
-  "Le classement se reset chaque semaine",
+  { icon: Dumbbell, label: "Séance d'entraînement", xp: "100", color: "#E80000" },
+  { icon: Footprints, label: "Objectif de pas atteint", xp: "15", color: "#FF6D6D" },
+  { icon: Flame, label: "Streak quotidien", xp: "10", color: "#FF8C00" },
+  { icon: Wind, label: "Session de respiration", xp: "25", color: "#FF6D6D" },
 ];
 
 export function InfoModal({ isOpen, onClose }: InfoModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="bg-gray-2 border-white/[0.08] text-gray-12 max-w-md p-0 gap-0">
+      <DialogContent className="bg-[#0A0A0A] border-white/[0.06] text-gray-12 max-w-md p-0 gap-0 rounded-2xl">
         <button
           onClick={onClose}
           className="absolute right-4 top-4 z-20 w-8 h-8 rounded-full bg-white/[0.06] border border-white/[0.08] flex items-center justify-center text-gray-9 hover:text-gray-12 hover:bg-white/[0.1] transition-colors"
@@ -36,100 +28,93 @@ export function InfoModal({ isOpen, onClose }: InfoModalProps) {
         </button>
 
         {/* Header */}
-        <div className="px-5 pt-7 pb-5 border-b border-white/[0.04] text-center">
+        <div className="px-6 pt-8 pb-6 text-center">
           <Image
             src="/Logo-optiz.png"
             alt="OPTIZ"
-            width={56}
-            height={56}
+            width={48}
+            height={48}
             className="object-contain mx-auto"
             style={{ borderRadius: 0 }}
             priority
           />
-          <DialogTitle className="text-lg font-black text-gray-12 mt-3 tracking-tight">
-            Comment fonctionne OPTIZ ?
+          <DialogTitle className="text-[20px] font-black text-white mt-4 tracking-tight">
+            Ta progression, gamifiée.
           </DialogTitle>
-          <p className="text-[11px] text-gray-8 mt-1 max-w-[260px] mx-auto leading-relaxed">
-            Chaque effort compte. Track, progresse et grimpe dans le classement.
+          <p className="text-[12px] text-white/40 mt-1.5 max-w-[280px] mx-auto leading-relaxed">
+            Entraîne-toi, reste régulier, grimpe dans le classement.
           </p>
         </div>
 
         {/* XP Sources */}
-        <div className="px-5 py-4 border-b border-white/[0.04]">
-          <p className="text-[10px] text-gray-7 uppercase tracking-wider font-semibold mb-3">
-            Comment gagner de l&apos;XP
+        <div className="px-5 pb-4">
+          <p className="text-[10px] text-white/30 uppercase tracking-widest font-semibold mb-3 px-1">
+            Sources d&apos;XP
           </p>
-          <div className="space-y-2">
+          <div className="grid grid-cols-2 gap-2">
             {XP_SOURCES.map((src) => (
               <div
                 key={src.label}
-                className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-3 flex items-center gap-3"
+                className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-3.5 flex flex-col gap-2"
               >
-                <div className="w-9 h-9 rounded-lg bg-[#E80000]/10 border border-[#E80000]/15 flex items-center justify-center shrink-0">
-                  <src.icon size={16} className="text-[#FF6D6D]" />
+                <div className="flex items-center justify-between">
+                  <src.icon size={16} className="text-white/50" />
+                  <span className="text-[14px] font-black text-[#FF6D6D] tabular-nums">
+                    +{src.xp}
+                  </span>
                 </div>
-                <p className="text-[13px] font-semibold text-gray-12 flex-1">
+                <p className="text-[11px] font-medium text-white/70 leading-tight">
                   {src.label}
                 </p>
-                <div className="flex items-baseline gap-0.5 shrink-0">
-                  <span className="text-[14px] font-bold text-[#FF6D6D] tabular-nums">
-                    {src.xp}
-                  </span>
-                  <span className="text-[9px] font-extrabold text-[#FF6D6D]">XP</span>
-                </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Rules */}
-        <div className="px-5 py-4 border-b border-white/[0.04]">
-          <p className="text-[10px] text-gray-7 uppercase tracking-wider font-semibold mb-3">
-            Règles du jeu
+        {/* How it works */}
+        <div className="px-5 pb-4">
+          <p className="text-[10px] text-white/30 uppercase tracking-widest font-semibold mb-3 px-1">
+            Comment ça marche
           </p>
-          <div className="space-y-2">
-            {RULES.map((rule, i) => (
-              <div key={i} className="flex items-start gap-2.5">
-                <div className="w-5 h-5 rounded-full bg-white/[0.04] border border-white/[0.06] flex items-center justify-center shrink-0 mt-0.5">
-                  <span className="text-[10px] font-bold text-gray-9">{i + 1}</span>
+          <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4">
+            <div className="flex items-center gap-3 mb-3">
+              {["Recrue", "Soldat", "Vétéran", "Prestige"].map((rank, i) => (
+                <div key={rank} className="flex-1 text-center">
+                  <div className={`text-[10px] font-bold ${i === 0 ? "text-[#FF6D6D]" : "text-white/25"}`}>
+                    {rank}
+                  </div>
+                  <div className={`h-1 rounded-full mt-1.5 ${i === 0 ? "bg-[#E80000]" : "bg-white/[0.06]"}`} />
                 </div>
-                <p className="text-[12px] text-gray-11 leading-relaxed">{rule}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Weekly Contest */}
-        <div className="px-5 py-4 border-b border-white/[0.04]">
-          <div className="rounded-xl bg-[#E80000]/8 border border-[#E80000]/20 p-4">
-            <div className="flex items-center gap-2.5 mb-2">
-              <Gift size={18} className="text-[#FF6D6D] shrink-0" />
-              <p className="text-[13px] font-bold text-gray-12">
-                Concours hebdomadaire
-              </p>
+              ))}
             </div>
-            <p className="text-[11px] text-gray-11 leading-relaxed">
-              Chaque semaine, le <strong className="text-[#FF6D6D]">Top 1</strong> du classement gagne une{" "}
-              <strong className="text-gray-12">commande offerte</strong> sur la boutique{" "}
-              <strong className="text-gray-12">Optiz Store</strong> — nos produits naturels pour ta santé.
+            <p className="text-[11px] text-white/40 leading-relaxed">
+              Accumule de l&apos;XP pour monter de niveau. 20 niveaux répartis en 4 rangs.
+              Ton classement se met à jour en temps réel.
             </p>
           </div>
         </div>
 
-        {/* Philosophy */}
-        <div className="px-5 py-4 pb-5">
-          <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-3.5 flex items-start gap-2.5">
-            <Shield size={14} className="text-gray-8 shrink-0 mt-0.5" />
+        {/* Weekly Contest */}
+        <div className="px-5 pb-4">
+          <div className="rounded-xl bg-[#E80000]/8 border border-[#E80000]/15 p-4 flex items-start gap-3">
+            <Gift size={20} className="text-[#FF6D6D] shrink-0 mt-0.5" />
             <div>
-              <p className="text-[11px] font-semibold text-gray-11 mb-1">
-                Notre philosophie
+              <p className="text-[13px] font-bold text-white mb-1">
+                Concours hebdomadaire
               </p>
-              <p className="text-[10px] text-gray-7 leading-relaxed">
-                OPTIZ, c&apos;est la discipline qui fait la différence. Pas de triche, pas de raccourci.
-                Chaque XP est mérité. Deviens la meilleure version de toi-même, naturellement.
+              <p className="text-[11px] text-white/50 leading-relaxed">
+                Le <span className="text-[#FF6D6D] font-semibold">Top 1</span> de chaque semaine remporte une commande offerte sur{" "}
+                <span className="text-white/80 font-semibold">Optiz Store</span>.
               </p>
             </div>
           </div>
+        </div>
+
+        {/* Footer */}
+        <div className="px-5 pb-6 pt-1">
+          <p className="text-[10px] text-white/20 text-center leading-relaxed">
+            Pas de triche, pas de raccourci. Chaque XP est mérité.
+          </p>
         </div>
       </DialogContent>
     </Dialog>
