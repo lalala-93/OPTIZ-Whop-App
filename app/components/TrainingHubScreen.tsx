@@ -648,6 +648,8 @@ export function TrainingHubScreen({ userId, onAwardXpEvent, initialCompletionsTo
     try { await deleteFreestyleTemplateAction(userId, id); } catch {}
   };
 
+  const [sessionCompleteModal, setSessionCompleteModal] = useState(false);
+
   const onSaved = async (a: SessionArchive) => {
     setArchives((p) => [a, ...p].slice(0, 160));
     if (!a.programId.startsWith("freestyle-")) setCompletions((p) => new Set([...p, sessionKey(a.programId, a.sessionId)]));
@@ -661,10 +663,55 @@ export function TrainingHubScreen({ userId, onAwardXpEvent, initialCompletionsTo
     } catch (err) { console.error("[OPTIZ] Save workout", err); }
     const today = new Date().toISOString().split("T")[0];
     await onAwardXpEvent("workout_complete", `workout-${a.programId}-${a.sessionId}-${today}`, a.xpEarned);
-    setFlash(a.improvedSets > 0 ? t("trainingSessionValidatedRecords", { xp: String(a.xpEarned), records: String(a.improvedSets) }) : t("trainingSessionValidated", { xp: String(a.xpEarned) }));
-    setTimeout(() => setFlash(""), 2600);
+    // Show session complete modal
+    setSessionCompleteModal(true);
+    playWorkoutCompleteSound();
+  };
+
+  const closeSessionCompleteModal = () => {
+    setSessionCompleteModal(false);
+    setFlash("");
     setTracker(null);
   };
+
+  // ── Session Complete Modal ──
+  if (sessionCompleteModal) {
+    return (
+      <div className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0, scale: 1.05 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+          className="relative w-full h-full"
+        >
+          <Image
+            src="/images/session-complete.png"
+            alt="Session Complete"
+            fill
+            className="object-cover"
+            priority
+          />
+          {/* Subtle overlay for contrast */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+          {/* Bottom CTA */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.8, duration: 0.4 }}
+            className="absolute bottom-0 inset-x-0 p-6 pb-10 flex flex-col items-center gap-3"
+          >
+            <p className="text-white/70 text-[13px] font-medium">+100 XP</p>
+            <Button
+              onClick={closeSessionCompleteModal}
+              className="w-full max-w-xs h-12 rounded-2xl bg-white text-black font-bold text-[15px] active:scale-[0.97] transition-transform border-0 hover:bg-white/90"
+            >
+              Continuer
+            </Button>
+          </motion.div>
+        </motion.div>
+      </div>
+    );
+  }
 
   // ── Workout funnel ──
   if (tracker) {

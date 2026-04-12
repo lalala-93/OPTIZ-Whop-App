@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useCallback } from "react";
 import Image from "next/image";
-import { ChevronDown, ChevronLeft, ChevronRight, Quote, RefreshCw, User, ArrowRight } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, Quote, RefreshCw, User } from "lucide-react";
 import { XPRing } from "./XPRing";
 import type { RankTier } from "./rankSystem";
 import { MOTIVATIONAL_QUOTES, getRankNameKey, formatNumber } from "./rankSystem";
@@ -476,24 +476,16 @@ export function HomeScreen({
 
   return (
     <div className="flex flex-col gap-4 pb-8">
-      {/* ── Contest label ── */}
+      {/* ── Contest label — compact ── */}
       <div className="flex justify-center animate-fade-in">
-        <div className="inline-flex items-center gap-2.5 rounded-2xl border border-[#E80000]/30 bg-gradient-to-r from-[#E80000]/12 to-[#E80000]/6 px-4 py-2 shadow-[0_0_20px_rgba(232,0,0,0.08)]">
+        <div className="inline-flex items-center gap-2 rounded-full border border-[#E80000]/20 bg-[#E80000]/8 px-3.5 py-1.5">
           <div className="relative flex items-center justify-center">
-            <div className="w-2 h-2 rounded-full bg-[#FF6D6D]" />
-            <div className="absolute w-2 h-2 rounded-full bg-[#FF6D6D] animate-ping" />
+            <div className="w-1.5 h-1.5 rounded-full bg-[#FF6D6D]" />
+            <div className="absolute w-1.5 h-1.5 rounded-full bg-[#FF6D6D] animate-ping" />
           </div>
-          <div className="flex flex-col">
-            <span className="text-[11px] font-bold text-[#FF6D6D] leading-tight">
-              Concours hebdomadaire
-            </span>
-            <span className="text-[9px] text-gray-8 leading-tight">
-              Top 1 → commande Optiz Store offerte
-            </span>
-          </div>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-[#FF6D6D] shrink-0">
-            <path d="M20 12H4M12 4l8 8-8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          <span className="text-[10px] font-bold text-[#FF6D6D] uppercase tracking-wide">
+            Concours hebdo · Top 1 gagne une commande
+          </span>
         </div>
       </div>
 
@@ -527,39 +519,36 @@ export function HomeScreen({
         href="https://optiz.store/collections/produits"
         target="_blank"
         rel="noopener noreferrer"
-        className="block rounded-2xl overflow-hidden border border-white/[0.08] relative group active:scale-[0.98] transition-transform shadow-lg shadow-black/20"
+        className="block rounded-2xl overflow-hidden border border-white/[0.08] relative group active:scale-[0.98] transition-transform"
       >
-        <div className="relative h-[110px] w-full">
+        <div className="relative h-[120px] w-full">
           <Image
-            src="/store-bg.jpeg"
+            src="/images/store-bull.jpeg"
             alt="Optiz Store"
             fill
             className="object-cover"
             sizes="(max-width: 768px) 100vw, 600px"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-          <div className="absolute inset-0 px-5 flex items-center justify-between gap-3">
+          <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/40 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+          <div className="absolute inset-0 px-5 flex items-center">
             <div className="min-w-0">
-              <div className="inline-flex items-center gap-1.5 mb-1.5 px-2 py-0.5 rounded-full bg-white/[0.1] border border-white/[0.12]">
+              <div className="inline-flex items-center gap-1.5 mb-1.5 px-2.5 py-1 rounded-full bg-white/[0.08] border border-white/[0.1]">
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#FF6D6D" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="9" cy="21" r="1" />
                   <circle cx="20" cy="21" r="1" />
                   <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
                 </svg>
-                <p className="text-[8px] font-bold text-white/90 uppercase tracking-widest leading-none">
+                <p className="text-[8px] font-bold text-white/80 uppercase tracking-widest leading-none">
                   Optiz Store
                 </p>
               </div>
-              <h3 className="text-[17px] font-bold text-white leading-tight">
+              <h3 className="text-[18px] font-black text-white leading-tight tracking-tight">
                 Deviens meilleur, naturellement
               </h3>
-              <p className="text-[11px] text-white/50 mt-0.5">
-                Produits naturels pour ta santé
+              <p className="text-[11px] text-white/45 mt-0.5 font-medium">
+                Nos produits naturels pour ta santé
               </p>
-            </div>
-            <div className="shrink-0 w-11 h-11 rounded-full bg-white/[0.12] border border-white/[0.15] flex items-center justify-center group-hover:bg-white/[0.2] transition-colors">
-              <ArrowRight size={18} className="text-white group-hover:translate-x-0.5 transition-transform" strokeWidth={2} />
             </div>
           </div>
         </div>
