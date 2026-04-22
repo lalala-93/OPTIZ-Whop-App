@@ -161,13 +161,26 @@ function WorkoutFunnel({
   const [elapsed, setElapsed] = useState(0);
   const [done, setDone] = useState(false);
   const [result, setResult] = useState<SessionArchive | null>(null);
-  const [rest, setRest] = useState<{ secondsLeft: number; total: number } | null>(null);
+  const [rest, setRest] = useState<{ secondsLeft: number; total: number; quote: string } | null>(null);
   const [paused, setPaused] = useState(false);
   const t0 = useRef(Date.now());
   const pausedAcc = useRef(0); // total ms paused so far
   const pausedAt = useRef<number | null>(null);
 
   const REST_DEFAULT = 45;
+  const REST_QUOTES = [
+    "Respire. Ton corps se reconstruit.",
+    "La récupération fait la performance.",
+    "Chaque série te rapproche.",
+    "Reste concentré. Visualise la suivante.",
+    "La constance bat l'intensité.",
+    "Hydrate-toi. Ajuste ta posture.",
+    "Tu es plus fort qu'à la série précédente.",
+    "Discipline > motivation. Tu y es.",
+    "Un set de plus, une excuse de moins.",
+    "Contracte le core. Prépare-toi.",
+  ];
+  const pickQuote = () => REST_QUOTES[Math.floor(Math.random() * REST_QUOTES.length)];
 
   // Elapsed timer — pauses when `paused`
   useEffect(() => {
@@ -238,12 +251,12 @@ function WorkoutFunnel({
     // Skip if this is the very last set of the last exercise (no more effort coming).
     const isLastSetOfEx = i === rows.length - 1;
     if (!(isLastSetOfEx && isLast)) {
-      setRest({ secondsLeft: REST_DEFAULT, total: REST_DEFAULT });
+      setRest({ secondsLeft: REST_DEFAULT, total: REST_DEFAULT, quote: pickQuote() });
     }
   };
 
   const skipRest = () => setRest(null);
-  const addRest = (extra: number) => setRest((r) => r ? { secondsLeft: r.secondsLeft + extra, total: r.total + extra } : r);
+  const addRest = (extra: number) => setRest((r) => r ? { ...r, secondsLeft: r.secondsLeft + extra, total: r.total + extra } : r);
 
   const finish = () => {
     const logs: ExerciseLog[] = session.exercises.map((e) => ({
@@ -752,6 +765,17 @@ function WorkoutFunnel({
                       </div>
                     </div>
                   </div>
+
+                  {/* Motivational quote — rotates each rest */}
+                  <motion.p
+                    key={rest.quote}
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                    className="text-center text-[12.5px] italic text-gray-9 leading-snug mb-5 px-2"
+                  >
+                    &ldquo;{rest.quote}&rdquo;
+                  </motion.p>
 
                   {/* Next-up preview */}
                   {nextSet && (

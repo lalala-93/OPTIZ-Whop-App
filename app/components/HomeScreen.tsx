@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
-import Image from "next/image";
-import { ChevronDown, ChevronLeft, ChevronRight, Quote, RefreshCw, User } from "lucide-react";
+import { ArrowUpRight, ChevronDown, ChevronLeft, ChevronRight, Quote, RefreshCw, ShoppingBag, User } from "lucide-react";
 import { XPRing } from "./XPRing";
 import type { RankTier } from "./rankSystem";
 import { MOTIVATIONAL_QUOTES, getRankNameKey, formatNumber } from "./rankSystem";
@@ -499,44 +498,45 @@ export function HomeScreen({
         </div>
       </div>
 
-      {/* Optiz Store promo — premium card */}
+      {/* Optiz Store — compact, sans image, lien externe */}
       <a
         href="https://optiz.store/collections/produits"
         target="_blank"
         rel="noopener noreferrer"
-        className="block rounded-2xl overflow-hidden border border-white/[0.08] relative group active:scale-[0.98] transition-transform"
+        aria-label="Ouvrir Optiz Store (lien externe)"
+        className="group flex items-center gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3.5 transition-all hover:border-[#E80000]/25 hover:bg-white/[0.035] active:scale-[0.985]"
       >
-        <div className="relative h-[120px] w-full">
-          <Image
-            src="/images/store-bull.jpeg"
-            alt="Optiz Store"
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 100vw, 600px"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/40 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-          <div className="absolute inset-0 px-5 flex items-center">
-            <div className="min-w-0">
-              <div className="inline-flex items-center gap-1.5 mb-1.5 px-2.5 py-1 rounded-full bg-white/[0.08] border border-white/[0.1]">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#FF6D6D" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="9" cy="21" r="1" />
-                  <circle cx="20" cy="21" r="1" />
-                  <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-                </svg>
-                <p className="text-[8px] font-bold text-white/80 uppercase tracking-widest leading-none">
-                  Optiz Store
-                </p>
-              </div>
-              <h3 className="text-[18px] font-black text-white leading-tight tracking-tight">
-                Deviens meilleur, naturellement
-              </h3>
-              <p className="text-[11px] text-white/45 mt-0.5 font-medium">
-                Nos produits naturels pour ta santé
-              </p>
-            </div>
+        {/* Icon badge */}
+        <span className="relative shrink-0 inline-flex items-center justify-center w-11 h-11 rounded-xl bg-[#E80000]/[0.1] border border-[#E80000]/20 text-[#FF6D6D] transition-colors group-hover:bg-[#E80000]/[0.15] group-hover:border-[#E80000]/35">
+          <ShoppingBag size={18} strokeWidth={2} />
+        </span>
+
+        {/* Text */}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[9.5px] font-semibold text-[#FF6D6D] uppercase tracking-[0.16em]">
+              Optiz Store
+            </span>
+            <span className="h-[3px] w-[3px] rounded-full bg-gray-7" />
+            <span className="text-[9.5px] text-gray-8 uppercase tracking-[0.12em] font-semibold">
+              Lien externe
+            </span>
           </div>
+          <h3 className="text-[14.5px] font-semibold text-gray-12 leading-tight tracking-tight mt-0.5 truncate">
+            Deviens meilleur, naturellement
+          </h3>
+          <p className="text-[11.5px] text-gray-8 mt-0.5 truncate">
+            Produits naturels pour ta santé
+          </p>
         </div>
+
+        {/* External-link arrow */}
+        <span
+          aria-hidden="true"
+          className="shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-lg border border-white/[0.06] bg-white/[0.02] text-gray-8 transition-all group-hover:border-[#E80000]/30 group-hover:bg-[#E80000]/[0.08] group-hover:text-[#FF6D6D] group-hover:-translate-y-[1px] group-hover:translate-x-[1px]"
+        >
+          <ArrowUpRight size={15} strokeWidth={2.25} />
+        </span>
       </a>
 
       {/* ── Section 2: Streak Calendar ── */}
