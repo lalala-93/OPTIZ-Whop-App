@@ -482,27 +482,17 @@ function WorkoutFunnel({
             </CardContent>
           </Card>
 
-          {/* Set tracker — EverFit-style compact table */}
+          {/* Set tracker — Hevy-style */}
           <Card className="border-white/[0.05] bg-white/[0.02] overflow-hidden">
             <CardContent className="p-0">
               {/* Header */}
-              <div className="grid grid-cols-[2rem_minmax(0,3.2rem)_1fr_1fr_2.4rem_2.2rem] items-center gap-2 px-3 py-2 border-b border-white/[0.05]">
-                <span className="text-[9.5px] uppercase tracking-[0.14em] text-gray-7 font-semibold text-center">
-                  {t("trainingHeaderSet")}
-                </span>
-                <span className="text-[9.5px] uppercase tracking-[0.14em] text-gray-7 font-semibold text-center">
-                  {t("trainingHeaderPrev")}
-                </span>
-                <span className="text-[9.5px] uppercase tracking-[0.14em] text-gray-7 font-semibold text-center">
-                  {t("trainingHeaderKg")}
-                </span>
-                <span className="text-[9.5px] uppercase tracking-[0.14em] text-gray-7 font-semibold text-center">
-                  {t("trainingHeaderReps")}
-                </span>
-                <span className="text-[9.5px] uppercase tracking-[0.14em] text-gray-7 font-semibold text-center">
-                  RPE
-                </span>
-                <span />
+              <div className="grid grid-cols-[1.75rem_2.75rem_minmax(0,1fr)_minmax(0,1fr)_2rem_2rem] items-center gap-x-1.5 px-2.5 py-2.5 border-b border-white/[0.05] bg-white/[0.015]">
+                <span className="text-[9.5px] uppercase tracking-[0.12em] text-gray-7 font-semibold text-center">#</span>
+                <span className="text-[9.5px] uppercase tracking-[0.12em] text-gray-7 font-semibold text-center">Préc.</span>
+                <span className="text-[9.5px] uppercase tracking-[0.12em] text-gray-7 font-semibold text-center">Kg</span>
+                <span className="text-[9.5px] uppercase tracking-[0.12em] text-gray-7 font-semibold text-center">Reps</span>
+                <span className="text-[9.5px] uppercase tracking-[0.12em] text-gray-7 font-semibold text-center">RPE</span>
+                <span className="text-[9.5px] uppercase tracking-[0.12em] text-gray-7 font-semibold text-center">✓</span>
               </div>
 
               {/* Rows */}
@@ -518,17 +508,27 @@ function WorkoutFunnel({
                       : `${prevSet.reps}r`
                     : "—";
 
+                  const bumpLoad = (delta: number) => {
+                    const cur = parseNum(row.load, 0);
+                    const next = Math.max(0, +(cur + delta).toFixed(1));
+                    upd(ex.id, i, { load: next === 0 ? "" : String(next) });
+                  };
+                  const bumpReps = (delta: number) => {
+                    const cur = parseNum(row.reps, targetReps);
+                    upd(ex.id, i, { reps: String(Math.max(0, cur + delta)) });
+                  };
+
                   return (
                     <div
                       key={i}
                       className={cn(
-                        "grid grid-cols-[2rem_minmax(0,3.2rem)_1fr_1fr_2.4rem_2.2rem] items-center gap-2 px-3 py-2 transition-colors",
-                        isActive && !row.done && "bg-[#E80000]/[0.06]",
+                        "grid grid-cols-[1.75rem_2.75rem_minmax(0,1fr)_minmax(0,1fr)_2rem_2rem] items-center gap-x-1.5 px-2.5 py-2 transition-colors",
+                        isActive && "bg-[#E80000]/[0.05]",
                         row.done && "bg-white/[0.015]"
                       )}
                     >
                       {/* Set # */}
-                      <div className="flex items-center justify-center gap-1">
+                      <div className="flex items-center justify-center gap-0.5">
                         <span
                           className={cn(
                             "inline-flex items-center justify-center w-6 h-6 rounded-md text-[11.5px] font-semibold tabular-nums",
@@ -541,9 +541,7 @@ function WorkoutFunnel({
                         >
                           {i + 1}
                         </span>
-                        {isPr && (
-                          <Sparkles size={9} className="text-[#FFD700] shrink-0" />
-                        )}
+                        {isPr && <Sparkles size={8} className="text-[#FFD700] shrink-0" />}
                       </div>
 
                       {/* Prev (tap to copy) */}
@@ -552,7 +550,7 @@ function WorkoutFunnel({
                         onClick={() => prevSet && copyFromPrev(i)}
                         disabled={!prevSet || row.done}
                         className={cn(
-                          "text-[11px] tabular-nums text-center truncate",
+                          "text-[10.5px] tabular-nums text-center truncate leading-tight",
                           prevSet && !row.done
                             ? "text-gray-8 hover:text-[#FF6D6D] transition-colors cursor-pointer"
                             : "text-gray-6"
@@ -562,36 +560,64 @@ function WorkoutFunnel({
                         {prevLabel}
                       </button>
 
-                      {/* KG */}
-                      <Input
-                        type="number"
-                        value={row.load}
-                        inputMode="decimal"
-                        step="0.5"
-                        onChange={(e) => upd(ex.id, i, { load: e.target.value })}
-                        disabled={row.done}
-                        placeholder="0"
-                        className="h-9 w-full rounded-md bg-white/[0.03] border border-white/[0.06] text-center text-[13.5px] font-semibold text-gray-12 placeholder:text-gray-6 disabled:opacity-55 tabular-nums focus:border-[#E80000]/40 focus:bg-white/[0.06] transition-colors px-0"
-                      />
-
-                      {/* Reps with inline steppers */}
+                      {/* KG stepper */}
                       <div
                         className={cn(
-                          "flex items-center h-9 rounded-md border overflow-hidden transition-colors",
+                          "flex items-center h-9 rounded-lg border overflow-hidden transition-colors",
                           row.done
-                            ? "bg-white/[0.02] border-white/[0.05] opacity-55"
+                            ? "bg-white/[0.02] border-white/[0.05] opacity-60"
+                            : isActive
+                            ? "bg-white/[0.04] border-white/[0.08] focus-within:border-[#E80000]/45 focus-within:bg-white/[0.06]"
                             : "bg-white/[0.03] border-white/[0.06] focus-within:border-[#E80000]/40 focus-within:bg-white/[0.06]"
                         )}
                       >
                         <button
                           type="button"
-                          onClick={() => {
-                            const cur = parseNum(row.reps, targetReps);
-                            upd(ex.id, i, { reps: String(Math.max(0, cur - 1)) });
-                          }}
+                          onClick={() => bumpLoad(-2.5)}
                           disabled={row.done}
-                          className="shrink-0 w-6 h-full flex items-center justify-center text-gray-8 hover:text-gray-11 hover:bg-white/[0.04] disabled:opacity-50 transition-colors"
-                          aria-label="−1"
+                          className="shrink-0 w-[22px] h-full flex items-center justify-center text-gray-8 hover:text-gray-12 hover:bg-white/[0.04] active:bg-white/[0.07] disabled:opacity-50 transition-colors"
+                          aria-label="−2.5 kg"
+                        >
+                          <Minus size={11} />
+                        </button>
+                        <Input
+                          type="number"
+                          value={row.load}
+                          inputMode="decimal"
+                          step="0.5"
+                          onChange={(e) => upd(ex.id, i, { load: e.target.value })}
+                          disabled={row.done}
+                          placeholder="0"
+                          className="flex-1 min-w-0 h-full border-0 bg-transparent text-center text-[13.5px] font-semibold text-gray-12 placeholder:text-gray-6 tabular-nums p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => bumpLoad(2.5)}
+                          disabled={row.done}
+                          className="shrink-0 w-[22px] h-full flex items-center justify-center text-gray-8 hover:text-gray-12 hover:bg-white/[0.04] active:bg-white/[0.07] disabled:opacity-50 transition-colors"
+                          aria-label="+2.5 kg"
+                        >
+                          <Plus size={11} />
+                        </button>
+                      </div>
+
+                      {/* Reps stepper */}
+                      <div
+                        className={cn(
+                          "flex items-center h-9 rounded-lg border overflow-hidden transition-colors",
+                          row.done
+                            ? "bg-white/[0.02] border-white/[0.05] opacity-60"
+                            : isActive
+                            ? "bg-white/[0.04] border-white/[0.08] focus-within:border-[#E80000]/45 focus-within:bg-white/[0.06]"
+                            : "bg-white/[0.03] border-white/[0.06] focus-within:border-[#E80000]/40 focus-within:bg-white/[0.06]"
+                        )}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => bumpReps(-1)}
+                          disabled={row.done}
+                          className="shrink-0 w-[22px] h-full flex items-center justify-center text-gray-8 hover:text-gray-12 hover:bg-white/[0.04] active:bg-white/[0.07] disabled:opacity-50 transition-colors"
+                          aria-label="−1 rep"
                         >
                           <Minus size={11} />
                         </button>
@@ -606,46 +632,50 @@ function WorkoutFunnel({
                         />
                         <button
                           type="button"
-                          onClick={() => {
-                            const cur = parseNum(row.reps, targetReps);
-                            upd(ex.id, i, { reps: String(cur + 1) });
-                          }}
+                          onClick={() => bumpReps(1)}
                           disabled={row.done}
-                          className="shrink-0 w-6 h-full flex items-center justify-center text-gray-8 hover:text-gray-11 hover:bg-white/[0.04] disabled:opacity-50 transition-colors"
-                          aria-label="+1"
+                          className="shrink-0 w-[22px] h-full flex items-center justify-center text-gray-8 hover:text-gray-12 hover:bg-white/[0.04] active:bg-white/[0.07] disabled:opacity-50 transition-colors"
+                          aria-label="+1 rep"
                         >
                           <Plus size={11} />
                         </button>
                       </div>
 
-                      {/* RPE */}
-                      <div className="relative">
+                      {/* RPE — cleaner chip select */}
+                      <div className="relative mx-auto w-full">
                         <select
                           value={row.rpe || ""}
                           onChange={(e) => upd(ex.id, i, { rpe: e.target.value })}
                           disabled={row.done}
-                          className="h-9 w-full rounded-md bg-white/[0.03] border border-white/[0.06] text-center text-[12.5px] font-semibold text-gray-12 tabular-nums appearance-none pr-3.5 pl-1 disabled:opacity-55 focus:border-[#E80000]/40 focus:bg-white/[0.06] focus:outline-none transition-colors cursor-pointer"
+                          aria-label="RPE"
+                          className={cn(
+                            "h-9 w-full rounded-lg border text-center text-[12.5px] font-semibold tabular-nums appearance-none px-1 transition-colors cursor-pointer focus:outline-none",
+                            row.done
+                              ? "bg-white/[0.02] border-white/[0.05] opacity-60 text-gray-9"
+                              : row.rpe
+                              ? "bg-white/[0.05] border-white/[0.08] text-gray-12 focus:border-[#E80000]/45"
+                              : "bg-white/[0.02] border-white/[0.05] text-gray-6 focus:border-[#E80000]/40"
+                          )}
                         >
-                          <option value="">—</option>
+                          <option value="">·</option>
                           {[6, 7, 8, 9, 10].map((v) => (
                             <option key={v} value={v}>{v}</option>
                           ))}
                         </select>
-                        <ChevronDown size={9} className="absolute right-1 top-1/2 -translate-y-1/2 text-gray-7 pointer-events-none" />
                       </div>
 
-                      {/* Check — distinct active vs done */}
+                      {/* Check — clear active vs done */}
                       <Button
                         type="button"
                         size="icon"
                         onClick={() => check(i)}
                         className={cn(
-                          "w-8 h-8 rounded-md transition-all mx-auto",
+                          "w-8 h-8 rounded-lg transition-all mx-auto",
                           row.done
-                            ? "bg-[#E80000] text-white hover:bg-[#E80000]/90"
+                            ? "bg-[#E80000] text-white hover:bg-[#E80000]/90 active:scale-95"
                             : isActive
                             ? "bg-transparent border border-[#E80000]/55 text-[#FF6D6D] hover:bg-[#E80000]/10 active:scale-95"
-                            : "bg-white/[0.04] border border-white/[0.08] text-gray-7 hover:bg-white/[0.08]"
+                            : "bg-white/[0.03] border border-white/[0.06] text-gray-7 hover:bg-white/[0.08]"
                         )}
                         aria-label={row.done ? "Série complétée" : "Valider la série"}
                       >
