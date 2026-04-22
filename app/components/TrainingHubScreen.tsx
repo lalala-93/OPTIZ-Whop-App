@@ -477,13 +477,13 @@ function WorkoutFunnel({
 
           {/* Set tracker — cohérent avec le reste de l'app, français */}
           <div className="rounded-2xl border border-white/[0.05] bg-white/[0.02] overflow-hidden">
-            {/* Header — copy 100% FR, pas de Préc. */}
-            <div className="grid grid-cols-[2rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem_2.25rem] items-center gap-x-2 px-3 py-2 border-b border-white/[0.05]">
-              <span className="text-[10px] uppercase tracking-[0.12em] text-gray-7 font-semibold text-center">Série</span>
-              <span className="text-[10px] uppercase tracking-[0.12em] text-gray-7 font-semibold text-center">Poids</span>
-              <span className="text-[10px] uppercase tracking-[0.12em] text-gray-7 font-semibold text-center">Reps</span>
-              <span className="text-[10px] uppercase tracking-[0.12em] text-gray-7 font-semibold text-center">RPE</span>
-              <span className="text-[10px] uppercase tracking-[0.12em] text-gray-7 font-semibold text-center">Fait</span>
+            {/* Header — copy court pour tenir sur 1 ligne */}
+            <div className="grid grid-cols-[2.5rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem_2.5rem] items-center gap-x-2 px-3 py-2.5 border-b border-white/[0.05]">
+              <span className="text-[10px] uppercase tracking-[0.1em] text-gray-7 font-semibold text-center whitespace-nowrap">N°</span>
+              <span className="text-[10px] uppercase tracking-[0.1em] text-gray-7 font-semibold text-center whitespace-nowrap">Poids</span>
+              <span className="text-[10px] uppercase tracking-[0.1em] text-gray-7 font-semibold text-center whitespace-nowrap">Reps</span>
+              <span className="text-[10px] uppercase tracking-[0.1em] text-gray-7 font-semibold text-center whitespace-nowrap">RPE</span>
+              <span className="text-[10px] uppercase tracking-[0.1em] text-gray-7 font-semibold text-center whitespace-nowrap">Fait</span>
             </div>
 
             {/* Rows */}
@@ -507,16 +507,16 @@ function WorkoutFunnel({
                   <div
                     key={i}
                     className={cn(
-                      "grid grid-cols-[2rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem_2.25rem] items-center gap-x-2 px-3 py-2.5",
+                      "grid grid-cols-[2.5rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem_2.5rem] items-center gap-x-2 px-3 py-3",
                       i > 0 && "border-t border-white/[0.04]",
                       row.done && "opacity-55"
                     )}
                   >
-                    {/* Série # — carré arrondi uniforme */}
-                    <div className="flex items-center justify-center gap-0.5">
+                    {/* N° — badge carré arrondi, 11×11 visible */}
+                    <div className="flex items-center justify-center gap-1">
                       <span
                         className={cn(
-                          "inline-flex items-center justify-center w-7 h-7 rounded-lg text-[12.5px] font-semibold tabular-nums transition-colors",
+                          "inline-flex items-center justify-center w-8 h-8 rounded-lg text-[13px] font-semibold tabular-nums transition-colors",
                           row.done
                             ? "bg-white/[0.04] text-gray-8"
                             : isActive
@@ -526,17 +526,17 @@ function WorkoutFunnel({
                       >
                         {i + 1}
                       </span>
-                      {isPr && <Sparkles size={9} className="text-[#FFD700] shrink-0 -ml-0.5" />}
+                      {isPr && <Sparkles size={10} className="text-[#FFD700] shrink-0 -ml-0.5" />}
                     </div>
 
-                    {/* Poids — stepper ±1 */}
+                    {/* Poids — stepper ±1, tap cibles 36px */}
                     <div
                       className={cn(
-                        "flex items-center h-10 rounded-xl border overflow-hidden transition-colors",
+                        "flex items-center h-11 rounded-xl border overflow-hidden transition-colors",
                         row.done
                           ? "bg-white/[0.02] border-white/[0.05]"
                           : isActive
-                          ? "bg-white/[0.03] border-[#E80000]/35 focus-within:border-[#E80000]/60"
+                          ? "bg-white/[0.03] border-[#E80000]/40 focus-within:border-[#E80000]/65"
                           : "bg-white/[0.03] border-white/[0.06] focus-within:border-white/[0.15]"
                       )}
                     >
@@ -544,10 +544,10 @@ function WorkoutFunnel({
                         type="button"
                         onClick={() => bumpLoad(-1)}
                         disabled={row.done}
-                        className="shrink-0 h-full w-7 flex items-center justify-center text-gray-8 hover:text-gray-12 hover:bg-white/[0.04] active:bg-white/[0.07] disabled:opacity-40 transition-colors"
+                        className="shrink-0 h-full w-9 flex items-center justify-center text-gray-8 hover:text-gray-12 hover:bg-white/[0.04] active:bg-white/[0.07] disabled:opacity-40 transition-colors"
                         aria-label="−1 kg"
                       >
-                        <Minus size={12} strokeWidth={2.25} />
+                        <Minus size={14} strokeWidth={2.25} />
                       </button>
                       <Input
                         type="number"
@@ -557,27 +557,27 @@ function WorkoutFunnel({
                         onChange={(e) => upd(ex.id, i, { load: e.target.value })}
                         disabled={row.done}
                         placeholder="0"
-                        className="flex-1 min-w-0 h-full border-0 bg-transparent text-center text-[15px] font-semibold text-gray-12 placeholder:text-gray-6 tabular-nums tracking-tight p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                        className="flex-1 min-w-0 h-full border-0 bg-transparent text-center text-[16px] font-semibold text-gray-12 placeholder:text-gray-6 tabular-nums tracking-tight p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
                       />
                       <button
                         type="button"
                         onClick={() => bumpLoad(1)}
                         disabled={row.done}
-                        className="shrink-0 h-full w-7 flex items-center justify-center text-gray-8 hover:text-gray-12 hover:bg-white/[0.04] active:bg-white/[0.07] disabled:opacity-40 transition-colors"
+                        className="shrink-0 h-full w-9 flex items-center justify-center text-gray-8 hover:text-gray-12 hover:bg-white/[0.04] active:bg-white/[0.07] disabled:opacity-40 transition-colors"
                         aria-label="+1 kg"
                       >
-                        <Plus size={12} strokeWidth={2.25} />
+                        <Plus size={14} strokeWidth={2.25} />
                       </button>
                     </div>
 
-                    {/* Reps — stepper ±1 */}
+                    {/* Reps — stepper ±1, tap cibles 36px */}
                     <div
                       className={cn(
-                        "flex items-center h-10 rounded-xl border overflow-hidden transition-colors",
+                        "flex items-center h-11 rounded-xl border overflow-hidden transition-colors",
                         row.done
                           ? "bg-white/[0.02] border-white/[0.05]"
                           : isActive
-                          ? "bg-white/[0.03] border-[#E80000]/35 focus-within:border-[#E80000]/60"
+                          ? "bg-white/[0.03] border-[#E80000]/40 focus-within:border-[#E80000]/65"
                           : "bg-white/[0.03] border-white/[0.06] focus-within:border-white/[0.15]"
                       )}
                     >
@@ -585,10 +585,10 @@ function WorkoutFunnel({
                         type="button"
                         onClick={() => bumpReps(-1)}
                         disabled={row.done}
-                        className="shrink-0 h-full w-7 flex items-center justify-center text-gray-8 hover:text-gray-12 hover:bg-white/[0.04] active:bg-white/[0.07] disabled:opacity-40 transition-colors"
+                        className="shrink-0 h-full w-9 flex items-center justify-center text-gray-8 hover:text-gray-12 hover:bg-white/[0.04] active:bg-white/[0.07] disabled:opacity-40 transition-colors"
                         aria-label="−1 rep"
                       >
-                        <Minus size={12} strokeWidth={2.25} />
+                        <Minus size={14} strokeWidth={2.25} />
                       </button>
                       <Input
                         type="number"
@@ -597,16 +597,16 @@ function WorkoutFunnel({
                         onChange={(e) => upd(ex.id, i, { reps: e.target.value })}
                         disabled={row.done}
                         placeholder={String(targetReps > 0 ? targetReps : 5)}
-                        className="flex-1 min-w-0 h-full border-0 bg-transparent text-center text-[15px] font-semibold text-gray-12 placeholder:text-gray-6 tabular-nums tracking-tight p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                        className="flex-1 min-w-0 h-full border-0 bg-transparent text-center text-[16px] font-semibold text-gray-12 placeholder:text-gray-6 tabular-nums tracking-tight p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
                       />
                       <button
                         type="button"
                         onClick={() => bumpReps(1)}
                         disabled={row.done}
-                        className="shrink-0 h-full w-7 flex items-center justify-center text-gray-8 hover:text-gray-12 hover:bg-white/[0.04] active:bg-white/[0.07] disabled:opacity-40 transition-colors"
+                        className="shrink-0 h-full w-9 flex items-center justify-center text-gray-8 hover:text-gray-12 hover:bg-white/[0.04] active:bg-white/[0.07] disabled:opacity-40 transition-colors"
                         aria-label="+1 rep"
                       >
-                        <Plus size={12} strokeWidth={2.25} />
+                        <Plus size={14} strokeWidth={2.25} />
                       </button>
                     </div>
 
@@ -617,7 +617,7 @@ function WorkoutFunnel({
                       disabled={row.done}
                       aria-label="RPE"
                       className={cn(
-                        "h-10 w-full rounded-xl border text-center text-[13px] font-semibold tabular-nums appearance-none transition-colors cursor-pointer focus:outline-none px-0.5",
+                        "h-11 w-full rounded-xl border text-center text-[14px] font-semibold tabular-nums appearance-none transition-colors cursor-pointer focus:outline-none px-0.5",
                         row.done
                           ? "bg-white/[0.02] border-white/[0.05] text-gray-8"
                           : row.rpe
@@ -631,21 +631,21 @@ function WorkoutFunnel({
                       ))}
                     </select>
 
-                    {/* Fait — carré arrondi (cohérent avec Série) */}
+                    {/* Fait — bouton carré arrondi (cohérent avec N°) */}
                     <button
                       type="button"
                       onClick={() => check(i)}
                       className={cn(
-                        "w-9 h-9 rounded-lg flex items-center justify-center transition-all mx-auto active:scale-90",
+                        "w-10 h-10 rounded-lg flex items-center justify-center transition-all mx-auto active:scale-90",
                         row.done
                           ? "bg-[#E80000] text-white hover:bg-[#E80000]/90"
                           : isActive
-                          ? "border border-[#E80000]/60 text-[#FF6D6D] hover:bg-[#E80000]/10"
+                          ? "border border-[#E80000]/65 text-[#FF6D6D] hover:bg-[#E80000]/10"
                           : "border border-white/[0.08] text-gray-7 hover:border-white/15 hover:text-gray-9"
                       )}
                       aria-label={row.done ? "Série complétée" : "Valider la série"}
                     >
-                      {row.done ? <Check size={14} strokeWidth={2.75} /> : null}
+                      {row.done ? <Check size={15} strokeWidth={2.75} /> : null}
                     </button>
                   </div>
                 );
