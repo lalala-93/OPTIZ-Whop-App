@@ -342,13 +342,6 @@ function WorkoutFunnel({
     ? ((exIdx + (totalSetsInEx ? doneCount / totalSetsInEx : 0)) / session.exercises.length) * 100
     : 0;
 
-  const copyFromPrev = (i: number) => {
-    if (!ex) return;
-    const p = prevRows[i];
-    if (!p) return;
-    upd(ex.id, i, { load: String(p.load), reps: String(p.reps) });
-  };
-
   return (
     <div className="pb-[160px]">
       {/* Top bar */}
@@ -482,16 +475,15 @@ function WorkoutFunnel({
             </CardContent>
           </Card>
 
-          {/* Set tracker — iOS HIG, grouped inset style */}
-          <div className="rounded-[14px] border border-white/[0.06] bg-[#1C1C1E] overflow-hidden">
-            {/* Header — iOS grouped caption row */}
-            <div className="grid grid-cols-[2rem_2.5rem_minmax(0,1fr)_minmax(0,1fr)_2.25rem_2.25rem] items-center gap-x-2 px-3 py-2 bg-white/[0.02] border-b border-white/[0.05]">
-              <span className="text-[10px] uppercase tracking-[0.08em] text-white/45 font-semibold text-center">Set</span>
-              <span className="text-[10px] uppercase tracking-[0.08em] text-white/45 font-semibold text-center">Préc.</span>
-              <span className="text-[10px] uppercase tracking-[0.08em] text-white/45 font-semibold text-center">Kg</span>
-              <span className="text-[10px] uppercase tracking-[0.08em] text-white/45 font-semibold text-center">Reps</span>
-              <span className="text-[10px] uppercase tracking-[0.08em] text-white/45 font-semibold text-center">RPE</span>
-              <span className="text-[10px] uppercase tracking-[0.08em] text-white/45 font-semibold text-center">✓</span>
+          {/* Set tracker — cohérent avec le reste de l'app, français */}
+          <div className="rounded-2xl border border-white/[0.05] bg-white/[0.02] overflow-hidden">
+            {/* Header — copy 100% FR, pas de Préc. */}
+            <div className="grid grid-cols-[2rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem_2.25rem] items-center gap-x-2 px-3 py-2 border-b border-white/[0.05]">
+              <span className="text-[10px] uppercase tracking-[0.12em] text-gray-7 font-semibold text-center">Série</span>
+              <span className="text-[10px] uppercase tracking-[0.12em] text-gray-7 font-semibold text-center">Poids</span>
+              <span className="text-[10px] uppercase tracking-[0.12em] text-gray-7 font-semibold text-center">Reps</span>
+              <span className="text-[10px] uppercase tracking-[0.12em] text-gray-7 font-semibold text-center">RPE</span>
+              <span className="text-[10px] uppercase tracking-[0.12em] text-gray-7 font-semibold text-center">Fait</span>
             </div>
 
             {/* Rows */}
@@ -500,16 +492,10 @@ function WorkoutFunnel({
                 const isPr = prKeys.includes(`${ex.id}-${i}`);
                 const isActive = i === activeSetIdx && !row.done;
                 const targetReps = ex.perSetReps?.[i] ?? ex.reps;
-                const prevSet = prevRows[i];
-                const prevLabel = prevSet
-                  ? prevSet.load > 0
-                    ? `${prevSet.load}×${prevSet.reps}`
-                    : `${prevSet.reps}r`
-                  : "—";
 
                 const bumpLoad = (delta: number) => {
                   const cur = parseNum(row.load, 0);
-                  const next = Math.max(0, +(cur + delta).toFixed(1));
+                  const next = Math.max(0, cur + delta);
                   upd(ex.id, i, { load: next === 0 ? "" : String(next) });
                 };
                 const bumpReps = (delta: number) => {
@@ -517,151 +503,126 @@ function WorkoutFunnel({
                   upd(ex.id, i, { reps: String(Math.max(0, cur + delta)) });
                 };
 
-                // iOS-style stepper field
-                const stepperField = (
-                  content: React.ReactNode,
-                ) => (
-                  <div
-                    className={cn(
-                      "flex items-center h-11 rounded-[10px] overflow-hidden transition-colors",
-                      row.done
-                        ? "bg-[#2C2C2E]/50 opacity-55"
-                        : isActive
-                        ? "bg-[#2C2C2E] ring-1 ring-[#E80000]/35 focus-within:ring-[#E80000]/60"
-                        : "bg-[#2C2C2E] focus-within:ring-1 focus-within:ring-[#E80000]/45"
-                    )}
-                  >
-                    {content}
-                  </div>
-                );
-
                 return (
                   <div
                     key={i}
                     className={cn(
-                      "grid grid-cols-[2rem_2.5rem_minmax(0,1fr)_minmax(0,1fr)_2.25rem_2.25rem] items-center gap-x-2 px-3 py-2.5 transition-colors",
-                      i > 0 && "border-t border-white/[0.05]",
-                      isActive && "bg-[#E80000]/[0.045]",
-                      row.done && "bg-white/[0.01]"
+                      "grid grid-cols-[2rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem_2.25rem] items-center gap-x-2 px-3 py-2.5",
+                      i > 0 && "border-t border-white/[0.04]",
+                      row.done && "opacity-55"
                     )}
                   >
-                    {/* Set # — iOS rounded badge */}
+                    {/* Série # — carré arrondi uniforme */}
                     <div className="flex items-center justify-center gap-0.5">
                       <span
                         className={cn(
-                          "inline-flex items-center justify-center w-7 h-7 rounded-full text-[13px] font-semibold tabular-nums",
+                          "inline-flex items-center justify-center w-7 h-7 rounded-lg text-[12.5px] font-semibold tabular-nums transition-colors",
                           row.done
-                            ? "bg-[#E80000]/15 text-[#FF8A8A]"
+                            ? "bg-white/[0.04] text-gray-8"
                             : isActive
                             ? "bg-[#E80000] text-white"
-                            : "bg-white/[0.05] text-white/55"
+                            : "bg-white/[0.04] text-gray-8"
                         )}
                       >
                         {i + 1}
                       </span>
-                      {isPr && <Sparkles size={8} className="text-[#FFD700] shrink-0 -ml-0.5" />}
+                      {isPr && <Sparkles size={9} className="text-[#FFD700] shrink-0 -ml-0.5" />}
                     </div>
 
-                    {/* Prev */}
-                    <button
-                      type="button"
-                      onClick={() => prevSet && copyFromPrev(i)}
-                      disabled={!prevSet || row.done}
+                    {/* Poids — stepper ±1 */}
+                    <div
                       className={cn(
-                        "text-[11.5px] tabular-nums text-center leading-tight truncate transition-colors",
-                        prevSet && !row.done
-                          ? "text-white/55 hover:text-[#FF8A8A] cursor-pointer"
-                          : "text-white/25"
+                        "flex items-center h-10 rounded-xl border overflow-hidden transition-colors",
+                        row.done
+                          ? "bg-white/[0.02] border-white/[0.05]"
+                          : isActive
+                          ? "bg-white/[0.03] border-[#E80000]/35 focus-within:border-[#E80000]/60"
+                          : "bg-white/[0.03] border-white/[0.06] focus-within:border-white/[0.15]"
                       )}
-                      aria-label={prevSet ? t("trainingCopyPrev") : undefined}
                     >
-                      {prevLabel}
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => bumpLoad(-1)}
+                        disabled={row.done}
+                        className="shrink-0 h-full w-7 flex items-center justify-center text-gray-8 hover:text-gray-12 hover:bg-white/[0.04] active:bg-white/[0.07] disabled:opacity-40 transition-colors"
+                        aria-label="−1 kg"
+                      >
+                        <Minus size={12} strokeWidth={2.25} />
+                      </button>
+                      <Input
+                        type="number"
+                        value={row.load}
+                        inputMode="decimal"
+                        step="1"
+                        onChange={(e) => upd(ex.id, i, { load: e.target.value })}
+                        disabled={row.done}
+                        placeholder="0"
+                        className="flex-1 min-w-0 h-full border-0 bg-transparent text-center text-[15px] font-semibold text-gray-12 placeholder:text-gray-6 tabular-nums tracking-tight p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => bumpLoad(1)}
+                        disabled={row.done}
+                        className="shrink-0 h-full w-7 flex items-center justify-center text-gray-8 hover:text-gray-12 hover:bg-white/[0.04] active:bg-white/[0.07] disabled:opacity-40 transition-colors"
+                        aria-label="+1 kg"
+                      >
+                        <Plus size={12} strokeWidth={2.25} />
+                      </button>
+                    </div>
 
-                    {/* KG — iOS stepper */}
-                    {stepperField(
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => bumpLoad(-2.5)}
-                          disabled={row.done}
-                          className="shrink-0 h-full w-8 flex items-center justify-center text-white/55 hover:text-white hover:bg-white/[0.04] active:bg-white/[0.08] disabled:opacity-40 transition-colors"
-                          aria-label="−2.5 kg"
-                        >
-                          <Minus size={13} strokeWidth={2.25} />
-                        </button>
-                        <div className="w-px h-5 bg-white/[0.06]" />
-                        <Input
-                          type="number"
-                          value={row.load}
-                          inputMode="decimal"
-                          step="0.5"
-                          onChange={(e) => upd(ex.id, i, { load: e.target.value })}
-                          disabled={row.done}
-                          placeholder="0"
-                          className="flex-1 min-w-0 h-full border-0 bg-transparent text-center text-[16px] font-medium text-white placeholder:text-white/25 tabular-nums tracking-tight p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
-                        />
-                        <div className="w-px h-5 bg-white/[0.06]" />
-                        <button
-                          type="button"
-                          onClick={() => bumpLoad(2.5)}
-                          disabled={row.done}
-                          className="shrink-0 h-full w-8 flex items-center justify-center text-white/55 hover:text-white hover:bg-white/[0.04] active:bg-white/[0.08] disabled:opacity-40 transition-colors"
-                          aria-label="+2.5 kg"
-                        >
-                          <Plus size={13} strokeWidth={2.25} />
-                        </button>
-                      </>
-                    )}
+                    {/* Reps — stepper ±1 */}
+                    <div
+                      className={cn(
+                        "flex items-center h-10 rounded-xl border overflow-hidden transition-colors",
+                        row.done
+                          ? "bg-white/[0.02] border-white/[0.05]"
+                          : isActive
+                          ? "bg-white/[0.03] border-[#E80000]/35 focus-within:border-[#E80000]/60"
+                          : "bg-white/[0.03] border-white/[0.06] focus-within:border-white/[0.15]"
+                      )}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => bumpReps(-1)}
+                        disabled={row.done}
+                        className="shrink-0 h-full w-7 flex items-center justify-center text-gray-8 hover:text-gray-12 hover:bg-white/[0.04] active:bg-white/[0.07] disabled:opacity-40 transition-colors"
+                        aria-label="−1 rep"
+                      >
+                        <Minus size={12} strokeWidth={2.25} />
+                      </button>
+                      <Input
+                        type="number"
+                        value={row.reps}
+                        inputMode="numeric"
+                        onChange={(e) => upd(ex.id, i, { reps: e.target.value })}
+                        disabled={row.done}
+                        placeholder={String(targetReps > 0 ? targetReps : 5)}
+                        className="flex-1 min-w-0 h-full border-0 bg-transparent text-center text-[15px] font-semibold text-gray-12 placeholder:text-gray-6 tabular-nums tracking-tight p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => bumpReps(1)}
+                        disabled={row.done}
+                        className="shrink-0 h-full w-7 flex items-center justify-center text-gray-8 hover:text-gray-12 hover:bg-white/[0.04] active:bg-white/[0.07] disabled:opacity-40 transition-colors"
+                        aria-label="+1 rep"
+                      >
+                        <Plus size={12} strokeWidth={2.25} />
+                      </button>
+                    </div>
 
-                    {/* REPS — iOS stepper */}
-                    {stepperField(
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => bumpReps(-1)}
-                          disabled={row.done}
-                          className="shrink-0 h-full w-8 flex items-center justify-center text-white/55 hover:text-white hover:bg-white/[0.04] active:bg-white/[0.08] disabled:opacity-40 transition-colors"
-                          aria-label="−1 rep"
-                        >
-                          <Minus size={13} strokeWidth={2.25} />
-                        </button>
-                        <div className="w-px h-5 bg-white/[0.06]" />
-                        <Input
-                          type="number"
-                          value={row.reps}
-                          inputMode="numeric"
-                          onChange={(e) => upd(ex.id, i, { reps: e.target.value })}
-                          disabled={row.done}
-                          placeholder={String(targetReps > 0 ? targetReps : 5)}
-                          className="flex-1 min-w-0 h-full border-0 bg-transparent text-center text-[16px] font-medium text-white placeholder:text-white/25 tabular-nums tracking-tight p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
-                        />
-                        <div className="w-px h-5 bg-white/[0.06]" />
-                        <button
-                          type="button"
-                          onClick={() => bumpReps(1)}
-                          disabled={row.done}
-                          className="shrink-0 h-full w-8 flex items-center justify-center text-white/55 hover:text-white hover:bg-white/[0.04] active:bg-white/[0.08] disabled:opacity-40 transition-colors"
-                          aria-label="+1 rep"
-                        >
-                          <Plus size={13} strokeWidth={2.25} />
-                        </button>
-                      </>
-                    )}
-
-                    {/* RPE — iOS capsule select */}
+                    {/* RPE — chip uniforme */}
                     <select
                       value={row.rpe || ""}
                       onChange={(e) => upd(ex.id, i, { rpe: e.target.value })}
                       disabled={row.done}
                       aria-label="RPE"
                       className={cn(
-                        "h-11 w-full rounded-[10px] text-center text-[14px] font-medium tabular-nums appearance-none transition-colors cursor-pointer focus:outline-none px-0.5",
+                        "h-10 w-full rounded-xl border text-center text-[13px] font-semibold tabular-nums appearance-none transition-colors cursor-pointer focus:outline-none px-0.5",
                         row.done
-                          ? "bg-[#2C2C2E]/50 opacity-55 text-white/40"
+                          ? "bg-white/[0.02] border-white/[0.05] text-gray-8"
                           : row.rpe
-                          ? "bg-[#2C2C2E] text-white"
-                          : "bg-[#2C2C2E] text-white/30"
+                          ? "bg-white/[0.04] border-white/[0.08] text-gray-12"
+                          : "bg-white/[0.02] border-white/[0.05] text-gray-6"
                       )}
                     >
                       <option value="">–</option>
@@ -670,21 +631,21 @@ function WorkoutFunnel({
                       ))}
                     </select>
 
-                    {/* Check — iOS circular action */}
+                    {/* Fait — carré arrondi (cohérent avec Série) */}
                     <button
                       type="button"
                       onClick={() => check(i)}
                       className={cn(
-                        "w-9 h-9 rounded-full flex items-center justify-center transition-all mx-auto active:scale-90",
+                        "w-9 h-9 rounded-lg flex items-center justify-center transition-all mx-auto active:scale-90",
                         row.done
-                          ? "bg-[#E80000] text-white shadow-[0_1px_0_rgba(0,0,0,0.15)]"
+                          ? "bg-[#E80000] text-white hover:bg-[#E80000]/90"
                           : isActive
-                          ? "border-[1.5px] border-[#E80000] text-[#FF8A8A] hover:bg-[#E80000]/10"
-                          : "border-[1.5px] border-white/15 text-white/25 hover:border-white/30 hover:text-white/40"
+                          ? "border border-[#E80000]/60 text-[#FF6D6D] hover:bg-[#E80000]/10"
+                          : "border border-white/[0.08] text-gray-7 hover:border-white/15 hover:text-gray-9"
                       )}
                       aria-label={row.done ? "Série complétée" : "Valider la série"}
                     >
-                      {row.done ? <Check size={15} strokeWidth={3} /> : null}
+                      {row.done ? <Check size={14} strokeWidth={2.75} /> : null}
                     </button>
                   </div>
                 );
