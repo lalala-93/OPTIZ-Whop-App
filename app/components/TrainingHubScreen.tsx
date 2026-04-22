@@ -4,19 +4,25 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowLeft,
+  ArrowRight,
   Check,
   ChevronDown,
   ChevronRight,
   Clock,
+  Copy,
   Dumbbell,
   ExternalLink,
+  Flame,
+  Minus,
   Play,
   Plus,
   Sparkles,
+  Timer,
   Trophy,
   Volume2,
   VolumeX,
   X,
+  Zap,
 } from "lucide-react";
 import Image from "next/image";
 import {
@@ -311,253 +317,495 @@ function WorkoutFunnel({
   }
 
   // ── Exercise screen ──
-  const progressPercent = session.exercises.length > 0 ? ((exIdx) / session.exercises.length) * 100 : 0;
+  const doneCount = rows.filter((r) => r.done).length;
+  const firstPending = rows.findIndex((r) => !r.done);
+  const activeSetIdx = firstPending === -1 ? rows.length - 1 : firstPending;
+  const totalSetsInEx = rows.length;
+  const globalProgress = session.exercises.length > 0
+    ? ((exIdx + (totalSetsInEx ? doneCount / totalSetsInEx : 0)) / session.exercises.length) * 100
+    : 0;
+
+  const copyFromPrev = (i: number) => {
+    if (!ex) return;
+    const p = prevRows[i];
+    if (!p) return;
+    upd(ex.id, i, { load: String(p.load), reps: String(p.reps) });
+  };
 
   return (
     <div className="pb-[160px]">
       {/* Top bar */}
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-4">
         <Button
           variant="outline"
           size="icon"
           onClick={onBack}
-          className="w-10 h-10 rounded-full border-gray-5/30 bg-gray-3/30 text-gray-9"
+          className="w-10 h-10 rounded-full border-white/10 bg-white/[0.03] text-gray-10 hover:bg-white/[0.06]"
         >
           <ArrowLeft size={16} />
         </Button>
         <div className="flex items-center gap-1.5">
-          <div className="flex items-center gap-1 px-2.5 h-8 rounded-full bg-gray-3/40 border border-gray-5/25">
-            <Clock size={11} className="text-gray-7" />
-            <span className="text-[13px] font-medium text-gray-11 tabular-nums">{fmtTimer(elapsed)}</span>
+          <div className="flex items-center gap-1.5 px-3 h-9 rounded-full bg-white/[0.04] border border-white/[0.08] backdrop-blur-sm">
+            <Clock size={11} className="text-[#FF6D6D]" />
+            <span className="text-[13px] font-semibold text-gray-12 tabular-nums tracking-tight">{fmtTimer(elapsed)}</span>
           </div>
           <Button
             variant="outline"
             size="icon"
             onClick={() => { const n = !soundOn; setSoundOn(n); setSoundEnabled(n); }}
-            className="w-10 h-10 rounded-full border-gray-5/30 bg-gray-3/30 text-gray-8"
+            className="w-10 h-10 rounded-full border-white/10 bg-white/[0.03] text-gray-9 hover:bg-white/[0.06]"
           >
             {soundOn ? <Volume2 size={14} /> : <VolumeX size={14} />}
           </Button>
         </div>
       </div>
 
-      {/* Exercise counter — step dots */}
-      <div className="flex items-center gap-1.5 mb-3">
-        {session.exercises.map((_, i) => (
-          <div key={i} className={cn(
-            "h-1 rounded-full flex-1 transition-all duration-300",
-            i < exIdx ? "bg-[#E80000]" : i === exIdx ? "bg-[#FF6D6D]" : "bg-white/[0.06]"
-          )} />
-        ))}
+      {/* Global progress bar with % */}
+      <div className="mb-1.5">
+        <div className="flex items-center justify-between mb-1.5">
+          <span className="text-[10px] uppercase tracking-[0.18em] text-gray-7 font-semibold">
+            {t("trainingExerciseOf", { current: String(exIdx + 1), total: String(session.exercises.length) })}
+          </span>
+          <span className="text-[10px] text-gray-8 tabular-nums font-medium">{Math.round(globalProgress)}%</span>
+        </div>
+        <div className="relative h-1.5 rounded-full bg-white/[0.05] overflow-hidden">
+          <motion.div
+            className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-[#FF5A3C] via-[#E80000] to-[#9E1912]"
+            initial={false}
+            animate={{ width: `${globalProgress}%` }}
+            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+          />
+        </div>
+        {/* Exercise step dots */}
+        <div className="flex items-center gap-1 mt-2">
+          {session.exercises.map((_, i) => (
+            <div
+              key={i}
+              className={cn(
+                "h-[3px] rounded-full flex-1 transition-all duration-300",
+                i < exIdx
+                  ? "bg-[#E80000]/80"
+                  : i === exIdx
+                  ? "bg-[#FF6D6D]"
+                  : "bg-white/[0.05]"
+              )}
+            />
+          ))}
+        </div>
       </div>
-      <p className="text-[11px] text-gray-7 uppercase tracking-widest mb-2">
-        {t("trainingExerciseOf", { current: String(exIdx + 1), total: String(session.exercises.length) })}
-      </p>
 
       {ex && (
-        <motion.div key={ex.id} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ type: "spring", stiffness: 400, damping: 30 }}>
-          {/* Exercise info */}
-          <Card className="relative border-white/[0.06] bg-gradient-to-b from-white/[0.04] to-white/[0.015] mb-2.5 overflow-hidden">
-            <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-[#FF3B3B] to-[#9E1912]" />
-            <CardContent className="p-3.5 pl-4">
-              <div className="flex items-center justify-between gap-2">
+        <motion.div
+          key={ex.id}
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ type: "spring", stiffness: 380, damping: 32 }}
+          className="mt-4"
+        >
+          {/* Exercise hero card */}
+          <Card className="relative border-white/[0.06] bg-gradient-to-b from-white/[0.05] to-white/[0.01] mb-3 overflow-hidden">
+            <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-gradient-to-b from-[#FF5A3C] via-[#E80000] to-[#7A0E0E]" />
+            <CardContent className="p-4 pl-5">
+              <div className="flex items-start gap-3">
                 <div className="min-w-0 flex-1">
-                  <h3 className="text-[17.5px] font-semibold text-gray-12 leading-snug tracking-tight">{ex.name}</h3>
-                  <div className="flex items-center gap-1.5 mt-1">
-                    <Badge variant="secondary" className="text-[10px] bg-gray-4/40 text-gray-8 border-0 px-1.5 py-0">
+                  <h3 className="text-[19px] font-bold text-gray-12 leading-[1.1] tracking-tight">{ex.name}</h3>
+                  <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                    <Badge className="bg-white/[0.05] text-gray-9 border-white/[0.08] text-[10px] font-medium hover:bg-white/[0.05] px-2 py-0.5">
                       {ex.muscles}
+                    </Badge>
+                    <Badge className="bg-[#E80000]/10 text-[#FF8A8A] border-[#E80000]/20 text-[10px] font-medium hover:bg-[#E80000]/10 px-2 py-0.5 tabular-nums">
+                      {totalSetsInEx}×{ex.repsLabel ?? ex.reps}
                     </Badge>
                   </div>
                 </div>
-                <a href={ex.videoUrl} target="_blank" rel="noopener noreferrer"
-                  className="w-11 h-11 rounded-xl bg-[#E80000]/10 border border-[#E80000]/25 flex items-center justify-center shrink-0 hover:bg-[#E80000]/15 transition-colors">
-                  <Play size={17} className="text-[#FF6D6D] ml-0.5" fill="currentColor" />
+                <a
+                  href={ex.videoUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={t("trainingVideoAria")}
+                  className="w-12 h-12 rounded-2xl bg-[#E80000]/12 border border-[#E80000]/25 flex items-center justify-center shrink-0 hover:bg-[#E80000]/20 active:scale-95 transition-all shadow-[0_6px_16px_-6px_rgba(232,0,0,0.45)]"
+                >
+                  <Play size={18} className="text-[#FF6D6D] ml-0.5" fill="currentColor" />
                 </a>
               </div>
-              {/* Exercise note (superset, rest, instructions) */}
               {ex.note && (
-                <p className="text-[11px] text-gray-8 mt-2.5 leading-relaxed border-t border-white/[0.05] pt-2.5">
-                  {ex.note}
-                </p>
+                <div className="mt-3 pt-3 border-t border-white/[0.05] flex items-start gap-2">
+                  <Timer size={12} className="text-gray-7 mt-0.5 shrink-0" />
+                  <p className="text-[11.5px] text-gray-9 leading-relaxed">{ex.note}</p>
+                </div>
               )}
             </CardContent>
           </Card>
 
-          {/* Set table */}
-          <Card className="border-gray-5/30 bg-gray-2/70 overflow-hidden">
-            <CardContent className="p-0">
-              {/* Header */}
-              <div className="grid grid-cols-[2.2rem_1fr_1fr_3rem_2.5rem] px-3 py-2 border-b border-gray-5/20">
-                <span className="text-[11px] uppercase tracking-wider text-gray-7 text-center">{t("trainingHeaderSet")}</span>
-                <span className="text-[11px] uppercase tracking-wider text-gray-7 text-center">{t("trainingHeaderKg")}</span>
-                <span className="text-[11px] uppercase tracking-wider text-gray-7 text-center">{t("trainingHeaderReps")}</span>
-                <span className="text-[11px] uppercase tracking-wider text-gray-7 text-center">RPE</span>
-                <span />
-              </div>
+          {/* Set cards */}
+          <div className="flex items-center justify-between px-1 mb-2">
+            <span className="text-[10px] uppercase tracking-[0.18em] text-gray-7 font-semibold">
+              {totalSetsInEx} {t("trainingHeaderSet")}{totalSetsInEx > 1 ? "s" : ""}
+            </span>
+            <span className="text-[10px] text-gray-8 tabular-nums">
+              {doneCount} / {totalSetsInEx}
+            </span>
+          </div>
 
-              {/* Rows */}
-              <div className="divide-y divide-gray-5/15">
-                {rows.map((row, i) => {
-                  const isPr = prKeys.includes(`${ex.id}-${i}`);
-                  return (
-                    <div key={i} className={cn(
-                      "grid grid-cols-[2.2rem_1fr_1fr_3rem_2.5rem] items-center px-3 py-1.5 transition-colors",
-                      row.done && "bg-[#E80000]/5"
-                    )}>
-                      <div className="flex items-center justify-center gap-0.5">
-                        <Badge
-                          variant="outline"
-                          className={cn(
-                            "h-5 w-5 p-0 flex items-center justify-center rounded-md text-[11px] font-medium border-0",
-                            row.done ? "bg-[#E80000]/10 text-[#FF6D6D]" : "bg-gray-4/30 text-gray-8"
-                          )}
-                        >
-                          {i + 1}
-                        </Badge>
-                        {isPr && (
-                          <Badge className="h-4 px-1 bg-[#FFD700]/15 text-[#FFD700] border-[#FFD700]/30 text-[8px]">
-                            <Sparkles size={8} className="mr-0.5" />PR
-                          </Badge>
+          <div className="space-y-2">
+            {rows.map((row, i) => {
+              const isPr = prKeys.includes(`${ex.id}-${i}`);
+              const isActive = i === activeSetIdx && !row.done;
+              const targetReps = ex.perSetReps?.[i] ?? ex.reps;
+              const prevSet = prevRows[i];
+
+              return (
+                <motion.div
+                  key={i}
+                  layout
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.25, delay: i * 0.04 }}
+                  className={cn(
+                    "relative rounded-2xl border overflow-hidden transition-all",
+                    row.done
+                      ? "border-[#E80000]/20 bg-[#E80000]/[0.04]"
+                      : isActive
+                      ? "border-[#E80000]/40 bg-gradient-to-b from-[#E80000]/[0.08] to-[#E80000]/[0.02] shadow-[0_8px_24px_-12px_rgba(232,0,0,0.45)]"
+                      : "border-white/[0.06] bg-white/[0.02]"
+                  )}
+                >
+                  {/* Active set pulse accent */}
+                  {isActive && (
+                    <motion.span
+                      aria-hidden
+                      className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#E80000]"
+                      initial={{ opacity: 0.6 }}
+                      animate={{ opacity: [0.6, 1, 0.6] }}
+                      transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                    />
+                  )}
+
+                  <div className="p-3 pl-4">
+                    {/* Top row: set #, PR, prev, check */}
+                    <div className="flex items-center gap-2 mb-2.5">
+                      <div
+                        className={cn(
+                          "inline-flex items-center justify-center rounded-lg w-7 h-7 text-[12.5px] font-bold tabular-nums shrink-0",
+                          row.done
+                            ? "bg-[#E80000] text-white"
+                            : isActive
+                            ? "bg-[#E80000]/15 text-[#FF6D6D] border border-[#E80000]/25"
+                            : "bg-white/[0.05] text-gray-8 border border-white/[0.06]"
                         )}
+                      >
+                        {i + 1}
                       </div>
+                      <span
+                        className={cn(
+                          "text-[10.5px] uppercase tracking-[0.14em] font-semibold",
+                          row.done ? "text-[#FF8A8A]" : isActive ? "text-[#FF6D6D]" : "text-gray-7"
+                        )}
+                      >
+                        {row.done ? "Validée" : isActive ? "En cours" : "À venir"}
+                      </span>
 
-                      <div className="flex justify-center px-1">
+                      {isPr && (
+                        <Badge className="h-5 px-1.5 bg-[#FFD700]/15 text-[#FFD700] border-[#FFD700]/30 text-[9.5px] font-semibold hover:bg-[#FFD700]/15">
+                          <Sparkles size={9} className="mr-0.5" />PR
+                        </Badge>
+                      )}
+
+                      {prevSet && !row.done && (
+                        <button
+                          type="button"
+                          onClick={() => copyFromPrev(i)}
+                          className="ml-auto inline-flex items-center gap-1 px-2 h-6 rounded-md bg-white/[0.03] border border-white/[0.06] text-[10px] text-gray-8 hover:text-gray-11 hover:bg-white/[0.06] transition-colors"
+                          aria-label={t("trainingCopyPrev")}
+                        >
+                          <Copy size={10} />
+                          <span className="tabular-nums">{prevSet.load > 0 ? `${prevSet.load} kg` : ""} × {prevSet.reps}</span>
+                        </button>
+                      )}
+
+                      <Button
+                        type="button"
+                        size="icon"
+                        onClick={() => check(i)}
+                        className={cn(
+                          "shrink-0 rounded-full transition-all ml-auto",
+                          row.done
+                            ? "w-9 h-9 bg-[#E80000] text-white hover:bg-[#E80000]/90 shadow-[0_4px_14px_-4px_rgba(232,0,0,0.65)]"
+                            : isActive
+                            ? "w-10 h-10 bg-[#E80000] text-white hover:bg-[#E80000]/90 shadow-[0_6px_18px_-4px_rgba(232,0,0,0.7)] active:scale-95"
+                            : "w-9 h-9 bg-white/[0.04] border border-white/[0.08] text-gray-7 hover:bg-white/[0.08]",
+                          prevSet && !row.done && "!ml-2"
+                        )}
+                      >
+                        <Check size={isActive ? 16 : 14} strokeWidth={2.75} />
+                      </Button>
+                    </div>
+
+                    {/* Controls grid */}
+                    <div className="grid grid-cols-3 gap-2">
+                      {/* Weight */}
+                      <label className="flex flex-col gap-1.5 min-w-0">
+                        <span className="text-[9.5px] uppercase tracking-[0.14em] text-gray-7 font-semibold pl-2">
+                          {t("trainingHeaderKg")}
+                        </span>
                         <Input
                           type="number"
                           value={row.load}
                           inputMode="decimal"
+                          step="0.5"
                           onChange={(e) => upd(ex.id, i, { load: e.target.value })}
                           disabled={row.done}
-                          placeholder="-"
-                          className="w-full max-w-[5rem] h-9 rounded-lg bg-transparent text-center text-[14px] text-gray-12 placeholder:text-gray-6 disabled:opacity-50 border-0 focus:bg-gray-3/30 transition-colors"
+                          placeholder="0"
+                          className={cn(
+                            "h-11 rounded-xl text-center text-[16px] font-semibold text-gray-12 placeholder:text-gray-6 disabled:opacity-60 tabular-nums transition-colors",
+                            row.done
+                              ? "bg-white/[0.02] border-white/[0.05]"
+                              : "bg-white/[0.04] border border-white/[0.08] focus:bg-white/[0.07] focus:border-[#E80000]/40"
+                          )}
                         />
+                      </label>
+
+                      {/* Reps stepper */}
+                      <div className="flex flex-col gap-1.5 min-w-0">
+                        <span className="text-[9.5px] uppercase tracking-[0.14em] text-gray-7 font-semibold pl-2">
+                          {t("trainingHeaderReps")}
+                        </span>
+                        <div className={cn(
+                          "flex items-center h-11 rounded-xl overflow-hidden border",
+                          row.done ? "bg-white/[0.02] border-white/[0.05] opacity-60" : "bg-white/[0.04] border-white/[0.08]"
+                        )}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const cur = parseNum(row.reps, targetReps);
+                              upd(ex.id, i, { reps: String(Math.max(0, cur - 1)) });
+                            }}
+                            disabled={row.done}
+                            className="flex items-center justify-center w-8 h-full text-gray-8 hover:text-gray-11 hover:bg-white/[0.04] active:bg-white/[0.08] disabled:opacity-50 transition-colors"
+                            aria-label="−1"
+                          >
+                            <Minus size={13} />
+                          </button>
+                          <Input
+                            type="number"
+                            value={row.reps}
+                            inputMode="numeric"
+                            onChange={(e) => upd(ex.id, i, { reps: e.target.value })}
+                            disabled={row.done}
+                            placeholder={String(targetReps > 0 ? targetReps : 5)}
+                            className="flex-1 h-full border-0 bg-transparent text-center text-[16px] font-bold text-gray-12 placeholder:text-gray-6 tabular-nums p-0 min-w-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const cur = parseNum(row.reps, targetReps);
+                              upd(ex.id, i, { reps: String(cur + 1) });
+                            }}
+                            disabled={row.done}
+                            className="flex items-center justify-center w-8 h-full text-gray-8 hover:text-gray-11 hover:bg-white/[0.04] active:bg-white/[0.08] disabled:opacity-50 transition-colors"
+                            aria-label="+1"
+                          >
+                            <Plus size={13} />
+                          </button>
+                        </div>
                       </div>
 
-                      <div className="flex justify-center px-1">
-                        <Input
-                          type="number"
-                          value={row.reps}
-                          inputMode="numeric"
-                          onChange={(e) => upd(ex.id, i, { reps: e.target.value })}
-                          disabled={row.done}
-                          placeholder={String(ex.perSetReps?.[i] ?? (ex.reps > 0 ? ex.reps : 5))}
-                          className="w-full max-w-[5rem] h-9 rounded-lg bg-transparent text-center text-[14px] text-gray-12 placeholder:text-gray-6 disabled:opacity-50 border-0 focus:bg-gray-3/30 transition-colors"
-                        />
+                      {/* RPE chips — compact dropdown trigger */}
+                      <div className="flex flex-col gap-1.5 min-w-0">
+                        <span className="text-[9.5px] uppercase tracking-[0.14em] text-gray-7 font-semibold pl-2">
+                          RPE
+                        </span>
+                        <div className="relative h-11">
+                          <select
+                            value={row.rpe || ""}
+                            onChange={(e) => upd(ex.id, i, { rpe: e.target.value })}
+                            disabled={row.done}
+                            className={cn(
+                              "absolute inset-0 w-full h-full rounded-xl text-center text-[16px] font-semibold text-gray-12 disabled:opacity-60 appearance-none pr-5 tabular-nums transition-colors cursor-pointer",
+                              row.done
+                                ? "bg-white/[0.02] border border-white/[0.05]"
+                                : "bg-white/[0.04] border border-white/[0.08] focus:bg-white/[0.07] focus:border-[#E80000]/40"
+                            )}
+                          >
+                            <option value="">—</option>
+                            {[6, 7, 8, 9, 10].map((v) => (
+                              <option key={v} value={v}>{v}</option>
+                            ))}
+                          </select>
+                          <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-7 pointer-events-none" />
+                        </div>
                       </div>
-
-                      <div className="flex justify-center">
-                        <select
-                          value={row.rpe || ""}
-                          onChange={(e) => upd(ex.id, i, { rpe: e.target.value })}
-                          disabled={row.done}
-                          className="h-9 w-full max-w-[3rem] rounded-lg bg-transparent text-center text-[13px] text-gray-12 disabled:opacity-50 border-0 focus:bg-gray-3/30 transition-colors appearance-none"
-                        >
-                          <option value="">-</option>
-                          {[6, 7, 8, 9, 10].map((v) => (
-                            <option key={v} value={v}>{v}</option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => check(i)}
-                        className={cn(
-                          "w-8 h-8 rounded-full mx-auto transition-all",
-                          row.done
-                            ? "bg-[#E80000] text-white hover:bg-[#E80000]/90"
-                            : "border border-gray-5/40 text-gray-6 hover:bg-gray-3/30"
-                        )}
-                      >
-                        <Check size={14} strokeWidth={2.5} />
-                      </Button>
                     </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
         </motion.div>
       )}
 
       {/* Rest overlay */}
       <AnimatePresence>
-        {rest && (
-          <motion.div
-            key="rest-overlay"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/75 backdrop-blur-sm px-4 pb-[calc(env(safe-area-inset-bottom)+90px)] sm:pb-0"
-            onClick={(e) => { if (e.target === e.currentTarget) skipRest(); }}
-          >
+        {rest && ex && (() => {
+          const nextSetIdx = rows.findIndex((r) => !r.done);
+          const nextSet = nextSetIdx >= 0 ? rows[nextSetIdx] : null;
+          const nextTargetReps = nextSetIdx >= 0 ? (ex.perSetReps?.[nextSetIdx] ?? ex.reps) : 0;
+          const isEndingSoon = rest.secondsLeft <= 5;
+          const progressPct = 1 - rest.secondsLeft / rest.total;
+          const RADIUS = 46;
+          const CIRC = 2 * Math.PI * RADIUS;
+
+          return (
             <motion.div
-              initial={{ y: 30, opacity: 0, scale: 0.96 }}
-              animate={{ y: 0, opacity: 1, scale: 1 }}
-              exit={{ y: 30, opacity: 0, scale: 0.96 }}
-              transition={{ type: "spring", stiffness: 380, damping: 32 }}
-              className="relative w-full max-w-md rounded-3xl overflow-hidden border border-white/[0.08] bg-gradient-to-b from-[#1a1414] to-[#0b0909] p-6"
+              key="rest-overlay"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-md px-4 pb-[calc(env(safe-area-inset-bottom)+90px)] sm:pb-0"
             >
-              {/* Progress ring */}
-              <div className="flex items-center justify-center mb-5">
-                <div className="relative w-40 h-40">
-                  <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-                    <circle cx="50" cy="50" r="44" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="5" />
-                    <circle
-                      cx="50" cy="50" r="44"
-                      fill="none"
-                      stroke="url(#restGrad)"
-                      strokeWidth="5"
-                      strokeLinecap="round"
-                      strokeDasharray={2 * Math.PI * 44}
-                      strokeDashoffset={2 * Math.PI * 44 * (1 - rest.secondsLeft / rest.total)}
-                      style={{ transition: "stroke-dashoffset 1s linear" }}
-                    />
-                    <defs>
-                      <linearGradient id="restGrad" x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0%" stopColor="#FF3B3B" />
-                        <stop offset="100%" stopColor="#9E1912" />
-                      </linearGradient>
-                    </defs>
-                  </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <p className="text-[9.5px] uppercase tracking-[0.22em] text-gray-7 mb-1 font-semibold">
-                      {t("trainingRestTitle")}
-                    </p>
-                    <p className="text-[46px] font-bold text-gray-12 tabular-nums leading-none">
-                      {rest.secondsLeft}
-                      <span className="text-[14px] text-gray-7 font-medium ml-0.5">s</span>
-                    </p>
-                  </div>
-                </div>
-              </div>
+              <motion.div
+                initial={{ y: 40, opacity: 0, scale: 0.95 }}
+                animate={{ y: 0, opacity: 1, scale: 1 }}
+                exit={{ y: 40, opacity: 0, scale: 0.95 }}
+                transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                className="relative w-full max-w-md rounded-[28px] overflow-hidden border border-white/[0.08] bg-gradient-to-b from-[#1a1414] to-[#0a0707] shadow-[0_30px_80px_-20px_rgba(232,0,0,0.4)]"
+              >
+                {/* Ambient glow */}
+                <motion.div
+                  aria-hidden
+                  className="absolute inset-0 pointer-events-none opacity-30"
+                  style={{
+                    background: isEndingSoon
+                      ? "radial-gradient(60% 50% at 50% 10%, rgba(255,58,58,0.45) 0%, transparent 70%)"
+                      : "radial-gradient(60% 50% at 50% 10%, rgba(232,0,0,0.28) 0%, transparent 70%)",
+                  }}
+                  animate={isEndingSoon ? { opacity: [0.25, 0.55, 0.25] } : { opacity: 0.3 }}
+                  transition={isEndingSoon ? { duration: 1, repeat: Infinity } : {}}
+                />
 
-              <p className="text-center text-[12.5px] text-gray-8 mb-5">
-                {t("trainingRestSubtitle")}
-              </p>
-
-              <div className="grid grid-cols-2 gap-2.5">
-                <Button
-                  type="button"
-                  onClick={() => addRest(15)}
-                  variant="outline"
-                  className="h-11 rounded-xl bg-white/[0.03] border-white/[0.08] text-gray-11 text-[13px] font-semibold hover:bg-white/[0.06]"
-                >
-                  {t("trainingRestAdd")}
-                </Button>
-                <Button
+                {/* Close */}
+                <button
                   type="button"
                   onClick={skipRest}
-                  className="h-11 rounded-xl optiz-gradient-bg border-0 text-white text-[13px] font-semibold hover:opacity-90 active:scale-[0.97]"
+                  aria-label={t("trainingRestSkip")}
+                  className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-gray-8 hover:text-gray-11 hover:bg-white/[0.08] transition-colors z-10"
                 >
-                  {t("trainingRestSkip")}
-                </Button>
-              </div>
+                  <X size={14} />
+                </button>
+
+                <div className="relative p-7 pt-8">
+                  {/* Label */}
+                  <div className="flex items-center justify-center gap-2 mb-5">
+                    <motion.span
+                      className="w-1.5 h-1.5 rounded-full bg-[#FF6D6D]"
+                      animate={{ opacity: [1, 0.3, 1] }}
+                      transition={{ duration: 1.4, repeat: Infinity }}
+                    />
+                    <span className="text-[10.5px] uppercase tracking-[0.24em] text-gray-8 font-semibold">
+                      {t("trainingRestTitle")} · récupération
+                    </span>
+                  </div>
+
+                  {/* Ring */}
+                  <div className="flex items-center justify-center mb-5">
+                    <motion.div
+                      className="relative w-48 h-48"
+                      animate={isEndingSoon ? { scale: [1, 1.03, 1] } : { scale: 1 }}
+                      transition={isEndingSoon ? { duration: 1, repeat: Infinity, ease: "easeInOut" } : {}}
+                    >
+                      <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+                        <circle cx="50" cy="50" r={RADIUS} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="3" />
+                        <circle
+                          cx="50"
+                          cy="50"
+                          r={RADIUS}
+                          fill="none"
+                          stroke={isEndingSoon ? "#FF3B3B" : "url(#restGrad)"}
+                          strokeWidth="3.5"
+                          strokeLinecap="round"
+                          strokeDasharray={CIRC}
+                          strokeDashoffset={CIRC * progressPct}
+                          style={{ transition: "stroke-dashoffset 1s linear, stroke 0.3s ease" }}
+                        />
+                        <defs>
+                          <linearGradient id="restGrad" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0%" stopColor="#FF6D4A" />
+                            <stop offset="55%" stopColor="#E80000" />
+                            <stop offset="100%" stopColor="#7A0E0E" />
+                          </linearGradient>
+                        </defs>
+                      </svg>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <p className="text-[9px] uppercase tracking-[0.28em] text-gray-7 mb-1.5 font-semibold">
+                          {t("trainingRestNextSet")}
+                        </p>
+                        <motion.p
+                          key={rest.secondsLeft}
+                          initial={{ scale: 0.9, opacity: 0.5 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          transition={{ duration: 0.15 }}
+                          className={cn(
+                            "text-[60px] font-bold tabular-nums leading-none tracking-tighter",
+                            isEndingSoon ? "text-[#FF6D6D]" : "text-gray-12"
+                          )}
+                        >
+                          {rest.secondsLeft}
+                        </motion.p>
+                        <p className="text-[11px] text-gray-7 font-medium mt-1 uppercase tracking-wider">
+                          secondes
+                        </p>
+                      </div>
+                    </motion.div>
+                  </div>
+
+                  {/* Next-up preview */}
+                  {nextSet && (
+                    <div className="relative rounded-2xl border border-white/[0.06] bg-black/30 px-4 py-3 mb-5">
+                      <div className="flex items-center gap-2.5">
+                        <div className="shrink-0 w-9 h-9 rounded-lg bg-[#E80000]/12 border border-[#E80000]/25 flex items-center justify-center">
+                          <span className="text-[13px] font-bold text-[#FF6D6D] tabular-nums">{nextSetIdx + 1}</span>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[10px] uppercase tracking-[0.18em] text-gray-7 font-semibold leading-none mb-1">
+                            Prochaine série
+                          </p>
+                          <p className="text-[13px] text-gray-11 font-medium truncate">{ex.name}</p>
+                        </div>
+                        <div className="shrink-0 text-right">
+                          <p className="text-[10px] uppercase tracking-wider text-gray-7 leading-none mb-0.5">Objectif</p>
+                          <p className="text-[13px] font-bold text-gray-12 tabular-nums">
+                            {nextSet.load && parseNum(nextSet.load, 0) > 0 ? `${nextSet.load} kg · ` : ""}
+                            {nextTargetReps > 0 ? nextTargetReps : nextSet.reps} reps
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      onClick={() => addRest(15)}
+                      variant="outline"
+                      className="h-12 flex-1 rounded-2xl bg-white/[0.03] border-white/[0.08] text-gray-11 text-[13.5px] font-semibold hover:bg-white/[0.07] gap-1.5"
+                    >
+                      <Plus size={13} /> 15 s
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={skipRest}
+                      className="h-12 flex-[1.4] rounded-2xl optiz-gradient-bg border-0 text-white text-[13.5px] font-semibold hover:opacity-95 active:scale-[0.97] transition-transform gap-1.5 shadow-[0_10px_24px_-8px_rgba(232,0,0,0.6)]"
+                    >
+                      {t("trainingRestSkip")} <ArrowRight size={14} />
+                    </Button>
+                  </div>
+                </div>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
+          );
+        })()}
       </AnimatePresence>
 
       {/* Bottom CTA */}
@@ -597,8 +845,10 @@ function ProgramDetailView({
 }) {
   const { t, locale } = useI18n();
 
+  const totalMin = program.sessions.reduce((s, x) => s + x.durationMin, 0);
+
   return (
-    <div className="pb-8">
+    <div className="pb-10">
       <Button
         variant="ghost"
         size="sm"
@@ -608,9 +858,14 @@ function ProgramDetailView({
         <ArrowLeft size={14} /> {t("back")}
       </Button>
 
-      {/* Hero */}
-      <div className="relative rounded-3xl overflow-hidden mb-5 border border-white/[0.06]">
-        <div className="relative aspect-[16/11] w-full">
+      {/* Hero — cinematic */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+        className="relative rounded-[28px] overflow-hidden mb-6 border border-white/[0.06] shadow-[0_22px_60px_-24px_rgba(232,0,0,0.35)]"
+      >
+        <div className="relative aspect-[16/10] w-full">
           <Image
             src={program.image}
             alt={program.title}
@@ -618,122 +873,182 @@ function ProgramDetailView({
             className="object-cover"
             priority
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-black/10" />
-          <div className="absolute inset-x-0 bottom-0 p-5">
-            <div className="flex items-center gap-2 mb-2">
-              <Badge className="bg-[#E80000]/20 text-[#FF8A8A] border-[#E80000]/30 text-[9px] uppercase tracking-[0.14em] font-semibold hover:bg-[#E80000]/20">
-                {program.level === "beginner" ? t("trainingLevelBeginner") : t("trainingLevelIntermediate")}
-              </Badge>
-              <span className="text-[10px] uppercase tracking-[0.14em] text-white/60 font-medium">
-                {program.sessions.length} séances
-              </span>
+          {/* Layered gradients for depth */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/55 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-tr from-black/60 via-transparent to-black/20" />
+          {/* Top meta row */}
+          <div className="absolute inset-x-0 top-0 p-4 flex items-center justify-between">
+            <Badge className="bg-white/10 backdrop-blur-md text-white border-white/15 text-[9px] uppercase tracking-[0.16em] font-semibold hover:bg-white/10 px-2.5 py-1">
+              {program.level === "beginner" ? t("trainingLevelBeginner") : t("trainingLevelIntermediate")}
+            </Badge>
+            <div className="flex items-center gap-1.5 px-2.5 h-7 rounded-full bg-black/40 backdrop-blur-md border border-white/10">
+              <Flame size={11} className="text-[#FF6D6D]" />
+              <span className="text-[11px] text-white font-medium tabular-nums">{program.sessions.length} séances</span>
             </div>
-            <h2 className="text-[26px] font-bold text-white leading-tight tracking-tight">{program.title}</h2>
-            <p className="text-[12.5px] text-white/70 mt-1 max-w-[30ch]">{program.subtitle}</p>
+          </div>
+          {/* Title block */}
+          <div className="absolute inset-x-0 bottom-0 p-5">
+            <h2 className="text-[28px] font-bold text-white leading-[1.05] tracking-tight">{program.title}</h2>
+            <p className="text-[12.5px] text-white/70 mt-1.5 max-w-[34ch] leading-relaxed">{program.subtitle}</p>
+            {/* Stats strip */}
+            <div className="flex items-center gap-4 mt-3.5 pt-3 border-t border-white/10">
+              <div className="flex items-center gap-1.5">
+                <Timer size={12} className="text-white/50" />
+                <span className="text-[11px] text-white/70 tabular-nums">~{totalMin} min</span>
+              </div>
+              <div className="w-px h-3 bg-white/10" />
+              <div className="flex items-center gap-1.5">
+                <Dumbbell size={12} className="text-white/50" />
+                <span className="text-[11px] text-white/70 tabular-nums">
+                  {program.sessions.reduce((s, x) => s + x.exercises.length, 0)} exercices
+                </span>
+              </div>
+              <div className="w-px h-3 bg-white/10" />
+              <div className="flex items-center gap-1.5">
+                <Zap size={12} className="text-[#FFD700]/80" />
+                <span className="text-[11px] text-white/70 tabular-nums">+{program.sessions.length * 100} XP</span>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Sessions header */}
-      <div className="flex items-baseline justify-between mb-3 px-0.5">
-        <p className="text-[10px] uppercase tracking-[0.18em] text-gray-7 font-semibold">
-          {t("trainingExerciseList")}
+      <div className="flex items-baseline justify-between mb-3 px-1">
+        <p className="text-[10px] uppercase tracking-[0.2em] text-gray-8 font-semibold">
+          Programme · {program.sessions.length} séances
         </p>
-        <p className="text-[10px] text-gray-7">
-          {program.sessions.length} séances · ~{program.sessions.reduce((s, x) => s + x.durationMin, 0)} min
+        <p className="text-[10px] text-gray-7 tabular-nums">
+          {program.sessions.filter((s) => isSessionDone(s.id)).length} / {program.sessions.length} faites
         </p>
       </div>
 
       {/* Session cards */}
-      <div className="space-y-3">
+      <div className="space-y-3.5">
         {program.sessions.map((session, sIdx) => {
           const done = isSessionDone(session.id);
           const archive = getLastArchive(session.id);
+          const num = String(sIdx + 1).padStart(2, "0");
 
           return (
-            <Card
+            <motion.div
               key={session.id}
-              className={cn(
-                "relative border-white/[0.06] bg-gradient-to-b from-white/[0.04] to-white/[0.015] overflow-hidden transition-opacity",
-                done && "opacity-55"
-              )}
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, delay: sIdx * 0.07, ease: [0.22, 1, 0.36, 1] }}
             >
-              {/* Left accent strip */}
-              <div
+              <Card
                 className={cn(
-                  "absolute left-0 top-0 bottom-0 w-[3px]",
-                  done ? "bg-gray-6/40" : "bg-gradient-to-b from-[#FF3B3B] to-[#9E1912]"
+                  "relative border-white/[0.06] bg-gradient-to-b from-white/[0.045] to-white/[0.01] overflow-hidden transition-all",
+                  !done && "hover:border-white/[0.12]",
+                  done && "opacity-55"
                 )}
-              />
-              <CardContent className="p-4 pl-5">
-                {/* Session header: number + title + XP */}
-                <div className="flex items-start gap-3 mb-3">
-                  <div
-                    className={cn(
-                      "shrink-0 w-10 h-10 rounded-xl flex flex-col items-center justify-center font-bold",
-                      done
-                        ? "bg-gray-3/40 text-gray-7"
-                        : "bg-[#E80000]/10 text-[#FF6D6D] border border-[#E80000]/15"
-                    )}
-                  >
-                    <span className="text-[9px] uppercase tracking-widest leading-none opacity-80">
-                      {t("trainingSessionNumber")}
-                    </span>
-                    <span className="text-[14px] leading-none mt-0.5 tabular-nums">{String(sIdx + 1).padStart(2, "0")}</span>
-                  </div>
+              >
+                {/* Left accent strip — thicker, gradient */}
+                <div
+                  className={cn(
+                    "absolute left-0 top-0 bottom-0 w-[4px]",
+                    done
+                      ? "bg-gray-6/40"
+                      : "bg-gradient-to-b from-[#FF5A3C] via-[#E80000] to-[#7A0E0E]"
+                  )}
+                />
+                {/* Watermark number (decorative) */}
+                <span
+                  aria-hidden
+                  className={cn(
+                    "absolute -top-4 right-3 font-bold leading-none pointer-events-none select-none tabular-nums",
+                    done ? "text-white/[0.02]" : "text-white/[0.035]"
+                  )}
+                  style={{ fontSize: 140, letterSpacing: "-0.04em" }}
+                >
+                  {num}
+                </span>
 
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[15.5px] font-semibold text-gray-12 leading-tight">{session.name}</p>
-                    <div className="flex items-center gap-1.5 mt-1 text-[11px] text-gray-8">
-                      <span className="truncate">{session.focus}</span>
-                      <span className="text-gray-6">·</span>
-                      <span className="inline-flex items-center gap-1 tabular-nums text-gray-7">
-                        <Clock size={10} />~{session.durationMin} min
+                <CardContent className="relative p-4 pl-5">
+                  {/* Header row */}
+                  <div className="flex items-start gap-3 mb-3.5">
+                    <div
+                      className={cn(
+                        "shrink-0 flex flex-col items-center justify-center rounded-[14px] w-[52px] h-[52px] font-bold",
+                        done
+                          ? "bg-gray-3/50 text-gray-7 border border-gray-5/25"
+                          : "bg-[#E80000]/12 text-[#FF6D6D] border border-[#E80000]/25 shadow-[inset_0_0_0_1px_rgba(255,109,109,0.08)]"
+                      )}
+                    >
+                      <span className="text-[8.5px] uppercase tracking-[0.18em] leading-none opacity-80 mb-1">
+                        {t("trainingSessionNumber")}
                       </span>
+                      <span className="text-[18px] leading-none tabular-nums tracking-tight">{num}</span>
                     </div>
-                    {archive && (
-                      <p className="text-[10px] text-gray-7 mt-1">
-                        {t("trainingLastPerf")} {fmtDate(archive.completedAt, locale)}
+
+                    <div className="min-w-0 flex-1 pt-0.5">
+                      <p className="text-[16.5px] font-semibold text-gray-12 leading-tight tracking-tight">
+                        {session.name}
                       </p>
-                    )}
-                  </div>
-
-                  <Badge className="shrink-0 bg-[#E80000]/10 text-[#FF6D6D] border-[#E80000]/15 text-[10.5px] font-semibold hover:bg-[#E80000]/10">
-                    +100 XP
-                  </Badge>
-                </div>
-
-                {/* Exercise preview */}
-                <div className="rounded-xl bg-black/20 border border-white/[0.04] px-3 py-2.5 mb-3">
-                  <div className="space-y-1.5">
-                    {session.exercises.map((exercise, i) => (
-                      <div key={exercise.id} className="flex items-baseline gap-2 text-[11.5px]">
-                        <span className="text-gray-6 w-5 text-right shrink-0 tabular-nums font-medium">{i + 1}.</span>
-                        <span className="text-gray-11 truncate">{exercise.name}</span>
-                        <span className="text-gray-7 shrink-0 ml-auto tabular-nums">
-                          {exercise.repsLabel || `${exercise.sets}×${exercise.reps}`}
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <span className="text-[11px] text-gray-8 truncate">{session.focus}</span>
+                        <span className="inline-flex items-center gap-1 px-1.5 h-[18px] rounded-md bg-white/[0.04] border border-white/[0.05] text-[10px] text-gray-9 tabular-nums shrink-0">
+                          <Clock size={9.5} />~{session.durationMin} min
                         </span>
                       </div>
-                    ))}
-                  </div>
-                </div>
+                      {archive && (
+                        <p className="text-[10px] text-gray-7 mt-1.5">
+                          {t("trainingLastPerf")} {fmtDate(archive.completedAt, locale)}
+                        </p>
+                      )}
+                    </div>
 
-                {/* Launch button */}
-                <Button
-                  onClick={() => onLaunchSession(session)}
-                  disabled={done}
-                  size="sm"
-                  className={cn(
-                    "w-full h-11 rounded-xl text-[13.5px] font-semibold gap-1.5",
-                    done
-                      ? "bg-gray-3 border border-gray-5/30 text-gray-7 hover:bg-gray-3"
-                      : "optiz-gradient-bg text-white border-0 hover:opacity-90 active:scale-[0.97]"
-                  )}
-                >
-                  {done ? t("trainingDoneReopens") : <>{t("trainingLaunch")} <ChevronRight size={15} /></>}
-                </Button>
-              </CardContent>
-            </Card>
+                    <div className="shrink-0 inline-flex items-center gap-1 px-2 h-6 rounded-full bg-[#E80000]/10 border border-[#E80000]/20">
+                      <Zap size={10} className="text-[#FFD700]" fill="currentColor" />
+                      <span className="text-[10.5px] font-semibold text-[#FF8A8A] tabular-nums">+100</span>
+                    </div>
+                  </div>
+
+                  {/* Exercise list — tight, clean, with delicate dividers */}
+                  <ul className="mb-4 space-y-0 divide-y divide-white/[0.04] border-y border-white/[0.04]">
+                    {session.exercises.map((exercise, i) => (
+                      <li
+                        key={exercise.id}
+                        className="flex items-baseline gap-2.5 py-1.5 text-[12px]"
+                      >
+                        <span className="text-gray-6 w-4 text-right shrink-0 tabular-nums font-medium text-[10.5px]">
+                          {i + 1}
+                        </span>
+                        <span className="text-gray-11 truncate flex-1">{exercise.name}</span>
+                        <span className="text-gray-7 shrink-0 tabular-nums text-[11px] font-medium">
+                          {exercise.repsLabel || `${exercise.sets}×${exercise.reps}`}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  {/* Launch button */}
+                  <Button
+                    onClick={() => onLaunchSession(session)}
+                    disabled={done}
+                    className={cn(
+                      "w-full h-12 rounded-2xl text-[14px] font-semibold gap-2 group/btn",
+                      done
+                        ? "bg-gray-3 border border-gray-5/30 text-gray-7 hover:bg-gray-3"
+                        : "optiz-gradient-bg text-white border-0 hover:opacity-95 active:scale-[0.98] transition-transform shadow-[0_10px_24px_-8px_rgba(232,0,0,0.5)]"
+                    )}
+                  >
+                    {done ? (
+                      <>
+                        <Check size={15} /> {t("trainingDoneReopens")}
+                      </>
+                    ) : (
+                      <>
+                        <Play size={14} fill="currentColor" />
+                        {t("trainingLaunch")}
+                        <ArrowRight size={15} className="transition-transform group-hover/btn:translate-x-0.5" />
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+            </motion.div>
           );
         })}
       </div>
