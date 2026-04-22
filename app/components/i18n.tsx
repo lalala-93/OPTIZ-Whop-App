@@ -328,6 +328,13 @@ const translations = {
     trainingLevelIntermediate: "Intermediate",
     trainingExerciseList: "Exercises",
     trainingStartSession: "Start session",
+    trainingRestTitle: "Rest",
+    trainingRestSubtitle: "Breathe. Let the set settle.",
+    trainingRestSkip: "Skip",
+    trainingRestAdd: "+15 s",
+    trainingRestNextSet: "Next set in",
+    trainingRestReady: "Ready.",
+    trainingSessionNumber: "Session",
 
     // Rank names
     rankRecruit: "Recruit",
@@ -673,6 +680,13 @@ const translations = {
     trainingLevelIntermediate: "Intermédiaire",
     trainingExerciseList: "Exercices",
     trainingStartSession: "Démarrer la séance",
+    trainingRestTitle: "Repos",
+    trainingRestSubtitle: "Respire. Laisse la série redescendre.",
+    trainingRestSkip: "Passer",
+    trainingRestAdd: "+15 s",
+    trainingRestNextSet: "Prochaine série dans",
+    trainingRestReady: "Prêt.",
+    trainingSessionNumber: "Séance",
 
     // Rank names
     rankRecruit: "Recrue",

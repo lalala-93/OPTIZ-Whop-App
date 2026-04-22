@@ -158,7 +158,10 @@ function WorkoutFunnel({
   const [elapsed, setElapsed] = useState(0);
   const [done, setDone] = useState(false);
   const [result, setResult] = useState<SessionArchive | null>(null);
+  const [rest, setRest] = useState<{ secondsLeft: number; total: number } | null>(null);
   const t0 = useRef(Date.now());
+
+  const REST_DEFAULT = 45;
 
   useEffect(() => {
     if (done) return;
@@ -166,11 +169,28 @@ function WorkoutFunnel({
     return () => clearInterval(iv);
   }, [done]);
 
+  // Rest countdown
+  useEffect(() => {
+    if (!rest) return;
+    const iv = setInterval(() => {
+      setRest((r) => {
+        if (!r) return null;
+        if (r.secondsLeft <= 1) {
+          if (soundOn) playCompleteSound();
+          return null;
+        }
+        return { ...r, secondsLeft: r.secondsLeft - 1 };
+      });
+    }, 1000);
+    return () => clearInterval(iv);
+  }, [rest, soundOn]);
+
   const ex = session.exercises[exIdx];
   const rows = ex ? sets[ex.id] || [] : [];
   const prevRows = ex ? previousArchive?.exercises.find((e) => e.exerciseId === ex.id)?.sets || [] : [];
   const allDone = rows.length > 0 && rows.every((r) => r.done);
   const isLast = exIdx === session.exercises.length - 1;
+  const resting = rest !== null;
 
   const upd = (eid: string, i: number, p: Partial<DraftSet>) => {
     setSets((prev) => ({
@@ -190,7 +210,17 @@ function WorkoutFunnel({
     const cur: SessionSetLog = { load: parseNum(r.load, 0), reps: parseNum(r.reps, ex.reps), rpe: parseNum(r.rpe, 8) };
     const k = `${ex.id}-${i}`;
     if (!prKeys.includes(k) && isImproved(cur, prevRows[i])) setPrKeys((p) => [...p, k]);
+
+    // Auto-trigger 45s rest after a set is validated.
+    // Skip if this is the very last set of the last exercise (no more effort coming).
+    const isLastSetOfEx = i === rows.length - 1;
+    if (!(isLastSetOfEx && isLast)) {
+      setRest({ secondsLeft: REST_DEFAULT, total: REST_DEFAULT });
+    }
   };
+
+  const skipRest = () => setRest(null);
+  const addRest = (extra: number) => setRest((r) => r ? { secondsLeft: r.secondsLeft + extra, total: r.total + extra } : r);
 
   const finish = () => {
     const logs: ExerciseLog[] = session.exercises.map((e) => ({
@@ -327,11 +357,12 @@ function WorkoutFunnel({
       {ex && (
         <motion.div key={ex.id} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ type: "spring", stiffness: 400, damping: 30 }}>
           {/* Exercise info */}
-          <Card className="border-gray-5/30 bg-gray-2/70 mb-2.5">
-            <CardContent className="p-3.5">
+          <Card className="relative border-white/[0.06] bg-gradient-to-b from-white/[0.04] to-white/[0.015] mb-2.5 overflow-hidden">
+            <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-[#FF3B3B] to-[#9E1912]" />
+            <CardContent className="p-3.5 pl-4">
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0 flex-1">
-                  <h3 className="text-[17px] font-semibold text-gray-12 leading-snug">{ex.name}</h3>
+                  <h3 className="text-[17.5px] font-semibold text-gray-12 leading-snug tracking-tight">{ex.name}</h3>
                   <div className="flex items-center gap-1.5 mt-1">
                     <Badge variant="secondary" className="text-[10px] bg-gray-4/40 text-gray-8 border-0 px-1.5 py-0">
                       {ex.muscles}
@@ -339,13 +370,13 @@ function WorkoutFunnel({
                   </div>
                 </div>
                 <a href={ex.videoUrl} target="_blank" rel="noopener noreferrer"
-                  className="w-10 h-10 rounded-xl bg-[#E80000]/8 border border-[#E80000]/20 flex items-center justify-center shrink-0">
-                  <Play size={16} className="text-[#FF6D6D] ml-0.5" />
+                  className="w-11 h-11 rounded-xl bg-[#E80000]/10 border border-[#E80000]/25 flex items-center justify-center shrink-0 hover:bg-[#E80000]/15 transition-colors">
+                  <Play size={17} className="text-[#FF6D6D] ml-0.5" fill="currentColor" />
                 </a>
               </div>
               {/* Exercise note (superset, rest, instructions) */}
               {ex.note && (
-                <p className="text-[11px] text-gray-8 mt-2 leading-relaxed border-t border-white/[0.04] pt-2">
+                <p className="text-[11px] text-gray-8 mt-2.5 leading-relaxed border-t border-white/[0.05] pt-2.5">
                   {ex.note}
                 </p>
               )}
@@ -451,21 +482,99 @@ function WorkoutFunnel({
         </motion.div>
       )}
 
+      {/* Rest overlay */}
+      <AnimatePresence>
+        {rest && (
+          <motion.div
+            key="rest-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/75 backdrop-blur-sm px-4 pb-[calc(env(safe-area-inset-bottom)+90px)] sm:pb-0"
+            onClick={(e) => { if (e.target === e.currentTarget) skipRest(); }}
+          >
+            <motion.div
+              initial={{ y: 30, opacity: 0, scale: 0.96 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: 30, opacity: 0, scale: 0.96 }}
+              transition={{ type: "spring", stiffness: 380, damping: 32 }}
+              className="relative w-full max-w-md rounded-3xl overflow-hidden border border-white/[0.08] bg-gradient-to-b from-[#1a1414] to-[#0b0909] p-6"
+            >
+              {/* Progress ring */}
+              <div className="flex items-center justify-center mb-5">
+                <div className="relative w-40 h-40">
+                  <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+                    <circle cx="50" cy="50" r="44" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="5" />
+                    <circle
+                      cx="50" cy="50" r="44"
+                      fill="none"
+                      stroke="url(#restGrad)"
+                      strokeWidth="5"
+                      strokeLinecap="round"
+                      strokeDasharray={2 * Math.PI * 44}
+                      strokeDashoffset={2 * Math.PI * 44 * (1 - rest.secondsLeft / rest.total)}
+                      style={{ transition: "stroke-dashoffset 1s linear" }}
+                    />
+                    <defs>
+                      <linearGradient id="restGrad" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stopColor="#FF3B3B" />
+                        <stop offset="100%" stopColor="#9E1912" />
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <p className="text-[9.5px] uppercase tracking-[0.22em] text-gray-7 mb-1 font-semibold">
+                      {t("trainingRestTitle")}
+                    </p>
+                    <p className="text-[46px] font-bold text-gray-12 tabular-nums leading-none">
+                      {rest.secondsLeft}
+                      <span className="text-[14px] text-gray-7 font-medium ml-0.5">s</span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-center text-[12.5px] text-gray-8 mb-5">
+                {t("trainingRestSubtitle")}
+              </p>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                <Button
+                  type="button"
+                  onClick={() => addRest(15)}
+                  variant="outline"
+                  className="h-11 rounded-xl bg-white/[0.03] border-white/[0.08] text-gray-11 text-[13px] font-semibold hover:bg-white/[0.06]"
+                >
+                  {t("trainingRestAdd")}
+                </Button>
+                <Button
+                  type="button"
+                  onClick={skipRest}
+                  className="h-11 rounded-xl optiz-gradient-bg border-0 text-white text-[13px] font-semibold hover:opacity-90 active:scale-[0.97]"
+                >
+                  {t("trainingRestSkip")}
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Bottom CTA */}
       <div className="fixed inset-x-0 bottom-0 z-40 px-4 sm:px-6 pb-[calc(env(safe-area-inset-bottom)+70px)] bg-gradient-to-t from-[var(--gray-1)] via-[var(--gray-1)]/95 to-transparent pointer-events-none">
         <div className="mx-auto max-w-4xl pointer-events-auto">
           <Button
             onClick={next}
-            disabled={!allDone}
+            disabled={!allDone || resting}
             className={cn(
               "w-full h-12 rounded-2xl font-semibold text-[15px] flex items-center justify-center gap-1.5 transition-all",
-              allDone
+              allDone && !resting
                 ? "optiz-gradient-bg text-white active:scale-[0.97] border-0 hover:opacity-90"
                 : "bg-gray-3 border border-gray-5/35 text-gray-7 hover:bg-gray-3"
             )}
           >
             {isLast ? t("trainingValidateSession") : t("trainingNextExercise")}
-            {!isLast && allDone && <ChevronRight size={16} />}
+            {!isLast && allDone && !resting && <ChevronRight size={16} />}
           </Button>
         </div>
       </div>
@@ -499,13 +608,40 @@ function ProgramDetailView({
         <ArrowLeft size={14} /> {t("back")}
       </Button>
 
-      {/* Header */}
-      <div className="mb-5">
-        <Badge className="bg-[#E80000]/12 text-[#FF6D6D] border-[#E80000]/20 mb-2 text-[9px] uppercase tracking-widest font-semibold hover:bg-[#E80000]/12">
-          {program.level === "beginner" ? t("trainingLevelBeginner") : t("trainingLevelIntermediate")} · {program.sessions.length} séances
-        </Badge>
-        <h2 className="text-xl font-bold text-gray-12 leading-tight">{program.title}</h2>
-        <p className="text-[13px] text-gray-8 mt-0.5">{program.subtitle}</p>
+      {/* Hero */}
+      <div className="relative rounded-3xl overflow-hidden mb-5 border border-white/[0.06]">
+        <div className="relative aspect-[16/11] w-full">
+          <Image
+            src={program.image}
+            alt={program.title}
+            fill
+            className="object-cover"
+            priority
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-black/10" />
+          <div className="absolute inset-x-0 bottom-0 p-5">
+            <div className="flex items-center gap-2 mb-2">
+              <Badge className="bg-[#E80000]/20 text-[#FF8A8A] border-[#E80000]/30 text-[9px] uppercase tracking-[0.14em] font-semibold hover:bg-[#E80000]/20">
+                {program.level === "beginner" ? t("trainingLevelBeginner") : t("trainingLevelIntermediate")}
+              </Badge>
+              <span className="text-[10px] uppercase tracking-[0.14em] text-white/60 font-medium">
+                {program.sessions.length} séances
+              </span>
+            </div>
+            <h2 className="text-[26px] font-bold text-white leading-tight tracking-tight">{program.title}</h2>
+            <p className="text-[12.5px] text-white/70 mt-1 max-w-[30ch]">{program.subtitle}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Sessions header */}
+      <div className="flex items-baseline justify-between mb-3 px-0.5">
+        <p className="text-[10px] uppercase tracking-[0.18em] text-gray-7 font-semibold">
+          {t("trainingExerciseList")}
+        </p>
+        <p className="text-[10px] text-gray-7">
+          {program.sessions.length} séances · ~{program.sessions.reduce((s, x) => s + x.durationMin, 0)} min
+        </p>
       </div>
 
       {/* Session cards */}
@@ -515,34 +651,71 @@ function ProgramDetailView({
           const archive = getLastArchive(session.id);
 
           return (
-            <Card key={session.id} className={cn("border-white/[0.06] bg-white/[0.03] overflow-hidden", done && "opacity-50")}>
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between gap-3 mb-3">
-                  <div className="min-w-0">
-                    <p className="text-[15px] font-semibold text-gray-12">{session.name}</p>
-                    <p className="text-[11px] text-gray-8 mt-0.5">{session.focus} · ~{session.durationMin} min</p>
+            <Card
+              key={session.id}
+              className={cn(
+                "relative border-white/[0.06] bg-gradient-to-b from-white/[0.04] to-white/[0.015] overflow-hidden transition-opacity",
+                done && "opacity-55"
+              )}
+            >
+              {/* Left accent strip */}
+              <div
+                className={cn(
+                  "absolute left-0 top-0 bottom-0 w-[3px]",
+                  done ? "bg-gray-6/40" : "bg-gradient-to-b from-[#FF3B3B] to-[#9E1912]"
+                )}
+              />
+              <CardContent className="p-4 pl-5">
+                {/* Session header: number + title + XP */}
+                <div className="flex items-start gap-3 mb-3">
+                  <div
+                    className={cn(
+                      "shrink-0 w-10 h-10 rounded-xl flex flex-col items-center justify-center font-bold",
+                      done
+                        ? "bg-gray-3/40 text-gray-7"
+                        : "bg-[#E80000]/10 text-[#FF6D6D] border border-[#E80000]/15"
+                    )}
+                  >
+                    <span className="text-[9px] uppercase tracking-widest leading-none opacity-80">
+                      {t("trainingSessionNumber")}
+                    </span>
+                    <span className="text-[14px] leading-none mt-0.5 tabular-nums">{String(sIdx + 1).padStart(2, "0")}</span>
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[15.5px] font-semibold text-gray-12 leading-tight">{session.name}</p>
+                    <div className="flex items-center gap-1.5 mt-1 text-[11px] text-gray-8">
+                      <span className="truncate">{session.focus}</span>
+                      <span className="text-gray-6">·</span>
+                      <span className="inline-flex items-center gap-1 tabular-nums text-gray-7">
+                        <Clock size={10} />~{session.durationMin} min
+                      </span>
+                    </div>
                     {archive && (
                       <p className="text-[10px] text-gray-7 mt-1">
                         {t("trainingLastPerf")} {fmtDate(archive.completedAt, locale)}
                       </p>
                     )}
                   </div>
-                  <Badge className="shrink-0 bg-[#E80000]/10 text-[#FF6D6D] border-[#E80000]/15 text-[11px] font-semibold hover:bg-[#E80000]/10">
+
+                  <Badge className="shrink-0 bg-[#E80000]/10 text-[#FF6D6D] border-[#E80000]/15 text-[10.5px] font-semibold hover:bg-[#E80000]/10">
                     +100 XP
                   </Badge>
                 </div>
 
                 {/* Exercise preview */}
-                <div className="space-y-1 mb-3">
-                  {session.exercises.map((exercise, i) => (
-                    <div key={exercise.id} className="flex items-baseline gap-2 text-[11px]">
-                      <span className="text-gray-7 w-4 text-right shrink-0">{i + 1}.</span>
-                      <span className="text-gray-11 truncate">{exercise.name}</span>
-                      <span className="text-gray-7 shrink-0 ml-auto">
-                        {exercise.repsLabel || `${exercise.sets}x${exercise.reps}`}
-                      </span>
-                    </div>
-                  ))}
+                <div className="rounded-xl bg-black/20 border border-white/[0.04] px-3 py-2.5 mb-3">
+                  <div className="space-y-1.5">
+                    {session.exercises.map((exercise, i) => (
+                      <div key={exercise.id} className="flex items-baseline gap-2 text-[11.5px]">
+                        <span className="text-gray-6 w-5 text-right shrink-0 tabular-nums font-medium">{i + 1}.</span>
+                        <span className="text-gray-11 truncate">{exercise.name}</span>
+                        <span className="text-gray-7 shrink-0 ml-auto tabular-nums">
+                          {exercise.repsLabel || `${exercise.sets}×${exercise.reps}`}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Launch button */}
@@ -551,13 +724,13 @@ function ProgramDetailView({
                   disabled={done}
                   size="sm"
                   className={cn(
-                    "w-full h-10 rounded-xl text-[13px] font-semibold",
+                    "w-full h-11 rounded-xl text-[13.5px] font-semibold gap-1.5",
                     done
                       ? "bg-gray-3 border border-gray-5/30 text-gray-7 hover:bg-gray-3"
                       : "optiz-gradient-bg text-white border-0 hover:opacity-90 active:scale-[0.97]"
                   )}
                 >
-                  {done ? t("trainingDoneReopens") : t("trainingLaunch")}
+                  {done ? t("trainingDoneReopens") : <>{t("trainingLaunch")} <ChevronRight size={15} /></>}
                 </Button>
               </CardContent>
             </Card>
