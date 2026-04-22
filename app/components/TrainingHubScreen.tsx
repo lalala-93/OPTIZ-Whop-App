@@ -631,21 +631,42 @@ function WorkoutFunnel({
                       ))}
                     </select>
 
-                    {/* Fait — bouton carré arrondi (cohérent avec N°) */}
+                    {/* Fait — bouton raffiné (radius aligné aux champs) */}
                     <button
                       type="button"
                       onClick={() => check(i)}
                       className={cn(
-                        "w-10 h-10 rounded-lg flex items-center justify-center transition-all mx-auto active:scale-90",
+                        "relative w-10 h-10 rounded-xl flex items-center justify-center mx-auto transition-all duration-150 active:scale-[0.92]",
                         row.done
-                          ? "bg-[#E80000] text-white hover:bg-[#E80000]/90"
+                          ? "bg-gradient-to-b from-[#FF1414] to-[#C40000] text-white shadow-[0_4px_12px_-3px_rgba(232,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.18)] hover:shadow-[0_5px_14px_-3px_rgba(232,0,0,0.65),inset_0_1px_0_rgba(255,255,255,0.2)]"
                           : isActive
-                          ? "border border-[#E80000]/65 text-[#FF6D6D] hover:bg-[#E80000]/10"
-                          : "border border-white/[0.08] text-gray-7 hover:border-white/15 hover:text-gray-9"
+                          ? "border-[1.5px] border-[#E80000]/70 bg-[#E80000]/[0.04] text-[#FF6D6D] hover:bg-[#E80000]/[0.1] hover:border-[#E80000]"
+                          : "border border-white/[0.08] bg-white/[0.01] text-gray-7 hover:border-white/20 hover:bg-white/[0.04] hover:text-gray-9"
                       )}
-                      aria-label={row.done ? "Série complétée" : "Valider la série"}
+                      aria-label={row.done ? "Série complétée — décocher" : isActive ? "Valider la série" : "Série en attente"}
                     >
-                      {row.done ? <Check size={15} strokeWidth={2.75} /> : null}
+                      <AnimatePresence initial={false} mode="wait">
+                        {row.done ? (
+                          <motion.span
+                            key="done"
+                            initial={{ scale: 0.4, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.4, opacity: 0 }}
+                            transition={{ type: "spring", stiffness: 520, damping: 22 }}
+                            className="flex"
+                          >
+                            <Check size={16} strokeWidth={3} />
+                          </motion.span>
+                        ) : isActive ? (
+                          <motion.span
+                            key="active"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 0.7 }}
+                            exit={{ opacity: 0 }}
+                            className="w-[7px] h-[7px] rounded-full bg-[#FF6D6D]"
+                          />
+                        ) : null}
+                      </AnimatePresence>
                     </button>
                   </div>
                 );
