@@ -491,7 +491,7 @@ function WorkoutFunnel({
           {/* Set tracker — cohérent avec le reste de l'app, français */}
           <div className="rounded-2xl border border-white/[0.05] bg-white/[0.02] overflow-hidden">
             {/* Header — copy court pour tenir sur 1 ligne */}
-            <div className="grid grid-cols-[2.5rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem_2.5rem] items-center gap-x-2 px-3 py-2.5 border-b border-white/[0.05]">
+            <div className="grid grid-cols-[2.75rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem_2.75rem] items-center gap-x-2 px-3 py-2.5 border-b border-white/[0.05]">
               <span className="text-[10px] uppercase tracking-[0.1em] text-gray-7 font-semibold text-center whitespace-nowrap">N°</span>
               <span className="text-[10px] uppercase tracking-[0.1em] text-gray-7 font-semibold text-center whitespace-nowrap">Poids</span>
               <span className="text-[10px] uppercase tracking-[0.1em] text-gray-7 font-semibold text-center whitespace-nowrap">Reps</span>
@@ -520,26 +520,26 @@ function WorkoutFunnel({
                   <div
                     key={i}
                     className={cn(
-                      "grid grid-cols-[2.5rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem_2.5rem] items-center gap-x-2 px-3 py-3",
+                      "grid grid-cols-[2.75rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem_2.75rem] items-center gap-x-2 px-3 py-2.5",
                       i > 0 && "border-t border-white/[0.04]",
                       row.done && "opacity-55"
                     )}
                   >
-                    {/* N° — badge carré arrondi, 11×11 visible */}
-                    <div className="flex items-center justify-center gap-1">
+                    {/* N° — même hauteur que les champs (44px) */}
+                    <div className="relative flex items-center justify-center">
                       <span
                         className={cn(
-                          "inline-flex items-center justify-center w-8 h-8 rounded-lg text-[13px] font-semibold tabular-nums transition-colors",
+                          "inline-flex items-center justify-center w-11 h-11 rounded-xl text-[16px] font-semibold tabular-nums tracking-tight transition-colors",
                           row.done
                             ? "bg-white/[0.04] text-gray-8"
                             : isActive
-                            ? "bg-[#E80000] text-white"
-                            : "bg-white/[0.04] text-gray-8"
+                            ? "bg-[#E80000] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]"
+                            : "bg-white/[0.04] text-gray-9"
                         )}
                       >
                         {i + 1}
                       </span>
-                      {isPr && <Sparkles size={10} className="text-[#FFD700] shrink-0 -ml-0.5" />}
+                      {isPr && <Sparkles size={10} className="text-[#FFD700] shrink-0 absolute -top-0.5 -right-0.5" />}
                     </div>
 
                     {/* Poids — stepper ±1, tap cibles 36px */}
@@ -644,12 +644,12 @@ function WorkoutFunnel({
                       ))}
                     </select>
 
-                    {/* Fait — bouton raffiné (radius aligné aux champs) */}
+                    {/* Fait — 44×44, aligné aux champs */}
                     <button
                       type="button"
                       onClick={() => check(i)}
                       className={cn(
-                        "relative w-10 h-10 rounded-xl flex items-center justify-center mx-auto transition-all duration-150 active:scale-[0.92]",
+                        "relative w-11 h-11 rounded-xl flex items-center justify-center mx-auto transition-all duration-150 active:scale-[0.92]",
                         row.done
                           ? "bg-gradient-to-b from-[#FF1414] to-[#C40000] text-white shadow-[0_4px_12px_-3px_rgba(232,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.18)] hover:shadow-[0_5px_14px_-3px_rgba(232,0,0,0.65),inset_0_1px_0_rgba(255,255,255,0.2)]"
                           : isActive
@@ -662,22 +662,26 @@ function WorkoutFunnel({
                         {row.done ? (
                           <motion.span
                             key="done"
-                            initial={{ scale: 0.4, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.4, opacity: 0 }}
+                            initial={{ scale: 0.35, opacity: 0, rotate: -30 }}
+                            animate={{ scale: 1, opacity: 1, rotate: 0 }}
+                            exit={{ scale: 0.35, opacity: 0 }}
                             transition={{ type: "spring", stiffness: 520, damping: 22 }}
                             className="flex"
                           >
-                            <Check size={16} strokeWidth={3} />
+                            <Check size={18} strokeWidth={3} />
                           </motion.span>
                         ) : isActive ? (
                           <motion.span
                             key="active"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 0.7 }}
-                            exit={{ opacity: 0 }}
-                            className="w-[7px] h-[7px] rounded-full bg-[#FF6D6D]"
-                          />
+                            initial={{ scale: 0.5, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.5, opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="relative inline-flex"
+                          >
+                            <span className="w-2 h-2 rounded-full bg-[#FF6D6D]" />
+                            <span className="absolute inset-0 w-2 h-2 rounded-full bg-[#FF6D6D] animate-ping opacity-60" />
+                          </motion.span>
                         ) : null}
                       </AnimatePresence>
                     </button>

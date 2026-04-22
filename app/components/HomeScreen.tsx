@@ -498,31 +498,31 @@ export function HomeScreen({
         </div>
       </div>
 
-      {/* Optiz Store — compact, sans image, lien externe */}
+      {/* Optiz Store — compact, premium, sans image */}
       <a
         href="https://optiz.store/collections/produits"
         target="_blank"
         rel="noopener noreferrer"
-        aria-label="Ouvrir Optiz Store (lien externe)"
-        className="group flex items-center gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3.5 transition-all hover:border-[#E80000]/25 hover:bg-white/[0.035] active:scale-[0.985]"
+        aria-label="Ouvrir Optiz Store"
+        className="group relative flex items-center gap-3.5 overflow-hidden rounded-2xl border border-white/[0.07] bg-gradient-to-br from-white/[0.035] to-white/[0.015] px-4 py-3.5 transition-all duration-200 hover:border-[#E80000]/30 hover:from-[#E80000]/[0.06] hover:to-white/[0.02] active:scale-[0.985]"
       >
+        {/* Subtle red glow accent on hover */}
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute -left-8 top-1/2 h-24 w-24 -translate-y-1/2 rounded-full bg-[#E80000]/0 blur-2xl transition-all duration-300 group-hover:bg-[#E80000]/[0.18]"
+        />
+
         {/* Icon badge */}
-        <span className="relative shrink-0 inline-flex items-center justify-center w-11 h-11 rounded-xl bg-[#E80000]/[0.1] border border-[#E80000]/20 text-[#FF6D6D] transition-colors group-hover:bg-[#E80000]/[0.15] group-hover:border-[#E80000]/35">
-          <ShoppingBag size={18} strokeWidth={2} />
+        <span className="relative shrink-0 inline-flex items-center justify-center w-11 h-11 rounded-xl bg-gradient-to-br from-[#E80000]/[0.18] to-[#E80000]/[0.06] border border-[#E80000]/25 text-[#FF8A8A] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition-all duration-200 group-hover:border-[#E80000]/40 group-hover:text-[#FFA5A5]">
+          <ShoppingBag size={18} strokeWidth={2.2} />
         </span>
 
         {/* Text */}
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5">
-            <span className="text-[9.5px] font-semibold text-[#FF6D6D] uppercase tracking-[0.16em]">
-              Optiz Store
-            </span>
-            <span className="h-[3px] w-[3px] rounded-full bg-gray-7" />
-            <span className="text-[9.5px] text-gray-8 uppercase tracking-[0.12em] font-semibold">
-              Lien externe
-            </span>
-          </div>
-          <h3 className="text-[14.5px] font-semibold text-gray-12 leading-tight tracking-tight mt-0.5 truncate">
+        <div className="min-w-0 flex-1 relative">
+          <span className="block text-[9.5px] font-bold text-[#FF6D6D] uppercase tracking-[0.18em]">
+            Optiz Store
+          </span>
+          <h3 className="text-[14.5px] font-semibold text-gray-12 leading-tight tracking-tight mt-1 truncate">
             Deviens meilleur, naturellement
           </h3>
           <p className="text-[11.5px] text-gray-8 mt-0.5 truncate">
@@ -533,9 +533,9 @@ export function HomeScreen({
         {/* External-link arrow */}
         <span
           aria-hidden="true"
-          className="shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-lg border border-white/[0.06] bg-white/[0.02] text-gray-8 transition-all group-hover:border-[#E80000]/30 group-hover:bg-[#E80000]/[0.08] group-hover:text-[#FF6D6D] group-hover:-translate-y-[1px] group-hover:translate-x-[1px]"
+          className="relative shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-xl border border-white/[0.07] bg-white/[0.02] text-gray-8 transition-all duration-200 group-hover:border-[#E80000]/35 group-hover:bg-[#E80000]/[0.1] group-hover:text-[#FF8A8A] group-hover:-translate-y-[1.5px] group-hover:translate-x-[1.5px]"
         >
-          <ArrowUpRight size={15} strokeWidth={2.25} />
+          <ArrowUpRight size={16} strokeWidth={2.25} />
         </span>
       </a>
 
@@ -601,10 +601,48 @@ export function HomeScreen({
 
           <CardContent className="p-4 pt-1">
             {loadingLeaderboard ? (
-              <div className="space-y-2.5">
-                {[1, 2, 3].map((i) => (
-                  <Skeleton key={i} className="h-[52px] rounded-xl" />
-                ))}
+              <div>
+                {/* Podium skeleton — matches real layout (2nd · 1st · 3rd) */}
+                <div className="flex items-end justify-center gap-2.5 mb-6 pt-4 px-1">
+                  {[
+                    { barH: 64, avatar: 44, pos: 2 },
+                    { barH: 92, avatar: 52, pos: 1 },
+                    { barH: 48, avatar: 40, pos: 3 },
+                  ].map((s, i) => (
+                    <div key={i} className="flex flex-col items-center gap-2 flex-1 max-w-[88px]">
+                      {/* Crown placeholder for 1st */}
+                      {s.pos === 1 && (
+                        <Skeleton className="h-3 w-3 rounded-sm opacity-60" />
+                      )}
+                      <Skeleton
+                        className="rounded-full"
+                        style={{ width: s.avatar, height: s.avatar }}
+                      />
+                      <Skeleton className="h-2.5 w-14 rounded-full" />
+                      <Skeleton className="h-2 w-10 rounded-full opacity-70" />
+                      <Skeleton
+                        className="w-full rounded-t-lg rounded-b-none"
+                        style={{ height: s.barH }}
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                {/* Rows skeleton — matches #4+ list layout */}
+                <div className="space-y-1.5">
+                  {[0, 1, 2, 3, 4].map((i) => (
+                    <div
+                      key={i}
+                      className="rounded-xl px-3 py-2.5 flex items-center gap-2.5 bg-white/[0.02] border border-white/[0.04]"
+                      style={{ opacity: 1 - i * 0.14 }}
+                    >
+                      <Skeleton className="h-3 w-3 rounded-sm shrink-0" />
+                      <Skeleton className="h-8 w-8 rounded-full shrink-0" />
+                      <Skeleton className="h-3 flex-1 max-w-[60%] rounded-full" />
+                      <Skeleton className="h-3 w-10 rounded-full shrink-0" />
+                    </div>
+                  ))}
+                </div>
               </div>
             ) : entries.length === 0 ? (
               <div className="py-8 flex flex-col items-center gap-2">
