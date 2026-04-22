@@ -10,8 +10,8 @@ import {
   ChevronRight,
   Clock,
   Dumbbell,
-  Flame,
   Minus,
+  Pause,
   Play,
   Plus,
   Sparkles,
@@ -162,19 +162,39 @@ function WorkoutFunnel({
   const [done, setDone] = useState(false);
   const [result, setResult] = useState<SessionArchive | null>(null);
   const [rest, setRest] = useState<{ secondsLeft: number; total: number } | null>(null);
+  const [paused, setPaused] = useState(false);
   const t0 = useRef(Date.now());
+  const pausedAcc = useRef(0); // total ms paused so far
+  const pausedAt = useRef<number | null>(null);
 
   const REST_DEFAULT = 45;
 
+  // Elapsed timer — pauses when `paused`
   useEffect(() => {
     if (done) return;
-    const iv = setInterval(() => setElapsed(Math.floor((Date.now() - t0.current) / 1000)), 1000);
+    if (paused) return;
+    const iv = setInterval(() => {
+      setElapsed(Math.floor((Date.now() - t0.current - pausedAcc.current) / 1000));
+    }, 1000);
     return () => clearInterval(iv);
-  }, [done]);
+  }, [done, paused]);
 
-  // Rest countdown
+  const togglePause = () => {
+    setPaused((prev) => {
+      const next = !prev;
+      if (next) {
+        pausedAt.current = Date.now();
+      } else if (pausedAt.current != null) {
+        pausedAcc.current += Date.now() - pausedAt.current;
+        pausedAt.current = null;
+      }
+      return next;
+    });
+  };
+
+  // Rest countdown — also halts while paused
   useEffect(() => {
-    if (!rest) return;
+    if (!rest || paused) return;
     const iv = setInterval(() => {
       setRest((r) => {
         if (!r) return null;
@@ -186,7 +206,7 @@ function WorkoutFunnel({
       });
     }, 1000);
     return () => clearInterval(iv);
-  }, [rest, soundOn]);
+  }, [rest, soundOn, paused]);
 
   const ex = session.exercises[exIdx];
   const rows = ex ? sets[ex.id] || [] : [];
@@ -342,20 +362,63 @@ function WorkoutFunnel({
           <ArrowLeft size={16} />
         </Button>
         <div className="flex items-center gap-1.5">
-          <div className="flex items-center gap-1.5 px-3 h-9 rounded-full bg-white/[0.04] border border-white/[0.08] backdrop-blur-sm">
-            <Clock size={11} className="text-[#FF6D6D]" />
-            <span className="text-[13px] font-semibold text-gray-12 tabular-nums tracking-tight">{fmtTimer(elapsed)}</span>
+          <div
+            className={cn(
+              "flex items-center gap-1.5 px-3 h-9 rounded-full border backdrop-blur-sm transition-colors",
+              paused
+                ? "bg-[#E80000]/[0.08] border-[#E80000]/25"
+                : "bg-white/[0.04] border-white/[0.08]"
+            )}
+          >
+            <Clock size={11} className={paused ? "text-[#FF6D6D]/70" : "text-[#FF6D6D]"} />
+            <span className={cn(
+              "text-[13px] font-semibold tabular-nums tracking-tight",
+              paused ? "text-gray-10" : "text-gray-12"
+            )}>
+              {fmtTimer(elapsed)}
+            </span>
           </div>
           <Button
             variant="outline"
             size="icon"
+            onClick={togglePause}
+            aria-label={paused ? "Reprendre" : "Pause"}
+            className={cn(
+              "w-10 h-10 rounded-full transition-colors",
+              paused
+                ? "border-[#E80000]/30 bg-[#E80000]/[0.08] text-[#FF6D6D] hover:bg-[#E80000]/[0.12]"
+                : "border-white/10 bg-white/[0.03] text-gray-9 hover:bg-white/[0.06]"
+            )}
+          >
+            {paused ? <Play size={14} className="ml-0.5" fill="currentColor" /> : <Pause size={14} />}
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
             onClick={() => { const n = !soundOn; setSoundOn(n); setSoundEnabled(n); }}
+            aria-label={soundOn ? "Muet" : "Son"}
             className="w-10 h-10 rounded-full border-white/10 bg-white/[0.03] text-gray-9 hover:bg-white/[0.06]"
           >
             {soundOn ? <Volume2 size={14} /> : <VolumeX size={14} />}
           </Button>
         </div>
       </div>
+
+      {/* Paused banner */}
+      <AnimatePresence>
+        {paused && (
+          <motion.div
+            key="paused-banner"
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.18 }}
+            className="mb-3 flex items-center justify-center gap-2 h-8 rounded-lg bg-[#E80000]/[0.06] border border-[#E80000]/15 text-[11.5px] text-[#FF6D6D] font-semibold tracking-[0.08em] uppercase"
+          >
+            <Pause size={11} /> Séance en pause
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Single-line progress — segmented bar with inline label */}
       <div className="flex items-center gap-3 mb-4">
@@ -571,7 +634,7 @@ function WorkoutFunnel({
                         <ChevronDown size={9} className="absolute right-1 top-1/2 -translate-y-1/2 text-gray-7 pointer-events-none" />
                       </div>
 
-                      {/* Check */}
+                      {/* Check — distinct active vs done */}
                       <Button
                         type="button"
                         size="icon"
@@ -581,11 +644,12 @@ function WorkoutFunnel({
                           row.done
                             ? "bg-[#E80000] text-white hover:bg-[#E80000]/90"
                             : isActive
-                            ? "bg-[#E80000] text-white hover:bg-[#E80000]/90 active:scale-95"
+                            ? "bg-transparent border border-[#E80000]/55 text-[#FF6D6D] hover:bg-[#E80000]/10 active:scale-95"
                             : "bg-white/[0.04] border border-white/[0.08] text-gray-7 hover:bg-white/[0.08]"
                         )}
+                        aria-label={row.done ? "Série complétée" : "Valider la série"}
                       >
-                        <Check size={13} strokeWidth={2.75} />
+                        {row.done ? <Check size={13} strokeWidth={2.75} /> : null}
                       </Button>
                     </div>
                   );
@@ -767,57 +831,58 @@ function ProgramDetailView({
         <ArrowLeft size={14} /> {t("back")}
       </Button>
 
-      {/* Hero — cinematic */}
+      {/* Hero — clean, no glow */}
       <motion.div
-        initial={{ opacity: 0, y: 10 }}
+        initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-        className="relative rounded-[28px] overflow-hidden mb-6 border border-white/[0.06] shadow-[0_22px_60px_-24px_rgba(232,0,0,0.35)]"
+        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+        className="relative rounded-[24px] overflow-hidden mb-6 border border-white/[0.06] bg-[#0B0B0C]"
       >
         <div className="relative aspect-[16/10] w-full">
           <Image
             src={program.image}
             alt={program.title}
             fill
-            className="object-cover"
+            className="object-cover object-center"
             priority
           />
-          {/* Layered gradients for depth */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/55 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-tr from-black/60 via-transparent to-black/20" />
+          {/* Crisp dark gradient — no red glow */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0B0B0C] via-[#0B0B0C]/70 to-[#0B0B0C]/10" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-transparent" />
+
           {/* Top meta row */}
           <div className="absolute inset-x-0 top-0 p-4 flex items-center justify-between">
-            <Badge className="bg-white/10 backdrop-blur-md text-white border-white/15 text-[9px] uppercase tracking-[0.16em] font-semibold hover:bg-white/10 px-2.5 py-1">
+            <span className="px-2.5 h-6 inline-flex items-center rounded-md bg-white/10 backdrop-blur-md border border-white/10 text-[9.5px] uppercase tracking-[0.18em] font-semibold text-white">
               {program.level === "beginner" ? t("trainingLevelBeginner") : t("trainingLevelIntermediate")}
-            </Badge>
-            <div className="flex items-center gap-1.5 px-2.5 h-7 rounded-full bg-black/40 backdrop-blur-md border border-white/10">
-              <Flame size={11} className="text-[#FF6D6D]" />
-              <span className="text-[11px] text-white font-medium tabular-nums">{program.sessions.length} séances</span>
+            </span>
+            <div className="flex items-center gap-1.5 px-2.5 h-6 rounded-md bg-black/50 backdrop-blur-md border border-white/10">
+              <span className="text-[10.5px] text-white/90 font-semibold tabular-nums">{program.sessions.length}</span>
+              <span className="text-[9.5px] uppercase tracking-[0.14em] text-white/60 font-semibold">séances</span>
             </div>
           </div>
+
           {/* Title block */}
           <div className="absolute inset-x-0 bottom-0 p-5">
-            <h2 className="text-[28px] font-bold text-white leading-[1.05] tracking-tight">{program.title}</h2>
-            <p className="text-[12.5px] text-white/70 mt-1.5 max-w-[34ch] leading-relaxed">{program.subtitle}</p>
-            {/* Stats strip */}
-            <div className="flex items-center gap-4 mt-3.5 pt-3 border-t border-white/10">
-              <div className="flex items-center gap-1.5">
-                <Timer size={12} className="text-white/50" />
-                <span className="text-[11px] text-white/70 tabular-nums">~{totalMin} min</span>
-              </div>
-              <div className="w-px h-3 bg-white/10" />
-              <div className="flex items-center gap-1.5">
-                <Dumbbell size={12} className="text-white/50" />
-                <span className="text-[11px] text-white/70 tabular-nums">
-                  {program.sessions.reduce((s, x) => s + x.exercises.length, 0)} exercices
-                </span>
-              </div>
-              <div className="w-px h-3 bg-white/10" />
-              <div className="flex items-center gap-1.5">
-                <Zap size={12} className="text-[#FFD700]/80" />
-                <span className="text-[11px] text-white/70 tabular-nums">+{program.sessions.length * 100} XP</span>
-              </div>
-            </div>
+            <h2 className="text-[26px] font-semibold text-white leading-[1.05] tracking-[-0.02em]">{program.title}</h2>
+            <p className="text-[12.5px] text-white/65 mt-1.5 max-w-[36ch] leading-relaxed">{program.subtitle}</p>
+          </div>
+        </div>
+
+        {/* Stats strip — outside image, flat */}
+        <div className="flex items-center divide-x divide-white/[0.06] border-t border-white/[0.06]">
+          <div className="flex-1 flex items-center justify-center gap-1.5 py-3">
+            <Timer size={12} className="text-gray-7" />
+            <span className="text-[11.5px] text-gray-10 tabular-nums font-medium">~{totalMin} min</span>
+          </div>
+          <div className="flex-1 flex items-center justify-center gap-1.5 py-3">
+            <Dumbbell size={12} className="text-gray-7" />
+            <span className="text-[11.5px] text-gray-10 tabular-nums font-medium">
+              {program.sessions.reduce((s, x) => s + x.exercises.length, 0)} exercices
+            </span>
+          </div>
+          <div className="flex-1 flex items-center justify-center gap-1.5 py-3">
+            <Zap size={12} className="text-[#FFD700]/80" />
+            <span className="text-[11.5px] text-gray-10 tabular-nums font-medium">+{program.sessions.length * 100} XP</span>
           </div>
         </div>
       </motion.div>
@@ -848,31 +913,45 @@ function ProgramDetailView({
             >
               <Card
                 className={cn(
-                  "border-white/[0.05] bg-white/[0.02] overflow-hidden transition-colors",
+                  "relative border-white/[0.05] bg-white/[0.02] overflow-hidden transition-colors",
                   !done && "hover:bg-white/[0.03] hover:border-white/[0.08]",
                   done && "opacity-50"
                 )}
               >
-                <CardContent className="p-4">
-                  {/* Header row */}
-                  <div className="flex items-center gap-3 mb-3">
+                {/* Big watermark number — bottom-right, behind content */}
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    "pointer-events-none select-none absolute -right-3 -bottom-6 font-black leading-none tracking-[-0.08em] tabular-nums text-[150px]",
+                    done ? "text-white/[0.02]" : "text-white/[0.035]"
+                  )}
+                >
+                  {num}
+                </span>
+
+                <CardContent className="relative p-4">
+                  {/* Header row — small index + title + focus, XP moved inline */}
+                  <div className="flex items-start gap-3 mb-3">
                     <span
                       className={cn(
-                        "shrink-0 text-[11px] font-semibold tabular-nums",
+                        "shrink-0 text-[10.5px] font-semibold tabular-nums tracking-[0.14em] uppercase mt-[2px]",
                         done ? "text-gray-7" : "text-[#FF6D6D]"
                       )}
                     >
                       {num}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className="text-[15px] font-semibold text-gray-12 leading-tight tracking-tight truncate">
+                      <p className="text-[15px] font-semibold text-gray-12 leading-tight tracking-tight">
                         {session.name}
                       </p>
-                      <p className="text-[11px] text-gray-8 mt-0.5 truncate">
-                        {session.focus} <span className="text-gray-6">·</span> ~{session.durationMin} min
-                      </p>
+                      <div className="flex items-center gap-1.5 mt-1 text-[11px] text-gray-8">
+                        <span className="truncate">{session.focus}</span>
+                        <span className="text-gray-6">·</span>
+                        <span className="tabular-nums whitespace-nowrap">~{session.durationMin} min</span>
+                        <span className="text-gray-6">·</span>
+                        <span className="tabular-nums text-gray-7 whitespace-nowrap">+100 XP</span>
+                      </div>
                     </div>
-                    <span className="shrink-0 text-[10.5px] font-semibold text-gray-7 tabular-nums">+100 XP</span>
                   </div>
 
                   {archive && (
