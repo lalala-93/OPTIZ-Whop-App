@@ -9,16 +9,13 @@ import {
   ChevronDown,
   ChevronRight,
   Clock,
-  Copy,
   Dumbbell,
-  ExternalLink,
   Flame,
   Minus,
   Play,
   Plus,
   Sparkles,
   Timer,
-  Trophy,
   Volume2,
   VolumeX,
   X,
@@ -360,38 +357,29 @@ function WorkoutFunnel({
         </div>
       </div>
 
-      {/* Global progress bar with % */}
-      <div className="mb-1.5">
-        <div className="flex items-center justify-between mb-1.5">
-          <span className="text-[10px] uppercase tracking-[0.18em] text-gray-7 font-semibold">
-            {t("trainingExerciseOf", { current: String(exIdx + 1), total: String(session.exercises.length) })}
-          </span>
-          <span className="text-[10px] text-gray-8 tabular-nums font-medium">{Math.round(globalProgress)}%</span>
-        </div>
-        <div className="relative h-1.5 rounded-full bg-white/[0.05] overflow-hidden">
-          <motion.div
-            className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-[#FF5A3C] via-[#E80000] to-[#9E1912]"
-            initial={false}
-            animate={{ width: `${globalProgress}%` }}
-            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-          />
-        </div>
-        {/* Exercise step dots */}
-        <div className="flex items-center gap-1 mt-2">
+      {/* Single-line progress — segmented bar with inline label */}
+      <div className="flex items-center gap-3 mb-4">
+        <span className="text-[10.5px] uppercase tracking-[0.16em] text-gray-8 font-semibold shrink-0">
+          {t("trainingExerciseOf", { current: String(exIdx + 1), total: String(session.exercises.length) })}
+        </span>
+        <div className="flex items-center gap-[3px] flex-1 min-w-0">
           {session.exercises.map((_, i) => (
-            <div
-              key={i}
-              className={cn(
-                "h-[3px] rounded-full flex-1 transition-all duration-300",
-                i < exIdx
-                  ? "bg-[#E80000]/80"
-                  : i === exIdx
-                  ? "bg-[#FF6D6D]"
-                  : "bg-white/[0.05]"
-              )}
-            />
+            <div key={i} className="h-[3px] rounded-full flex-1 bg-white/[0.05] overflow-hidden">
+              <motion.div
+                className="h-full bg-[#E80000] rounded-full origin-left"
+                initial={false}
+                animate={{
+                  scaleX: i < exIdx ? 1 : i === exIdx ? (totalSetsInEx ? doneCount / totalSetsInEx : 0) : 0,
+                }}
+                transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                style={{ transformOrigin: "left" }}
+              />
+            </div>
           ))}
         </div>
+        <span className="text-[10.5px] text-gray-8 tabular-nums font-medium shrink-0 w-9 text-right">
+          {Math.round(globalProgress)}%
+        </span>
       </div>
 
       {ex && (
@@ -402,255 +390,218 @@ function WorkoutFunnel({
           transition={{ type: "spring", stiffness: 380, damping: 32 }}
           className="mt-4"
         >
-          {/* Exercise hero card */}
-          <Card className="relative border-white/[0.06] bg-gradient-to-b from-white/[0.05] to-white/[0.01] mb-3 overflow-hidden">
-            <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-gradient-to-b from-[#FF5A3C] via-[#E80000] to-[#7A0E0E]" />
-            <CardContent className="p-4 pl-5">
+          {/* Exercise hero card — minimalist */}
+          <Card className="border-white/[0.05] bg-white/[0.02] mb-3 overflow-hidden">
+            <CardContent className="p-4">
               <div className="flex items-start gap-3">
                 <div className="min-w-0 flex-1">
-                  <h3 className="text-[19px] font-bold text-gray-12 leading-[1.1] tracking-tight">{ex.name}</h3>
-                  <div className="flex flex-wrap items-center gap-1.5 mt-2">
-                    <Badge className="bg-white/[0.05] text-gray-9 border-white/[0.08] text-[10px] font-medium hover:bg-white/[0.05] px-2 py-0.5">
-                      {ex.muscles}
-                    </Badge>
-                    <Badge className="bg-[#E80000]/10 text-[#FF8A8A] border-[#E80000]/20 text-[10px] font-medium hover:bg-[#E80000]/10 px-2 py-0.5 tabular-nums">
-                      {totalSetsInEx}×{ex.repsLabel ?? ex.reps}
-                    </Badge>
-                  </div>
+                  <h3 className="text-[18px] font-semibold text-gray-12 leading-[1.15] tracking-tight">{ex.name}</h3>
+                  <p className="text-[11.5px] text-gray-8 mt-1">
+                    {ex.muscles} <span className="text-gray-6">·</span>{" "}
+                    <span className="text-gray-9 font-medium tabular-nums">{totalSetsInEx}×{ex.repsLabel ?? ex.reps}</span>
+                  </p>
                 </div>
                 <a
                   href={ex.videoUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={t("trainingVideoAria")}
-                  className="w-12 h-12 rounded-2xl bg-[#E80000]/12 border border-[#E80000]/25 flex items-center justify-center shrink-0 hover:bg-[#E80000]/20 active:scale-95 transition-all shadow-[0_6px_16px_-6px_rgba(232,0,0,0.45)]"
+                  className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center shrink-0 hover:bg-white/[0.08] active:scale-95 transition-all"
                 >
-                  <Play size={18} className="text-[#FF6D6D] ml-0.5" fill="currentColor" />
+                  <Play size={14} className="text-[#FF6D6D] ml-0.5" fill="currentColor" />
                 </a>
               </div>
               {ex.note && (
-                <div className="mt-3 pt-3 border-t border-white/[0.05] flex items-start gap-2">
-                  <Timer size={12} className="text-gray-7 mt-0.5 shrink-0" />
-                  <p className="text-[11.5px] text-gray-9 leading-relaxed">{ex.note}</p>
-                </div>
+                <p className="text-[11px] text-gray-8 mt-2.5 pt-2.5 border-t border-white/[0.05] leading-relaxed">
+                  {ex.note}
+                </p>
               )}
             </CardContent>
           </Card>
 
-          {/* Set cards */}
-          <div className="flex items-center justify-between px-1 mb-2">
-            <span className="text-[10px] uppercase tracking-[0.18em] text-gray-7 font-semibold">
-              {totalSetsInEx} {t("trainingHeaderSet")}{totalSetsInEx > 1 ? "s" : ""}
-            </span>
-            <span className="text-[10px] text-gray-8 tabular-nums">
-              {doneCount} / {totalSetsInEx}
-            </span>
-          </div>
+          {/* Set tracker — EverFit-style compact table */}
+          <Card className="border-white/[0.05] bg-white/[0.02] overflow-hidden">
+            <CardContent className="p-0">
+              {/* Header */}
+              <div className="grid grid-cols-[2rem_minmax(0,3.2rem)_1fr_1fr_2.4rem_2.2rem] items-center gap-2 px-3 py-2 border-b border-white/[0.05]">
+                <span className="text-[9.5px] uppercase tracking-[0.14em] text-gray-7 font-semibold text-center">
+                  {t("trainingHeaderSet")}
+                </span>
+                <span className="text-[9.5px] uppercase tracking-[0.14em] text-gray-7 font-semibold text-center">
+                  {t("trainingHeaderPrev")}
+                </span>
+                <span className="text-[9.5px] uppercase tracking-[0.14em] text-gray-7 font-semibold text-center">
+                  {t("trainingHeaderKg")}
+                </span>
+                <span className="text-[9.5px] uppercase tracking-[0.14em] text-gray-7 font-semibold text-center">
+                  {t("trainingHeaderReps")}
+                </span>
+                <span className="text-[9.5px] uppercase tracking-[0.14em] text-gray-7 font-semibold text-center">
+                  RPE
+                </span>
+                <span />
+              </div>
 
-          <div className="space-y-2">
-            {rows.map((row, i) => {
-              const isPr = prKeys.includes(`${ex.id}-${i}`);
-              const isActive = i === activeSetIdx && !row.done;
-              const targetReps = ex.perSetReps?.[i] ?? ex.reps;
-              const prevSet = prevRows[i];
+              {/* Rows */}
+              <div className="divide-y divide-white/[0.04]">
+                {rows.map((row, i) => {
+                  const isPr = prKeys.includes(`${ex.id}-${i}`);
+                  const isActive = i === activeSetIdx && !row.done;
+                  const targetReps = ex.perSetReps?.[i] ?? ex.reps;
+                  const prevSet = prevRows[i];
+                  const prevLabel = prevSet
+                    ? prevSet.load > 0
+                      ? `${prevSet.load}×${prevSet.reps}`
+                      : `${prevSet.reps}r`
+                    : "—";
 
-              return (
-                <motion.div
-                  key={i}
-                  layout
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.25, delay: i * 0.04 }}
-                  className={cn(
-                    "relative rounded-2xl border overflow-hidden transition-all",
-                    row.done
-                      ? "border-[#E80000]/20 bg-[#E80000]/[0.04]"
-                      : isActive
-                      ? "border-[#E80000]/40 bg-gradient-to-b from-[#E80000]/[0.08] to-[#E80000]/[0.02] shadow-[0_8px_24px_-12px_rgba(232,0,0,0.45)]"
-                      : "border-white/[0.06] bg-white/[0.02]"
-                  )}
-                >
-                  {/* Active set pulse accent */}
-                  {isActive && (
-                    <motion.span
-                      aria-hidden
-                      className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#E80000]"
-                      initial={{ opacity: 0.6 }}
-                      animate={{ opacity: [0.6, 1, 0.6] }}
-                      transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                    />
-                  )}
+                  return (
+                    <div
+                      key={i}
+                      className={cn(
+                        "grid grid-cols-[2rem_minmax(0,3.2rem)_1fr_1fr_2.4rem_2.2rem] items-center gap-2 px-3 py-2 transition-colors",
+                        isActive && !row.done && "bg-[#E80000]/[0.06]",
+                        row.done && "bg-white/[0.015]"
+                      )}
+                    >
+                      {/* Set # */}
+                      <div className="flex items-center justify-center gap-1">
+                        <span
+                          className={cn(
+                            "inline-flex items-center justify-center w-6 h-6 rounded-md text-[11.5px] font-semibold tabular-nums",
+                            row.done
+                              ? "bg-[#E80000]/12 text-[#FF6D6D]"
+                              : isActive
+                              ? "bg-[#E80000] text-white"
+                              : "bg-white/[0.04] text-gray-8"
+                          )}
+                        >
+                          {i + 1}
+                        </span>
+                        {isPr && (
+                          <Sparkles size={9} className="text-[#FFD700] shrink-0" />
+                        )}
+                      </div>
 
-                  <div className="p-3 pl-4">
-                    {/* Top row: set #, PR, prev, check */}
-                    <div className="flex items-center gap-2 mb-2.5">
+                      {/* Prev (tap to copy) */}
+                      <button
+                        type="button"
+                        onClick={() => prevSet && copyFromPrev(i)}
+                        disabled={!prevSet || row.done}
+                        className={cn(
+                          "text-[11px] tabular-nums text-center truncate",
+                          prevSet && !row.done
+                            ? "text-gray-8 hover:text-[#FF6D6D] transition-colors cursor-pointer"
+                            : "text-gray-6"
+                        )}
+                        aria-label={prevSet ? t("trainingCopyPrev") : undefined}
+                      >
+                        {prevLabel}
+                      </button>
+
+                      {/* KG */}
+                      <Input
+                        type="number"
+                        value={row.load}
+                        inputMode="decimal"
+                        step="0.5"
+                        onChange={(e) => upd(ex.id, i, { load: e.target.value })}
+                        disabled={row.done}
+                        placeholder="0"
+                        className="h-9 w-full rounded-md bg-white/[0.03] border border-white/[0.06] text-center text-[13.5px] font-semibold text-gray-12 placeholder:text-gray-6 disabled:opacity-55 tabular-nums focus:border-[#E80000]/40 focus:bg-white/[0.06] transition-colors px-0"
+                      />
+
+                      {/* Reps with inline steppers */}
                       <div
                         className={cn(
-                          "inline-flex items-center justify-center rounded-lg w-7 h-7 text-[12.5px] font-bold tabular-nums shrink-0",
+                          "flex items-center h-9 rounded-md border overflow-hidden transition-colors",
                           row.done
-                            ? "bg-[#E80000] text-white"
-                            : isActive
-                            ? "bg-[#E80000]/15 text-[#FF6D6D] border border-[#E80000]/25"
-                            : "bg-white/[0.05] text-gray-8 border border-white/[0.06]"
+                            ? "bg-white/[0.02] border-white/[0.05] opacity-55"
+                            : "bg-white/[0.03] border-white/[0.06] focus-within:border-[#E80000]/40 focus-within:bg-white/[0.06]"
                         )}
                       >
-                        {i + 1}
-                      </div>
-                      <span
-                        className={cn(
-                          "text-[10.5px] uppercase tracking-[0.14em] font-semibold",
-                          row.done ? "text-[#FF8A8A]" : isActive ? "text-[#FF6D6D]" : "text-gray-7"
-                        )}
-                      >
-                        {row.done ? "Validée" : isActive ? "En cours" : "À venir"}
-                      </span>
-
-                      {isPr && (
-                        <Badge className="h-5 px-1.5 bg-[#FFD700]/15 text-[#FFD700] border-[#FFD700]/30 text-[9.5px] font-semibold hover:bg-[#FFD700]/15">
-                          <Sparkles size={9} className="mr-0.5" />PR
-                        </Badge>
-                      )}
-
-                      {prevSet && !row.done && (
                         <button
                           type="button"
-                          onClick={() => copyFromPrev(i)}
-                          className="ml-auto inline-flex items-center gap-1 px-2 h-6 rounded-md bg-white/[0.03] border border-white/[0.06] text-[10px] text-gray-8 hover:text-gray-11 hover:bg-white/[0.06] transition-colors"
-                          aria-label={t("trainingCopyPrev")}
+                          onClick={() => {
+                            const cur = parseNum(row.reps, targetReps);
+                            upd(ex.id, i, { reps: String(Math.max(0, cur - 1)) });
+                          }}
+                          disabled={row.done}
+                          className="shrink-0 w-6 h-full flex items-center justify-center text-gray-8 hover:text-gray-11 hover:bg-white/[0.04] disabled:opacity-50 transition-colors"
+                          aria-label="−1"
                         >
-                          <Copy size={10} />
-                          <span className="tabular-nums">{prevSet.load > 0 ? `${prevSet.load} kg` : ""} × {prevSet.reps}</span>
+                          <Minus size={11} />
                         </button>
-                      )}
+                        <Input
+                          type="number"
+                          value={row.reps}
+                          inputMode="numeric"
+                          onChange={(e) => upd(ex.id, i, { reps: e.target.value })}
+                          disabled={row.done}
+                          placeholder={String(targetReps > 0 ? targetReps : 5)}
+                          className="flex-1 min-w-0 h-full border-0 bg-transparent text-center text-[13.5px] font-semibold text-gray-12 placeholder:text-gray-6 tabular-nums p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const cur = parseNum(row.reps, targetReps);
+                            upd(ex.id, i, { reps: String(cur + 1) });
+                          }}
+                          disabled={row.done}
+                          className="shrink-0 w-6 h-full flex items-center justify-center text-gray-8 hover:text-gray-11 hover:bg-white/[0.04] disabled:opacity-50 transition-colors"
+                          aria-label="+1"
+                        >
+                          <Plus size={11} />
+                        </button>
+                      </div>
 
+                      {/* RPE */}
+                      <div className="relative">
+                        <select
+                          value={row.rpe || ""}
+                          onChange={(e) => upd(ex.id, i, { rpe: e.target.value })}
+                          disabled={row.done}
+                          className="h-9 w-full rounded-md bg-white/[0.03] border border-white/[0.06] text-center text-[12.5px] font-semibold text-gray-12 tabular-nums appearance-none pr-3.5 pl-1 disabled:opacity-55 focus:border-[#E80000]/40 focus:bg-white/[0.06] focus:outline-none transition-colors cursor-pointer"
+                        >
+                          <option value="">—</option>
+                          {[6, 7, 8, 9, 10].map((v) => (
+                            <option key={v} value={v}>{v}</option>
+                          ))}
+                        </select>
+                        <ChevronDown size={9} className="absolute right-1 top-1/2 -translate-y-1/2 text-gray-7 pointer-events-none" />
+                      </div>
+
+                      {/* Check */}
                       <Button
                         type="button"
                         size="icon"
                         onClick={() => check(i)}
                         className={cn(
-                          "shrink-0 rounded-full transition-all ml-auto",
+                          "w-8 h-8 rounded-md transition-all mx-auto",
                           row.done
-                            ? "w-9 h-9 bg-[#E80000] text-white hover:bg-[#E80000]/90 shadow-[0_4px_14px_-4px_rgba(232,0,0,0.65)]"
+                            ? "bg-[#E80000] text-white hover:bg-[#E80000]/90"
                             : isActive
-                            ? "w-10 h-10 bg-[#E80000] text-white hover:bg-[#E80000]/90 shadow-[0_6px_18px_-4px_rgba(232,0,0,0.7)] active:scale-95"
-                            : "w-9 h-9 bg-white/[0.04] border border-white/[0.08] text-gray-7 hover:bg-white/[0.08]",
-                          prevSet && !row.done && "!ml-2"
+                            ? "bg-[#E80000] text-white hover:bg-[#E80000]/90 active:scale-95"
+                            : "bg-white/[0.04] border border-white/[0.08] text-gray-7 hover:bg-white/[0.08]"
                         )}
                       >
-                        <Check size={isActive ? 16 : 14} strokeWidth={2.75} />
+                        <Check size={13} strokeWidth={2.75} />
                       </Button>
                     </div>
-
-                    {/* Controls grid */}
-                    <div className="grid grid-cols-3 gap-2">
-                      {/* Weight */}
-                      <label className="flex flex-col gap-1.5 min-w-0">
-                        <span className="text-[9.5px] uppercase tracking-[0.14em] text-gray-7 font-semibold pl-2">
-                          {t("trainingHeaderKg")}
-                        </span>
-                        <Input
-                          type="number"
-                          value={row.load}
-                          inputMode="decimal"
-                          step="0.5"
-                          onChange={(e) => upd(ex.id, i, { load: e.target.value })}
-                          disabled={row.done}
-                          placeholder="0"
-                          className={cn(
-                            "h-11 rounded-xl text-center text-[16px] font-semibold text-gray-12 placeholder:text-gray-6 disabled:opacity-60 tabular-nums transition-colors",
-                            row.done
-                              ? "bg-white/[0.02] border-white/[0.05]"
-                              : "bg-white/[0.04] border border-white/[0.08] focus:bg-white/[0.07] focus:border-[#E80000]/40"
-                          )}
-                        />
-                      </label>
-
-                      {/* Reps stepper */}
-                      <div className="flex flex-col gap-1.5 min-w-0">
-                        <span className="text-[9.5px] uppercase tracking-[0.14em] text-gray-7 font-semibold pl-2">
-                          {t("trainingHeaderReps")}
-                        </span>
-                        <div className={cn(
-                          "flex items-center h-11 rounded-xl overflow-hidden border",
-                          row.done ? "bg-white/[0.02] border-white/[0.05] opacity-60" : "bg-white/[0.04] border-white/[0.08]"
-                        )}>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const cur = parseNum(row.reps, targetReps);
-                              upd(ex.id, i, { reps: String(Math.max(0, cur - 1)) });
-                            }}
-                            disabled={row.done}
-                            className="flex items-center justify-center w-8 h-full text-gray-8 hover:text-gray-11 hover:bg-white/[0.04] active:bg-white/[0.08] disabled:opacity-50 transition-colors"
-                            aria-label="−1"
-                          >
-                            <Minus size={13} />
-                          </button>
-                          <Input
-                            type="number"
-                            value={row.reps}
-                            inputMode="numeric"
-                            onChange={(e) => upd(ex.id, i, { reps: e.target.value })}
-                            disabled={row.done}
-                            placeholder={String(targetReps > 0 ? targetReps : 5)}
-                            className="flex-1 h-full border-0 bg-transparent text-center text-[16px] font-bold text-gray-12 placeholder:text-gray-6 tabular-nums p-0 min-w-0 focus-visible:ring-0 focus-visible:ring-offset-0"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const cur = parseNum(row.reps, targetReps);
-                              upd(ex.id, i, { reps: String(cur + 1) });
-                            }}
-                            disabled={row.done}
-                            className="flex items-center justify-center w-8 h-full text-gray-8 hover:text-gray-11 hover:bg-white/[0.04] active:bg-white/[0.08] disabled:opacity-50 transition-colors"
-                            aria-label="+1"
-                          >
-                            <Plus size={13} />
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* RPE chips — compact dropdown trigger */}
-                      <div className="flex flex-col gap-1.5 min-w-0">
-                        <span className="text-[9.5px] uppercase tracking-[0.14em] text-gray-7 font-semibold pl-2">
-                          RPE
-                        </span>
-                        <div className="relative h-11">
-                          <select
-                            value={row.rpe || ""}
-                            onChange={(e) => upd(ex.id, i, { rpe: e.target.value })}
-                            disabled={row.done}
-                            className={cn(
-                              "absolute inset-0 w-full h-full rounded-xl text-center text-[16px] font-semibold text-gray-12 disabled:opacity-60 appearance-none pr-5 tabular-nums transition-colors cursor-pointer",
-                              row.done
-                                ? "bg-white/[0.02] border border-white/[0.05]"
-                                : "bg-white/[0.04] border border-white/[0.08] focus:bg-white/[0.07] focus:border-[#E80000]/40"
-                            )}
-                          >
-                            <option value="">—</option>
-                            {[6, 7, 8, 9, 10].map((v) => (
-                              <option key={v} value={v}>{v}</option>
-                            ))}
-                          </select>
-                          <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-7 pointer-events-none" />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
         </motion.div>
       )}
 
-      {/* Rest overlay */}
+      {/* Rest overlay — minimalist */}
       <AnimatePresence>
         {rest && ex && (() => {
           const nextSetIdx = rows.findIndex((r) => !r.done);
           const nextSet = nextSetIdx >= 0 ? rows[nextSetIdx] : null;
           const nextTargetReps = nextSetIdx >= 0 ? (ex.perSetReps?.[nextSetIdx] ?? ex.reps) : 0;
-          const isEndingSoon = rest.secondsLeft <= 5;
           const progressPct = 1 - rest.secondsLeft / rest.total;
           const RADIUS = 46;
           const CIRC = 2 * Math.PI * RADIUS;
@@ -661,125 +612,83 @@ function WorkoutFunnel({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.25 }}
-              className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-md px-4 pb-[calc(env(safe-area-inset-bottom)+90px)] sm:pb-0"
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/85 backdrop-blur-md px-4 pb-[calc(env(safe-area-inset-bottom)+90px)] sm:pb-0"
             >
               <motion.div
-                initial={{ y: 40, opacity: 0, scale: 0.95 }}
-                animate={{ y: 0, opacity: 1, scale: 1 }}
-                exit={{ y: 40, opacity: 0, scale: 0.95 }}
-                transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                className="relative w-full max-w-md rounded-[28px] overflow-hidden border border-white/[0.08] bg-gradient-to-b from-[#1a1414] to-[#0a0707] shadow-[0_30px_80px_-20px_rgba(232,0,0,0.4)]"
+                initial={{ y: 24, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 24, opacity: 0 }}
+                transition={{ type: "spring", stiffness: 380, damping: 32 }}
+                className="relative w-full max-w-sm rounded-[24px] border border-white/[0.06] bg-[#0F0F10]"
               >
-                {/* Ambient glow */}
-                <motion.div
-                  aria-hidden
-                  className="absolute inset-0 pointer-events-none opacity-30"
-                  style={{
-                    background: isEndingSoon
-                      ? "radial-gradient(60% 50% at 50% 10%, rgba(255,58,58,0.45) 0%, transparent 70%)"
-                      : "radial-gradient(60% 50% at 50% 10%, rgba(232,0,0,0.28) 0%, transparent 70%)",
-                  }}
-                  animate={isEndingSoon ? { opacity: [0.25, 0.55, 0.25] } : { opacity: 0.3 }}
-                  transition={isEndingSoon ? { duration: 1, repeat: Infinity } : {}}
-                />
-
                 {/* Close */}
                 <button
                   type="button"
                   onClick={skipRest}
                   aria-label={t("trainingRestSkip")}
-                  className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-gray-8 hover:text-gray-11 hover:bg-white/[0.08] transition-colors z-10"
+                  className="absolute top-3.5 right-3.5 w-8 h-8 rounded-full flex items-center justify-center text-gray-7 hover:text-gray-11 hover:bg-white/[0.04] transition-colors z-10"
                 >
                   <X size={14} />
                 </button>
 
-                <div className="relative p-7 pt-8">
+                <div className="p-6 pt-7">
                   {/* Label */}
-                  <div className="flex items-center justify-center gap-2 mb-5">
-                    <motion.span
-                      className="w-1.5 h-1.5 rounded-full bg-[#FF6D6D]"
-                      animate={{ opacity: [1, 0.3, 1] }}
-                      transition={{ duration: 1.4, repeat: Infinity }}
-                    />
-                    <span className="text-[10.5px] uppercase tracking-[0.24em] text-gray-8 font-semibold">
-                      {t("trainingRestTitle")} · récupération
-                    </span>
-                  </div>
+                  <p className="text-center text-[10.5px] uppercase tracking-[0.22em] text-gray-7 font-semibold mb-5">
+                    {t("trainingRestTitle")}
+                  </p>
 
                   {/* Ring */}
-                  <div className="flex items-center justify-center mb-5">
-                    <motion.div
-                      className="relative w-48 h-48"
-                      animate={isEndingSoon ? { scale: [1, 1.03, 1] } : { scale: 1 }}
-                      transition={isEndingSoon ? { duration: 1, repeat: Infinity, ease: "easeInOut" } : {}}
-                    >
+                  <div className="flex items-center justify-center mb-6">
+                    <div className="relative w-44 h-44">
                       <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-                        <circle cx="50" cy="50" r={RADIUS} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="3" />
+                        <circle cx="50" cy="50" r={RADIUS} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="2.5" />
                         <circle
                           cx="50"
                           cy="50"
                           r={RADIUS}
                           fill="none"
-                          stroke={isEndingSoon ? "#FF3B3B" : "url(#restGrad)"}
-                          strokeWidth="3.5"
+                          stroke="#E80000"
+                          strokeWidth="3"
                           strokeLinecap="round"
                           strokeDasharray={CIRC}
                           strokeDashoffset={CIRC * progressPct}
-                          style={{ transition: "stroke-dashoffset 1s linear, stroke 0.3s ease" }}
+                          style={{ transition: "stroke-dashoffset 1s linear" }}
                         />
-                        <defs>
-                          <linearGradient id="restGrad" x1="0" y1="0" x2="1" y2="1">
-                            <stop offset="0%" stopColor="#FF6D4A" />
-                            <stop offset="55%" stopColor="#E80000" />
-                            <stop offset="100%" stopColor="#7A0E0E" />
-                          </linearGradient>
-                        </defs>
                       </svg>
                       <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <p className="text-[9px] uppercase tracking-[0.28em] text-gray-7 mb-1.5 font-semibold">
-                          {t("trainingRestNextSet")}
-                        </p>
                         <motion.p
                           key={rest.secondsLeft}
-                          initial={{ scale: 0.9, opacity: 0.5 }}
-                          animate={{ scale: 1, opacity: 1 }}
-                          transition={{ duration: 0.15 }}
-                          className={cn(
-                            "text-[60px] font-bold tabular-nums leading-none tracking-tighter",
-                            isEndingSoon ? "text-[#FF6D6D]" : "text-gray-12"
-                          )}
+                          initial={{ opacity: 0.6, y: -2 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.18 }}
+                          className="text-[64px] font-semibold text-gray-12 tabular-nums leading-none tracking-[-0.04em]"
                         >
                           {rest.secondsLeft}
                         </motion.p>
-                        <p className="text-[11px] text-gray-7 font-medium mt-1 uppercase tracking-wider">
+                        <p className="text-[10.5px] text-gray-7 font-medium mt-2 uppercase tracking-[0.22em]">
                           secondes
                         </p>
                       </div>
-                    </motion.div>
+                    </div>
                   </div>
 
                   {/* Next-up preview */}
                   {nextSet && (
-                    <div className="relative rounded-2xl border border-white/[0.06] bg-black/30 px-4 py-3 mb-5">
-                      <div className="flex items-center gap-2.5">
-                        <div className="shrink-0 w-9 h-9 rounded-lg bg-[#E80000]/12 border border-[#E80000]/25 flex items-center justify-center">
-                          <span className="text-[13px] font-bold text-[#FF6D6D] tabular-nums">{nextSetIdx + 1}</span>
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-[10px] uppercase tracking-[0.18em] text-gray-7 font-semibold leading-none mb-1">
-                            Prochaine série
-                          </p>
-                          <p className="text-[13px] text-gray-11 font-medium truncate">{ex.name}</p>
-                        </div>
-                        <div className="shrink-0 text-right">
-                          <p className="text-[10px] uppercase tracking-wider text-gray-7 leading-none mb-0.5">Objectif</p>
-                          <p className="text-[13px] font-bold text-gray-12 tabular-nums">
-                            {nextSet.load && parseNum(nextSet.load, 0) > 0 ? `${nextSet.load} kg · ` : ""}
-                            {nextTargetReps > 0 ? nextTargetReps : nextSet.reps} reps
-                          </p>
-                        </div>
+                    <div className="flex items-center gap-3 rounded-xl border border-white/[0.05] bg-white/[0.02] px-3 py-2.5 mb-5">
+                      <span className="shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-md bg-[#E80000]/10 text-[#FF6D6D] text-[11.5px] font-semibold tabular-nums">
+                        {nextSetIdx + 1}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[9.5px] uppercase tracking-[0.16em] text-gray-7 font-semibold leading-none">
+                          Prochaine série
+                        </p>
+                        <p className="text-[12.5px] text-gray-11 font-medium truncate mt-1">{ex.name}</p>
                       </div>
+                      <p className="shrink-0 text-[12.5px] font-semibold text-gray-12 tabular-nums">
+                        {nextSet.load && parseNum(nextSet.load, 0) > 0 ? `${nextSet.load}×` : ""}
+                        {nextTargetReps > 0 ? nextTargetReps : nextSet.reps}
+                      </p>
                     </div>
                   )}
 
@@ -789,16 +698,16 @@ function WorkoutFunnel({
                       type="button"
                       onClick={() => addRest(15)}
                       variant="outline"
-                      className="h-12 flex-1 rounded-2xl bg-white/[0.03] border-white/[0.08] text-gray-11 text-[13.5px] font-semibold hover:bg-white/[0.07] gap-1.5"
+                      className="h-11 flex-1 rounded-xl bg-white/[0.03] border-white/[0.07] text-gray-11 text-[13px] font-semibold hover:bg-white/[0.06]"
                     >
-                      <Plus size={13} /> 15 s
+                      +15 s
                     </Button>
                     <Button
                       type="button"
                       onClick={skipRest}
-                      className="h-12 flex-[1.4] rounded-2xl optiz-gradient-bg border-0 text-white text-[13.5px] font-semibold hover:opacity-95 active:scale-[0.97] transition-transform gap-1.5 shadow-[0_10px_24px_-8px_rgba(232,0,0,0.6)]"
+                      className="h-11 flex-[1.3] rounded-xl optiz-gradient-bg border-0 text-white text-[13px] font-semibold hover:opacity-95 active:scale-[0.97] transition-transform"
                     >
-                      {t("trainingRestSkip")} <ArrowRight size={14} />
+                      {t("trainingRestSkip")}
                     </Button>
                   </div>
                 </div>
@@ -923,8 +832,8 @@ function ProgramDetailView({
         </p>
       </div>
 
-      {/* Session cards */}
-      <div className="space-y-3.5">
+      {/* Session cards — minimalist */}
+      <div className="space-y-2.5">
         {program.sessions.map((session, sIdx) => {
           const done = isSessionDone(session.id);
           const archive = getLastArchive(session.id);
@@ -933,90 +842,57 @@ function ProgramDetailView({
           return (
             <motion.div
               key={session.id}
-              initial={{ opacity: 0, y: 14 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.35, delay: sIdx * 0.07, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ duration: 0.3, delay: sIdx * 0.05, ease: [0.22, 1, 0.36, 1] }}
             >
               <Card
                 className={cn(
-                  "relative border-white/[0.06] bg-gradient-to-b from-white/[0.045] to-white/[0.01] overflow-hidden transition-all",
-                  !done && "hover:border-white/[0.12]",
-                  done && "opacity-55"
+                  "border-white/[0.05] bg-white/[0.02] overflow-hidden transition-colors",
+                  !done && "hover:bg-white/[0.03] hover:border-white/[0.08]",
+                  done && "opacity-50"
                 )}
               >
-                {/* Left accent strip — thicker, gradient */}
-                <div
-                  className={cn(
-                    "absolute left-0 top-0 bottom-0 w-[4px]",
-                    done
-                      ? "bg-gray-6/40"
-                      : "bg-gradient-to-b from-[#FF5A3C] via-[#E80000] to-[#7A0E0E]"
-                  )}
-                />
-                {/* Watermark number (decorative) */}
-                <span
-                  aria-hidden
-                  className={cn(
-                    "absolute -top-4 right-3 font-bold leading-none pointer-events-none select-none tabular-nums",
-                    done ? "text-white/[0.02]" : "text-white/[0.035]"
-                  )}
-                  style={{ fontSize: 140, letterSpacing: "-0.04em" }}
-                >
-                  {num}
-                </span>
-
-                <CardContent className="relative p-4 pl-5">
+                <CardContent className="p-4">
                   {/* Header row */}
-                  <div className="flex items-start gap-3 mb-3.5">
-                    <div
+                  <div className="flex items-center gap-3 mb-3">
+                    <span
                       className={cn(
-                        "shrink-0 flex flex-col items-center justify-center rounded-[14px] w-[52px] h-[52px] font-bold",
-                        done
-                          ? "bg-gray-3/50 text-gray-7 border border-gray-5/25"
-                          : "bg-[#E80000]/12 text-[#FF6D6D] border border-[#E80000]/25 shadow-[inset_0_0_0_1px_rgba(255,109,109,0.08)]"
+                        "shrink-0 text-[11px] font-semibold tabular-nums",
+                        done ? "text-gray-7" : "text-[#FF6D6D]"
                       )}
                     >
-                      <span className="text-[8.5px] uppercase tracking-[0.18em] leading-none opacity-80 mb-1">
-                        {t("trainingSessionNumber")}
-                      </span>
-                      <span className="text-[18px] leading-none tabular-nums tracking-tight">{num}</span>
-                    </div>
-
-                    <div className="min-w-0 flex-1 pt-0.5">
-                      <p className="text-[16.5px] font-semibold text-gray-12 leading-tight tracking-tight">
+                      {num}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[15px] font-semibold text-gray-12 leading-tight tracking-tight truncate">
                         {session.name}
                       </p>
-                      <div className="flex items-center gap-2 mt-1.5">
-                        <span className="text-[11px] text-gray-8 truncate">{session.focus}</span>
-                        <span className="inline-flex items-center gap-1 px-1.5 h-[18px] rounded-md bg-white/[0.04] border border-white/[0.05] text-[10px] text-gray-9 tabular-nums shrink-0">
-                          <Clock size={9.5} />~{session.durationMin} min
-                        </span>
-                      </div>
-                      {archive && (
-                        <p className="text-[10px] text-gray-7 mt-1.5">
-                          {t("trainingLastPerf")} {fmtDate(archive.completedAt, locale)}
-                        </p>
-                      )}
+                      <p className="text-[11px] text-gray-8 mt-0.5 truncate">
+                        {session.focus} <span className="text-gray-6">·</span> ~{session.durationMin} min
+                      </p>
                     </div>
-
-                    <div className="shrink-0 inline-flex items-center gap-1 px-2 h-6 rounded-full bg-[#E80000]/10 border border-[#E80000]/20">
-                      <Zap size={10} className="text-[#FFD700]" fill="currentColor" />
-                      <span className="text-[10.5px] font-semibold text-[#FF8A8A] tabular-nums">+100</span>
-                    </div>
+                    <span className="shrink-0 text-[10.5px] font-semibold text-gray-7 tabular-nums">+100 XP</span>
                   </div>
 
-                  {/* Exercise list — tight, clean, with delicate dividers */}
-                  <ul className="mb-4 space-y-0 divide-y divide-white/[0.04] border-y border-white/[0.04]">
+                  {archive && (
+                    <p className="text-[10px] text-gray-7 mb-2.5">
+                      {t("trainingLastPerf")} {fmtDate(archive.completedAt, locale)}
+                    </p>
+                  )}
+
+                  {/* Exercise list — minimal */}
+                  <ul className="mb-3.5 space-y-[3px]">
                     {session.exercises.map((exercise, i) => (
                       <li
                         key={exercise.id}
-                        className="flex items-baseline gap-2.5 py-1.5 text-[12px]"
+                        className="flex items-baseline gap-2.5 text-[12px] leading-tight"
                       >
-                        <span className="text-gray-6 w-4 text-right shrink-0 tabular-nums font-medium text-[10.5px]">
+                        <span className="text-gray-6 w-4 text-right shrink-0 tabular-nums text-[10.5px]">
                           {i + 1}
                         </span>
-                        <span className="text-gray-11 truncate flex-1">{exercise.name}</span>
-                        <span className="text-gray-7 shrink-0 tabular-nums text-[11px] font-medium">
+                        <span className="text-gray-10 truncate flex-1">{exercise.name}</span>
+                        <span className="text-gray-7 shrink-0 tabular-nums text-[11px]">
                           {exercise.repsLabel || `${exercise.sets}×${exercise.reps}`}
                         </span>
                       </li>
@@ -1028,21 +904,20 @@ function ProgramDetailView({
                     onClick={() => onLaunchSession(session)}
                     disabled={done}
                     className={cn(
-                      "w-full h-12 rounded-2xl text-[14px] font-semibold gap-2 group/btn",
+                      "w-full h-11 rounded-xl text-[13.5px] font-semibold gap-2",
                       done
                         ? "bg-gray-3 border border-gray-5/30 text-gray-7 hover:bg-gray-3"
-                        : "optiz-gradient-bg text-white border-0 hover:opacity-95 active:scale-[0.98] transition-transform shadow-[0_10px_24px_-8px_rgba(232,0,0,0.5)]"
+                        : "optiz-gradient-bg text-white border-0 hover:opacity-95 active:scale-[0.98] transition-transform"
                     )}
                   >
                     {done ? (
                       <>
-                        <Check size={15} /> {t("trainingDoneReopens")}
+                        <Check size={14} /> {t("trainingDoneReopens")}
                       </>
                     ) : (
                       <>
-                        <Play size={14} fill="currentColor" />
                         {t("trainingLaunch")}
-                        <ArrowRight size={15} className="transition-transform group-hover/btn:translate-x-0.5" />
+                        <ArrowRight size={14} />
                       </>
                     )}
                   </Button>
