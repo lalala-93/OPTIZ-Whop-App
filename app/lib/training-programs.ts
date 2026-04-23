@@ -186,14 +186,14 @@ const REST = (txt: string) => `Repos ${txt}`;
 // ═══════════════════════════════════════════════════════
 // Programme 01 — Transformation
 // (renommé depuis "Spécial Gros" de Hakim)
-// Conditionnement · Perte de gras · Prise de muscle
+// Conditioning · Fat loss · Build muscle
 // ═══════════════════════════════════════════════════════
 
 const TRANSFORMATION: ProgramTemplate = {
   id: "shred-transformation",
   title: "Transformation",
   subtitle: "4 séances · Débutant · Les fondations du physique.",
-  objective: "Conditionnement · Perte de gras · Prise de muscle",
+  objective: "Conditioning · Fat loss · Build muscle",
   level: "beginner",
   location: "gym",
   image: "/images/shred-transformation.jpeg",
@@ -235,7 +235,7 @@ const TRANSFORMATION: ProgramTemplate = {
     },
     {
       id: "shred-t-s3",
-      name: "Conditionnement général",
+      name: "General Conditioning",
       focus: "Circuit cardio + force endurance",
       durationMin: 45,
       exercises: [
@@ -250,7 +250,7 @@ const TRANSFORMATION: ProgramTemplate = {
     },
     {
       id: "shred-t-s4",
-      name: "Jambes & Bras",
+      name: "Legs & Arms",
       focus: "Volume bas du corps + bras",
       durationMin: 55,
       warmup: {
@@ -271,22 +271,23 @@ const TRANSFORMATION: ProgramTemplate = {
 };
 
 // ═══════════════════════════════════════════════════════
-// Programme 02 — Pectoraux & Biceps
-// Allure athlétique · Prise de muscle · Correction des faiblesses
+// Programme 02 — Accent sur Pectoraux & Biceps
+// Pour ceux qui ont besoin de pectoraux et de biceps
+// Athletic look · Build muscle · Correction des faiblesses
 // ═══════════════════════════════════════════════════════
 
 const PECS_BICEPS: ProgramTemplate = {
   id: "shred-pecs-biceps",
   title: "Accent sur Pectoraux & Biceps",
-  subtitle: "Programme intermédiaire 2 · 4 séances · Volume ciblé, angles variés.",
-  objective: "Allure athlétique · Prise de muscle · Correction des faiblesses",
+  subtitle: "4 séances · Intermédiaire · Pour ceux qui ont besoin de pectoraux et de biceps.",
+  objective: "Athletic look · Build muscle · Correction des faiblesses",
   level: "intermediate",
   location: "gym",
   image: "/images/shred-pecs-biceps.jpeg",
   sessions: [
     {
       id: "shred-pb-s1",
-      name: "Corps complet fonctionnel",
+      name: "Functional Full Body",
       focus: "Pecs, jambes, gainage",
       durationMin: 55,
       exercises: [
@@ -303,7 +304,7 @@ const PECS_BICEPS: ProgramTemplate = {
     },
     {
       id: "shred-pb-s2",
-      name: "Haut du corps 1",
+      name: "Upper 1",
       focus: "Tirage lourd, épaules, bras",
       durationMin: 60,
       exercises: [
@@ -319,7 +320,7 @@ const PECS_BICEPS: ProgramTemplate = {
     },
     {
       id: "shred-pb-s3",
-      name: "Haut du corps 2",
+      name: "Upper 2",
       focus: "Pecs (angles), épaules, triceps",
       durationMin: 60,
       exercises: [
@@ -335,7 +336,7 @@ const PECS_BICEPS: ProgramTemplate = {
     },
     {
       id: "shred-pb-s4",
-      name: "Jambes & Bras",
+      name: "Legs & Arms",
       focus: "Volume bas + bras",
       durationMin: 55,
       exercises: [
@@ -353,22 +354,23 @@ const PECS_BICEPS: ProgramTemplate = {
 };
 
 // ═══════════════════════════════════════════════════════
-// Programme 03 — Dos & Triceps
-// Allure athlétique · Prise de muscle · Correction des faiblesses
+// Programme 03 — Accent sur Dos & Triceps
+// Pour ceux qui ont besoin de dos et triceps
+// Athletic look · Build muscle · Correction des faiblesses
 // ═══════════════════════════════════════════════════════
 
 const DOS_TRICEPS: ProgramTemplate = {
   id: "shred-dos-triceps",
   title: "Accent sur Dos & Triceps",
-  subtitle: "Programme intermédiaire 1 · 4 séances · Tractions, tirage lourd, bras.",
-  objective: "Allure athlétique · Prise de muscle · Correction des faiblesses",
+  subtitle: "4 séances · Intermédiaire · Pour ceux qui ont besoin de dos et triceps.",
+  objective: "Athletic look · Build muscle · Correction des faiblesses",
   level: "intermediate",
   location: "gym",
   image: "/images/shred-dos-triceps.jpeg",
   sessions: [
     {
       id: "shred-dt-s1",
-      name: "Corps complet fonctionnel",
+      name: "Functional Full Body",
       focus: "Tirage, pecs, gainage",
       durationMin: 60,
       exercises: [
@@ -385,7 +387,7 @@ const DOS_TRICEPS: ProgramTemplate = {
     },
     {
       id: "shred-dt-s2",
-      name: "Haut du corps 1",
+      name: "Upper 1",
       focus: "Tirage lourd + triceps",
       durationMin: 60,
       exercises: [
@@ -401,7 +403,7 @@ const DOS_TRICEPS: ProgramTemplate = {
     },
     {
       id: "shred-dt-s3",
-      name: "Haut du corps 2",
+      name: "Upper 2",
       focus: "Tractions, pecs (angles), triceps",
       durationMin: 60,
       exercises: [
@@ -417,7 +419,7 @@ const DOS_TRICEPS: ProgramTemplate = {
     },
     {
       id: "shred-dt-s4",
-      name: "Jambes & Bras",
+      name: "Legs & Arms",
       focus: "Volume bas + bras + tractions finisher",
       durationMin: 55,
       exercises: [
@@ -451,7 +453,7 @@ const COMPLEMENT: ProgramTemplate = {
   sessions: [
     {
       id: "shred-cs-s1",
-      name: "Full Body Control",
+      name: "Full Body (Control)",
       focus: "Contrôle, mobilité, posture",
       durationMin: 55,
       exercises: [
@@ -468,7 +470,7 @@ const COMPLEMENT: ProgramTemplate = {
     },
     {
       id: "shred-cs-s2",
-      name: "Full Body Power & Posture",
+      name: "Full Body (Power Posture)",
       focus: "Puissance, chaîne postérieure, posture",
       durationMin: 55,
       exercises: [
@@ -486,7 +488,7 @@ const COMPLEMENT: ProgramTemplate = {
     },
     {
       id: "shred-cs-s3",
-      name: "Full Body Athletic Flow",
+      name: "Full Body (Athletic + Flow)",
       focus: "Athlétique, fluidité, cardio léger",
       durationMin: 50,
       exercises: [
@@ -509,9 +511,10 @@ const COMPLEMENT: ProgramTemplate = {
 // Export
 // ═══════════════════════════════════════════════════════
 
+// Ordre WhatsApp Hakim (2026-04-21) : P2 = Pectoraux & Biceps, P3 = Dos & Triceps
 export const MASS_PROGRAMS: ProgramTemplate[] = [
   TRANSFORMATION,
-  DOS_TRICEPS,
   PECS_BICEPS,
+  DOS_TRICEPS,
   COMPLEMENT,
 ];
