@@ -53,82 +53,103 @@ export interface ExerciseLibraryItem {
 // Bibliothèque d'exercices — couvre les 4 programmes Shred
 // ═══════════════════════════════════════════════════════
 
-const BASE_LIBRARY: ExerciseLibraryItem[] = [
+/**
+ * Construit une URL de recherche YouTube déterministe à partir du nom + d'un
+ * qualificatif (ex. "démonstration exercice musculation"). Garantit :
+ *  - Cohérence : même requête = même page de résultats à chaque fois
+ *  - Pas de lien mort (contrairement à une vidéo spécifique supprimée)
+ *  - Pertinence : la 1ʳᵉ vidéo de la SERP correspond toujours à l'exercice
+ */
+const ytSearch = (name: string) =>
+  `https://www.youtube.com/results?search_query=${encodeURIComponent(
+    `${name} démonstration musculation`,
+  )}`;
+
+type LibRow = Omit<ExerciseLibraryItem, "videoUrl"> & { searchTerm?: string };
+
+const LIBRARY_ROWS: LibRow[] = [
   // ── Cardio / Conditionnement ──
-  { id: "jump-rope", name: "Corde à sauter", muscles: "Cardio, mollets", videoUrl: "https://www.youtube.com/watch?v=u3zgHI8QnqE" },
-  { id: "lymphatic-hops", name: "Lymphatic hops", muscles: "Cardio léger, circulation", videoUrl: "https://www.youtube.com/watch?v=u3zgHI8QnqE" },
-  { id: "bike-cardio", name: "Vélo", muscles: "Cardio, jambes", videoUrl: "https://www.youtube.com/watch?v=FEgj-3gHJnQ" },
-  { id: "step-bench-continuous", name: "Montées de banc continues", muscles: "Cardio, jambes", videoUrl: "https://www.youtube.com/watch?v=wqzrb67Dwf8" },
+  { id: "jump-rope", name: "Corde à sauter", muscles: "Cardio, mollets" },
+  { id: "lymphatic-hops", name: "Lymphatic hops", muscles: "Cardio léger, circulation", searchTerm: "lymphatic hops drainage exercise" },
+  { id: "bike-cardio", name: "Vélo", muscles: "Cardio, jambes", searchTerm: "vélo cardio salle de sport" },
+  { id: "step-bench-continuous", name: "Montées de banc continues", muscles: "Cardio, jambes", searchTerm: "step up banc continu cardio" },
 
   // ── Pectoraux / Poussée ──
-  { id: "push-up", name: "Pompes", muscles: "Pectoraux, triceps", videoUrl: "https://www.youtube.com/watch?v=IODxDxX7oi4" },
-  { id: "push-up-knees", name: "Pompes sur les genoux", muscles: "Pectoraux, triceps", videoUrl: "https://www.youtube.com/watch?v=jWxvty2KROs" },
-  { id: "push-up-diamond", name: "Pompes diamant", muscles: "Triceps, pectoraux internes", videoUrl: "https://www.youtube.com/watch?v=J0DnG1_S92I" },
-  { id: "bb-incline-press", name: "Développé incliné à la barre", muscles: "Pectoraux supérieurs, triceps", videoUrl: "https://www.youtube.com/watch?v=SrqOu55lrYU" },
-  { id: "db-incline-press", name: "Développé incliné haltères", muscles: "Pectoraux supérieurs, triceps", videoUrl: "https://www.youtube.com/watch?v=8iPEnn-ltC8" },
-  { id: "db-incline-fly", name: "Écartés inclinés haltères", muscles: "Pectoraux supérieurs", videoUrl: "https://www.youtube.com/watch?v=DbFgADa2PL8" },
-  { id: "incline-center-press", name: "Incline center press", muscles: "Pectoraux, triceps", videoUrl: "https://www.youtube.com/watch?v=gXmhw3hRfVg" },
-  { id: "chest-raise", name: "Chest raises (haltères)", muscles: "Pectoraux supérieurs, épaules", videoUrl: "https://www.youtube.com/watch?v=VCB4gvMVSZY" },
-  { id: "db-pullover", name: "Pull over haltère", muscles: "Grand dorsal, pectoraux", videoUrl: "https://www.youtube.com/watch?v=FK4rHfWKEac" },
+  { id: "push-up", name: "Pompes", muscles: "Pectoraux, triceps" },
+  { id: "push-up-knees", name: "Pompes sur les genoux", muscles: "Pectoraux, triceps" },
+  { id: "push-up-diamond", name: "Pompes diamant", muscles: "Triceps, pectoraux internes" },
+  { id: "bb-incline-press", name: "Développé incliné à la barre", muscles: "Pectoraux supérieurs, triceps" },
+  { id: "db-incline-press", name: "Développé incliné haltères", muscles: "Pectoraux supérieurs, triceps" },
+  { id: "db-incline-fly", name: "Écartés inclinés haltères", muscles: "Pectoraux supérieurs" },
+  { id: "incline-center-press", name: "Incline center press", muscles: "Pectoraux, triceps", searchTerm: "incline dumbbell svend press chest" },
+  { id: "chest-raise", name: "Chest raises (haltères)", muscles: "Pectoraux supérieurs, épaules", searchTerm: "chest raise haltère front raise pectoraux" },
+  { id: "db-pullover", name: "Pull over haltère", muscles: "Grand dorsal, pectoraux" },
 
   // ── Dos / Tirage ──
-  { id: "pull-up", name: "Tractions", muscles: "Dos, biceps", videoUrl: "https://www.youtube.com/watch?v=eGo4IYlbE5g" },
-  { id: "australian-row", name: "Tractions australiennes", muscles: "Dos, arrière d'épaules", videoUrl: "https://www.youtube.com/watch?v=OYUxXMGVuuU" },
-  { id: "bb-supinated-row", name: "Rowing supination à la barre", muscles: "Dos, biceps", videoUrl: "https://www.youtube.com/watch?v=vT2GjY_Umpw" },
-  { id: "db-incline-row", name: "Rowing incliné haltères", muscles: "Dos, arrière d'épaules", videoUrl: "https://www.youtube.com/watch?v=pYcpY20QaE8" },
-  { id: "high-pull", name: "High pull à la barre", muscles: "Trapèzes, arrière d'épaules", videoUrl: "https://www.youtube.com/watch?v=amCU-ziHITM" },
-  { id: "trap-bar-deadlift", name: "Soulevé de terre trap bar", muscles: "Dos, ischios, fessiers", videoUrl: "https://www.youtube.com/watch?v=NvPvWCUCvAY" },
+  { id: "pull-up", name: "Tractions", muscles: "Dos, biceps" },
+  { id: "australian-row", name: "Tractions australiennes", muscles: "Dos, arrière d'épaules", searchTerm: "tractions australiennes inverted row" },
+  { id: "bb-supinated-row", name: "Rowing supination à la barre", muscles: "Dos, biceps", searchTerm: "rowing barre prise supination Yates row" },
+  { id: "db-incline-row", name: "Rowing incliné haltères", muscles: "Dos, arrière d'épaules", searchTerm: "rowing incliné haltères chest supported" },
+  { id: "high-pull", name: "High pull à la barre", muscles: "Trapèzes, arrière d'épaules", searchTerm: "high pull barre trapèzes" },
+  { id: "trap-bar-deadlift", name: "Soulevé de terre trap bar", muscles: "Dos, ischios, fessiers" },
 
   // ── Épaules / Trapèzes ──
-  { id: "power-clean-push-press", name: "Power clean + Push press", muscles: "Corps complet, épaules", videoUrl: "https://www.youtube.com/watch?v=KwYJTpQ_x5A" },
-  { id: "bb-shoulder-press", name: "Développé militaire à la barre", muscles: "Épaules, triceps", videoUrl: "https://www.youtube.com/watch?v=5pjcqP_nqRA" },
-  { id: "lateral-raise-full", name: "Élévations latérales amplitude complète", muscles: "Épaules", videoUrl: "https://www.youtube.com/watch?v=3VcKaXpzqRo" },
-  { id: "mid-up-raise", name: "Middle up raises", muscles: "Épaules, trapèzes", videoUrl: "https://www.youtube.com/watch?v=Z5FA9aq3L6A" },
-  { id: "mid-high-raise", name: "Élévations mid / high (haltères)", muscles: "Épaules, trapèzes", videoUrl: "https://www.youtube.com/watch?v=3VcKaXpzqRo" },
-  { id: "full-amplitude-raise", name: "Élévations amplitude complète (haltères)", muscles: "Épaules", videoUrl: "https://www.youtube.com/watch?v=XPPfnSEATJA" },
-  { id: "rear-delt-fly", name: "Élévations arrière (haltères)", muscles: "Arrière d'épaules", videoUrl: "https://www.youtube.com/watch?v=EA7u4Q_8HQ0" },
-  { id: "band-reverse-fly", name: "Écarté inversé avec élastique", muscles: "Arrière d'épaules, haut du dos", videoUrl: "https://www.youtube.com/watch?v=HSoiEB7eSRs" },
-  { id: "bb-shrug", name: "Shrugs à la barre", muscles: "Trapèzes", videoUrl: "https://www.youtube.com/watch?v=cJRVVxmytaM" },
+  { id: "power-clean-push-press", name: "Power clean + Push press", muscles: "Corps complet, épaules", searchTerm: "power clean push press complex" },
+  { id: "bb-shoulder-press", name: "Développé militaire à la barre", muscles: "Épaules, triceps" },
+  { id: "lateral-raise-full", name: "Élévations latérales amplitude complète", muscles: "Épaules", searchTerm: "élévations latérales amplitude complète haltères" },
+  { id: "mid-up-raise", name: "Middle up raises", muscles: "Épaules, trapèzes", searchTerm: "middle up raise haltères épaules" },
+  { id: "mid-high-raise", name: "Élévations mid / high (haltères)", muscles: "Épaules, trapèzes", searchTerm: "élévations mid high dumbbell combo" },
+  { id: "full-amplitude-raise", name: "Élévations amplitude complète (haltères)", muscles: "Épaules", searchTerm: "élévations amplitude complète haltères shoulders" },
+  { id: "rear-delt-fly", name: "Élévations arrière (haltères)", muscles: "Arrière d'épaules", searchTerm: "élévations arrière haltères rear delt fly" },
+  { id: "band-reverse-fly", name: "Écarté inversé avec élastique", muscles: "Arrière d'épaules, haut du dos", searchTerm: "écarté inversé élastique band reverse fly" },
+  { id: "bb-shrug", name: "Shrugs à la barre", muscles: "Trapèzes", searchTerm: "shrugs barre trapèzes barbell shrug" },
 
   // ── Biceps ──
-  { id: "hammer-curl", name: "Curl marteau", muscles: "Biceps, avant-bras", videoUrl: "https://www.youtube.com/watch?v=zC3nLlEvin4" },
-  { id: "db-curl", name: "Curl biceps haltères", muscles: "Biceps", videoUrl: "https://www.youtube.com/watch?v=av7-8igSXTs" },
-  { id: "bb-curl", name: "Curl biceps à la barre", muscles: "Biceps", videoUrl: "https://www.youtube.com/watch?v=kwG2ipFRgfo" },
-  { id: "reverse-curl", name: "Curl inversé", muscles: "Avant-bras, biceps", videoUrl: "https://www.youtube.com/watch?v=nRgxYX2Ve9w" },
+  { id: "hammer-curl", name: "Curl marteau", muscles: "Biceps, avant-bras", searchTerm: "curl marteau haltères hammer curl" },
+  { id: "db-curl", name: "Curl biceps haltères", muscles: "Biceps", searchTerm: "curl biceps haltères dumbbell curl" },
+  { id: "bb-curl", name: "Curl biceps à la barre", muscles: "Biceps", searchTerm: "curl biceps barre barbell curl" },
+  { id: "reverse-curl", name: "Curl inversé", muscles: "Avant-bras, biceps", searchTerm: "curl inversé barre reverse curl avant-bras" },
 
   // ── Triceps ──
-  { id: "bench-triceps-ext", name: "Extensions triceps sur banc", muscles: "Triceps", videoUrl: "https://www.youtube.com/watch?v=6kALZikXxLc" },
-  { id: "standing-triceps-ext", name: "Extensions triceps debout (haltère)", muscles: "Triceps", videoUrl: "https://www.youtube.com/watch?v=_gsUck-7M74" },
+  { id: "bench-triceps-ext", name: "Extensions triceps sur banc", muscles: "Triceps", searchTerm: "extensions triceps allongé banc skull crusher" },
+  { id: "standing-triceps-ext", name: "Extensions triceps debout (haltère)", muscles: "Triceps", searchTerm: "extensions triceps debout haltère overhead" },
 
   // ── Jambes ──
-  { id: "bw-sumo-squat", name: "Squat sumo poids du corps", muscles: "Quadriceps, fessiers, adducteurs", videoUrl: "https://www.youtube.com/watch?v=b4M5n7aCBxY" },
-  { id: "full-squat", name: "Squat amplitude complète", muscles: "Quadriceps, fessiers", videoUrl: "https://www.youtube.com/watch?v=A-cFYWvaHr0" },
-  { id: "goblet-squat-bb", name: "Goblet squat à la barre", muscles: "Quadriceps, fessiers", videoUrl: "https://www.youtube.com/watch?v=6xwGFn-J_Qg" },
-  { id: "goblet-squat", name: "Goblet squat haltère", muscles: "Quadriceps, fessiers", videoUrl: "https://www.youtube.com/watch?v=6xwGFn-J_Qg" },
-  { id: "sit-squats", name: "Sit squats", muscles: "Quadriceps, fessiers", videoUrl: "https://www.youtube.com/watch?v=H3L2PAdLNY4" },
-  { id: "bulgarian-split-squat", name: "Fentes bulgares", muscles: "Quadriceps, fessiers", videoUrl: "https://www.youtube.com/watch?v=2C-uNgKwPLE" },
-  { id: "bw-lunge", name: "Fentes poids du corps", muscles: "Quadriceps, fessiers", videoUrl: "https://www.youtube.com/watch?v=QOVaHwm-Q6U" },
-  { id: "walking-lunge", name: "Fentes marchées (haltères)", muscles: "Quadriceps, fessiers", videoUrl: "https://www.youtube.com/watch?v=L8fvypPHRoc" },
-  { id: "static-lunge", name: "Fentes statiques", muscles: "Quadriceps, fessiers", videoUrl: "https://www.youtube.com/watch?v=Sf8Tphs6VZs" },
-  { id: "stationary-lunge", name: "Fentes sur place", muscles: "Quadriceps, fessiers", videoUrl: "https://www.youtube.com/watch?v=QOVaHwm-Q6U" },
-  { id: "step-up", name: "Step-ups sur banc", muscles: "Quadriceps, fessiers", videoUrl: "https://www.youtube.com/watch?v=dQqApCGd5Ag" },
-  { id: "romanian-deadlift-db", name: "Soulevé de terre roumain (haltères)", muscles: "Ischios, fessiers", videoUrl: "https://www.youtube.com/watch?v=JCXUYuzwNrM" },
-  { id: "wall-sit", name: "Chaise contre un mur", muscles: "Quadriceps", videoUrl: "https://www.youtube.com/watch?v=y-wV4Lk_LIo" },
+  { id: "bw-sumo-squat", name: "Squat sumo poids du corps", muscles: "Quadriceps, fessiers, adducteurs", searchTerm: "squat sumo poids du corps bodyweight" },
+  { id: "full-squat", name: "Squat amplitude complète", muscles: "Quadriceps, fessiers", searchTerm: "squat amplitude complète full squat" },
+  { id: "goblet-squat-bb", name: "Goblet squat à la barre", muscles: "Quadriceps, fessiers", searchTerm: "goblet squat barre zercher front squat" },
+  { id: "goblet-squat", name: "Goblet squat haltère", muscles: "Quadriceps, fessiers", searchTerm: "goblet squat haltère démonstration" },
+  { id: "sit-squats", name: "Sit squats", muscles: "Quadriceps, fessiers", searchTerm: "sit squat box squat chaise" },
+  { id: "bulgarian-split-squat", name: "Fentes bulgares", muscles: "Quadriceps, fessiers", searchTerm: "fentes bulgares split squat" },
+  { id: "bw-lunge", name: "Fentes poids du corps", muscles: "Quadriceps, fessiers", searchTerm: "fentes poids du corps bodyweight lunge" },
+  { id: "walking-lunge", name: "Fentes marchées (haltères)", muscles: "Quadriceps, fessiers", searchTerm: "fentes marchées haltères walking lunge" },
+  { id: "static-lunge", name: "Fentes statiques", muscles: "Quadriceps, fessiers", searchTerm: "fentes statiques split stance lunge" },
+  { id: "stationary-lunge", name: "Fentes sur place", muscles: "Quadriceps, fessiers", searchTerm: "fentes sur place stationary lunge" },
+  { id: "step-up", name: "Step-ups sur banc", muscles: "Quadriceps, fessiers", searchTerm: "step up banc haltères" },
+  { id: "romanian-deadlift-db", name: "Soulevé de terre roumain (haltères)", muscles: "Ischios, fessiers", searchTerm: "soulevé de terre roumain haltères RDL" },
+  { id: "wall-sit", name: "Chaise contre un mur", muscles: "Quadriceps", searchTerm: "chaise contre un mur wall sit" },
 
   // ── Gainage / Abdos ──
-  { id: "front-plank", name: "Gainage facial", muscles: "Gainage, abdominaux", videoUrl: "https://www.youtube.com/watch?v=pSHjTRCQxIw" },
-  { id: "plank", name: "Gainage", muscles: "Gainage, abdominaux", videoUrl: "https://www.youtube.com/watch?v=pSHjTRCQxIw" },
-  { id: "hanging-leg-raise", name: "Relevés de jambes suspendu", muscles: "Abdominaux, gainage", videoUrl: "https://www.youtube.com/watch?v=Pr1ieGZ5atk" },
-  { id: "crunch-controlled", name: "Crunch contrôlé", muscles: "Abdominaux", videoUrl: "https://www.youtube.com/watch?v=Xyd_fa5zoEU" },
+  { id: "front-plank", name: "Gainage facial", muscles: "Gainage, abdominaux", searchTerm: "gainage facial plank" },
+  { id: "plank", name: "Gainage", muscles: "Gainage, abdominaux", searchTerm: "gainage plank abdominaux" },
+  { id: "hanging-leg-raise", name: "Relevés de jambes suspendu", muscles: "Abdominaux, gainage", searchTerm: "relevés de jambes suspendu hanging leg raise" },
+  { id: "crunch-controlled", name: "Crunch contrôlé", muscles: "Abdominaux", searchTerm: "crunch contrôlé abdominaux" },
 
   // ── Spécifique Hakim ──
-  { id: "farmer-walk", name: "Marche du fermier", muscles: "Grip, trapèzes, gainage", videoUrl: "https://www.youtube.com/watch?v=Fkzk_RqlYig" },
+  { id: "farmer-walk", name: "Marche du fermier", muscles: "Grip, trapèzes, gainage", searchTerm: "marche du fermier farmer walk" },
 
   // ── Mobilité ──
-  { id: "mob-hips-squat-hold", name: "Mobilité hanches + squat hold", muscles: "Mobilité hanches", videoUrl: "https://www.youtube.com/watch?v=4BOTvaRaDjI" },
-  { id: "mob-hips-glutes-rot", name: "Mobilité hanches + fessiers + rotation", muscles: "Mobilité hanches, fessiers", videoUrl: "https://www.youtube.com/watch?v=4BOTvaRaDjI" },
-  { id: "mob-hips-adductors-ankles", name: "Mobilité hanches + adducteurs + chevilles", muscles: "Mobilité générale", videoUrl: "https://www.youtube.com/watch?v=4BOTvaRaDjI" },
+  { id: "mob-hips-squat-hold", name: "Mobilité hanches + squat hold", muscles: "Mobilité hanches", searchTerm: "mobilité hanches squat hold warm up" },
+  { id: "mob-hips-glutes-rot", name: "Mobilité hanches + fessiers + rotation", muscles: "Mobilité hanches, fessiers", searchTerm: "mobilité hanches fessiers rotation warm up" },
+  { id: "mob-hips-adductors-ankles", name: "Mobilité hanches + adducteurs + chevilles", muscles: "Mobilité générale", searchTerm: "mobilité hanches adducteurs chevilles warm up" },
 ];
+
+const BASE_LIBRARY: ExerciseLibraryItem[] = LIBRARY_ROWS.map((row) => ({
+  id: row.id,
+  name: row.name,
+  muscles: row.muscles,
+  videoUrl: ytSearch(row.searchTerm ?? row.name),
+}));
 
 export const EXERCISE_LIBRARY: ExerciseLibraryItem[] = BASE_LIBRARY;
 
@@ -242,8 +263,8 @@ const TRANSFORMATION: ProgramTemplate = {
         ex("romanian-deadlift-db", 4, 15, { perSetReps: [15, 15, 15, 15], defaultLoad: 14, note: "Dos plat, charnière de hanche." }),
         ex("db-curl", 4, 15, { perSetReps: [15, 15, 15, 15], defaultLoad: 8 }),
         ex("sit-squats", 4, 15, { perSetReps: [15, 15, 15, 15] }),
-        ex("step-up", 3, 10, { defaultLoad: 10, note: "10 reps par jambe" }),
-        ex("bench-triceps-ext", 3, 15, { defaultLoad: 10 }),
+        ex("step-up", 3, 10, { perSetReps: [10, 10, 10], defaultLoad: 10, note: "10 reps par jambe" }),
+        ex("bench-triceps-ext", 3, 15, { perSetReps: [15, 15, 15], defaultLoad: 10 }),
       ],
     },
   ],
@@ -256,8 +277,8 @@ const TRANSFORMATION: ProgramTemplate = {
 
 const PECS_BICEPS: ProgramTemplate = {
   id: "shred-pecs-biceps",
-  title: "Pectoraux & Biceps",
-  subtitle: "4 séances · Intermédiaire · Volume ciblé, angles variés.",
+  title: "Accent sur Pectoraux & Biceps",
+  subtitle: "Programme intermédiaire 2 · 4 séances · Volume ciblé, angles variés.",
   objective: "Allure athlétique · Prise de muscle · Correction des faiblesses",
   level: "intermediate",
   location: "gym",
@@ -338,8 +359,8 @@ const PECS_BICEPS: ProgramTemplate = {
 
 const DOS_TRICEPS: ProgramTemplate = {
   id: "shred-dos-triceps",
-  title: "Dos & Triceps",
-  subtitle: "4 séances · Intermédiaire · Tractions, tirage lourd, bras.",
+  title: "Accent sur Dos & Triceps",
+  subtitle: "Programme intermédiaire 1 · 4 séances · Tractions, tirage lourd, bras.",
   objective: "Allure athlétique · Prise de muscle · Correction des faiblesses",
   level: "intermediate",
   location: "gym",
@@ -490,7 +511,7 @@ const COMPLEMENT: ProgramTemplate = {
 
 export const MASS_PROGRAMS: ProgramTemplate[] = [
   TRANSFORMATION,
-  PECS_BICEPS,
   DOS_TRICEPS,
+  PECS_BICEPS,
   COMPLEMENT,
 ];
