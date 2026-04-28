@@ -368,7 +368,7 @@ function WorkoutFunnel({
     : 0;
 
   return (
-    <div className="pb-[160px]">
+    <div className="pb-[200px]">
       {/* Top bar */}
       <div className="flex items-center justify-between mb-4">
         <Button
@@ -512,8 +512,8 @@ function WorkoutFunnel({
               : "set_active";
 
             // Construit la timeline des phases pour le strip.
+            // (Pas de pill "Démo" — on commence direct à la série 1.)
             const stripPhases: StripPhase[] = [];
-            stripPhases.push({ kind: "preview", active: doneCount === 0 && !resting });
             for (let i = 0; i < totalSetsInEx; i++) {
               const setStatus: "pending" | "active" | "done" =
                 rows[i]?.done
@@ -533,9 +533,7 @@ function WorkoutFunnel({
             }
             // Active index calculation
             const activeStripIdx = (() => {
-              if (doneCount === 0 && !resting) return 0; // preview
               if (resting) {
-                // rest after activeSetIdx-1 (the just-completed set)
                 const justDone = Math.max(0, activeSetIdx - 1);
                 return stripPhases.findIndex(
                   (p) => p.kind === "rest" && p.afterSetIdx === justDone,
@@ -637,11 +635,11 @@ function WorkoutFunnel({
                 animate={{ y: 0, opacity: 1, scale: 1 }}
                 exit={{ y: 24, opacity: 0, scale: 0.96 }}
                 transition={{ type: "spring", stiffness: 380, damping: 32 }}
-                className="w-full max-w-sm rounded-2xl border border-white/[0.08] bg-[#0F0F10]/95 shadow-[0_24px_64px_-16px_rgba(0,0,0,0.8)] overflow-hidden"
+                className="w-full max-w-sm rounded-3xl border border-white/[0.08] bg-[#0F0F10]/95 shadow-[0_24px_64px_-16px_rgba(0,0,0,0.8)] overflow-hidden"
               >
-                <div className="flex items-stretch gap-3 p-3">
-                  {/* Compact countdown ring */}
-                  <div className="relative shrink-0 w-[76px] h-[76px]">
+                <div className="px-6 pt-7 pb-5 flex flex-col items-center text-center gap-5">
+                  {/* Big countdown ring — focus visuel */}
+                  <div className="relative w-[124px] h-[124px]">
                     <svg viewBox="0 0 80 80" className="w-full h-full -rotate-90">
                       <circle cx="40" cy="40" r={RADIUS} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="3" />
                       <circle
@@ -663,59 +661,48 @@ function WorkoutFunnel({
                         initial={{ opacity: 0.5, y: -1 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.16 }}
-                        className="text-[24px] font-semibold text-gray-12 tabular-nums leading-none tracking-[-0.03em]"
+                        className="text-[44px] font-semibold text-gray-12 tabular-nums leading-none tracking-[-0.04em]"
                       >
                         {rest.secondsLeft}
                       </motion.span>
-                      <span className="text-[8.5px] text-gray-7 mt-1 uppercase tracking-[0.18em] font-semibold">
+                      <span className="text-[9px] text-gray-7 mt-1.5 uppercase tracking-[0.22em] font-semibold">
                         sec
                       </span>
                     </div>
                   </div>
 
-                  {/* Quote + actions */}
-                  <div className="flex flex-col justify-between min-w-0 flex-1 py-0.5">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="text-[9px] uppercase tracking-[0.18em] text-[#FF6D6D] font-semibold leading-none mb-1">
-                          {t("trainingRestTitle")}
-                        </p>
-                        <motion.p
-                          key={rest.quote}
-                          initial={{ opacity: 0, y: 3 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.3 }}
-                          className="text-[12px] italic text-gray-10 leading-snug line-clamp-2"
-                        >
-                          &ldquo;{rest.quote}&rdquo;
-                        </motion.p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={skipRest}
-                        aria-label={t("trainingRestSkip")}
-                        className="shrink-0 w-7 h-7 -mt-0.5 -mr-1 rounded-full flex items-center justify-center text-gray-7 hover:text-gray-11 hover:bg-white/[0.05] transition-colors"
-                      >
-                        <X size={13} />
-                      </button>
-                    </div>
+                  {/* Title + quote */}
+                  <div className="space-y-2">
+                    <p className="text-[10px] uppercase tracking-[0.22em] text-[#FF6D6D] font-semibold">
+                      {t("trainingRestTitle")}
+                    </p>
+                    <motion.p
+                      key={rest.quote}
+                      initial={{ opacity: 0, y: 3 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="text-[14px] italic text-gray-10 leading-snug max-w-[260px] mx-auto"
+                    >
+                      &ldquo;{rest.quote}&rdquo;
+                    </motion.p>
+                  </div>
 
-                    <div className="flex items-center gap-1.5 mt-2">
-                      <button
-                        type="button"
-                        onClick={() => addRest(15)}
-                        className="h-8 px-2.5 rounded-lg bg-white/[0.04] border border-white/[0.07] text-gray-11 text-[11.5px] font-semibold hover:bg-white/[0.07] active:scale-95 transition-all"
-                      >
-                        +15 s
-                      </button>
-                      <button
-                        type="button"
-                        onClick={skipRest}
-                        className="flex-1 h-8 rounded-lg optiz-gradient-bg text-white text-[11.5px] font-semibold hover:opacity-95 active:scale-[0.97] transition-all"
-                      >
-                        {t("trainingRestSkip")}
-                      </button>
-                    </div>
+                  {/* Actions — bouton primaire pleine largeur, +15s en secondaire */}
+                  <div className="flex items-center gap-2 w-full pt-1">
+                    <button
+                      type="button"
+                      onClick={() => addRest(15)}
+                      className="h-11 px-4 rounded-xl bg-white/[0.04] border border-white/[0.08] text-gray-11 text-[13px] font-semibold hover:bg-white/[0.07] active:scale-95 transition-all"
+                    >
+                      +15 s
+                    </button>
+                    <button
+                      type="button"
+                      onClick={skipRest}
+                      className="flex-1 h-11 rounded-xl bg-gradient-to-b from-[#FF1414] to-[#C40000] text-white text-[13.5px] font-semibold tracking-[0.02em] shadow-[inset_0_1px_0_rgba(255,255,255,0.18)] hover:opacity-95 active:scale-[0.98] transition-all"
+                    >
+                      {t("trainingRestSkip")}
+                    </button>
                   </div>
                 </div>
               </motion.div>
@@ -724,22 +711,26 @@ function WorkoutFunnel({
         })()}
       </AnimatePresence>
 
-      {/* Bottom CTA */}
-      <div className="fixed inset-x-0 bottom-0 z-40 px-4 sm:px-6 pb-[calc(env(safe-area-inset-bottom)+70px)] bg-gradient-to-t from-[var(--gray-1)] via-[var(--gray-1)]/95 to-transparent pointer-events-none">
-        <div className="mx-auto max-w-4xl pointer-events-auto">
-          <Button
-            onClick={next}
-            disabled={!allDone || resting}
-            className={cn(
-              "w-full h-12 rounded-2xl font-semibold text-[15px] flex items-center justify-center gap-1.5 transition-all",
-              allDone && !resting
-                ? "optiz-gradient-bg text-white active:scale-[0.97] border-0 hover:opacity-90"
-                : "bg-white/[0.05] border border-white/[0.12] text-gray-9 hover:bg-white/[0.05] cursor-not-allowed"
-            )}
-          >
-            {isLast ? t("trainingValidateSession") : t("trainingNextExercise")}
-            {!isLast && allDone && !resting && <ChevronRight size={16} />}
-          </Button>
+      {/* Bottom CTA — fond opaque pour ne pas laisser passer le tracker derrière */}
+      <div className="fixed inset-x-0 bottom-0 z-40 pointer-events-none">
+        {/* Soft fade au-dessus pour adoucir la jonction sans laisser bleeding */}
+        <div className="h-6 bg-gradient-to-t from-[var(--gray-1)] to-transparent" />
+        <div className="px-4 sm:px-6 pt-3 pb-[calc(env(safe-area-inset-bottom)+70px)] bg-[var(--gray-1)] pointer-events-auto">
+          <div className="mx-auto max-w-4xl">
+            <Button
+              onClick={next}
+              disabled={!allDone || resting}
+              className={cn(
+                "w-full h-12 rounded-2xl font-semibold text-[15px] flex items-center justify-center gap-1.5 transition-all",
+                allDone && !resting
+                  ? "optiz-gradient-bg text-white active:scale-[0.97] border-0 hover:opacity-90"
+                  : "bg-white/[0.04] border border-white/[0.08] text-gray-8 hover:bg-white/[0.04] cursor-not-allowed"
+              )}
+            >
+              {isLast ? t("trainingValidateSession") : t("trainingNextExercise")}
+              {!isLast && allDone && !resting && <ChevronRight size={16} />}
+            </Button>
+          </div>
         </div>
       </div>
     </div>

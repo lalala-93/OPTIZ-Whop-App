@@ -220,8 +220,8 @@ function computeOverlay(phase: VideoPhase, badgeOverride?: string) {
       return {
         dimColor: "rgba(0,0,0,0.18)",
         dimOpacity: 1,
-        badge: badgeOverride ?? "Démo",
-        badgeDot: "bg-white/70",
+        badge: badgeOverride ?? null,
+        badgeDot: null,
       };
     case "set_active":
       return {

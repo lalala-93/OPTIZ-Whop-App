@@ -61,7 +61,7 @@ export function SetRow({
     onValidate();
   };
 
-  // ── Done state : résumé compact + RPE chips ─────────────────────────────
+  // ── Done state : ligne unique, grise, calme. RPE = pill discrète à droite.
   if (row.done) {
     return (
       <motion.div
@@ -69,78 +69,58 @@ export function SetRow({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         className={cn(
-          "px-3 py-2.5",
+          "flex items-center gap-3 px-3 py-2.5",
           !isFirst && "border-t border-white/[0.04]",
         )}
       >
-        <div className="flex items-center gap-3">
-          {/* N° avec checkmark */}
-          <div className="relative shrink-0">
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-b from-[#FF1414] to-[#C40000] text-white flex items-center justify-center shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]">
-              <Check size={18} strokeWidth={3} />
-            </div>
-            {isPr && (
-              <Sparkles
-                size={10}
-                className="text-[#FFD700] absolute -top-0.5 -right-0.5"
-              />
-            )}
+        {/* N° avec checkmark — gris neutre, plus le focus rouge. */}
+        <div className="relative shrink-0">
+          <div className="w-9 h-9 rounded-lg bg-white/[0.05] border border-white/[0.08] text-gray-9 flex items-center justify-center">
+            <Check size={14} strokeWidth={2.5} />
           </div>
-
-          {/* Résumé */}
-          <div className="flex-1 min-w-0 flex items-baseline gap-1.5">
-            <span className="text-[9.5px] uppercase tracking-[0.16em] text-gray-7 font-semibold shrink-0">
-              Série {idx + 1}
-            </span>
-            <span className="text-[15px] font-semibold text-gray-12 tabular-nums">
-              {row.load && parseFloat(row.load) > 0 ? `${row.load} kg` : "—"}
-              <span className="text-gray-7 mx-1">×</span>
-              {row.reps || targetReps}
-            </span>
-          </div>
-
-          {/* Undo */}
-          <button
-            type="button"
-            onClick={onUndo}
-            aria-label="Annuler la validation"
-            className="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center text-gray-7 hover:text-gray-11 hover:bg-white/[0.04] active:scale-95 transition-all"
-          >
-            <RotateCcw size={14} />
-          </button>
+          {isPr && (
+            <Sparkles
+              size={10}
+              className="text-[#FFD700] absolute -top-0.5 -right-0.5"
+            />
+          )}
         </div>
 
-        {/* RPE chips — slide in après validation */}
-        <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: "auto" }}
-          transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-          className="overflow-hidden"
+        {/* Résumé série — texte calme, gris. */}
+        <div className="flex-1 min-w-0 flex items-baseline gap-1.5">
+          <span className="text-[10px] uppercase tracking-[0.14em] text-gray-7 font-semibold shrink-0">
+            Série {idx + 1}
+          </span>
+          <span className="text-[14px] font-semibold text-gray-10 tabular-nums">
+            {row.load && parseFloat(row.load) > 0 ? `${row.load} kg` : "—"}
+            <span className="text-gray-7 mx-1">×</span>
+            {row.reps || targetReps}
+          </span>
+        </div>
+
+        {/* RPE pill cyclable — un seul tap pour changer 6→7→8→9→10→6 */}
+        <button
+          type="button"
+          onClick={() => {
+            const cur = parseInt(row.rpe || "8", 10);
+            const next = cur >= 10 ? 6 : cur + 1;
+            onUpdate({ rpe: String(next) });
+          }}
+          className="shrink-0 h-7 px-2.5 rounded-md bg-white/[0.03] border border-white/[0.07] text-[10.5px] font-semibold tabular-nums text-gray-9 hover:text-gray-11 hover:bg-white/[0.05] transition-colors"
+          aria-label={`RPE ${row.rpe || 8} — appuyer pour modifier`}
         >
-          <div className="flex items-center gap-1.5 pt-2 pl-[3.5rem]">
-            <span className="text-[9px] uppercase tracking-[0.18em] text-gray-7 font-semibold mr-1">
-              RPE
-            </span>
-            {[6, 7, 8, 9, 10].map((v) => {
-              const selected = row.rpe === String(v);
-              return (
-                <button
-                  key={v}
-                  type="button"
-                  onClick={() => onUpdate({ rpe: String(v) })}
-                  className={cn(
-                    "h-6 px-2 rounded-md text-[11px] font-semibold tabular-nums border transition-colors",
-                    selected
-                      ? "bg-[#E80000]/[0.12] border-[#E80000]/40 text-[#FF6D6D]"
-                      : "bg-white/[0.02] border-white/[0.05] text-gray-8 hover:bg-white/[0.05] hover:text-gray-11",
-                  )}
-                >
-                  {v}
-                </button>
-              );
-            })}
-          </div>
-        </motion.div>
+          RPE <span className="text-gray-11 ml-0.5">{row.rpe || 8}</span>
+        </button>
+
+        {/* Undo */}
+        <button
+          type="button"
+          onClick={onUndo}
+          aria-label="Annuler la validation"
+          className="shrink-0 w-7 h-7 rounded-md flex items-center justify-center text-gray-7 hover:text-gray-11 hover:bg-white/[0.04] active:scale-95 transition-all"
+        >
+          <RotateCcw size={12} />
+        </button>
       </motion.div>
     );
   }

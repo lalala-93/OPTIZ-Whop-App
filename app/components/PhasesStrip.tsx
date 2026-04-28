@@ -137,23 +137,25 @@ function pillConfig(p: StripPhase): {
 } {
   switch (p.kind) {
     case "preview":
+      // Conservé pour compat, mais on ne pousse plus de phase "preview" dans le strip.
       return {
         label: "Démo",
-        dot: "bg-white/60",
-        bg: p.active ? "bg-white/[0.06]" : "bg-white/[0.02]",
-        border: p.active ? "border-white/20" : "border-white/[0.06]",
-        text: p.active ? "text-white" : "text-gray-9",
-        dim: false,
+        dot: null,
+        bg: "bg-white/[0.02]",
+        border: "border-white/[0.06]",
+        text: "text-gray-8",
+        dim: true,
       };
     case "set": {
       const label = `Série ${p.idx + 1}`;
       if (p.status === "done") {
+        // Past sets = simplement gris, pas d'emerald.
         return {
           label,
-          dot: "bg-emerald-400",
-          bg: "bg-emerald-500/[0.06]",
-          border: "border-emerald-500/20",
-          text: "text-emerald-300/85",
+          dot: "bg-white/25",
+          bg: "bg-white/[0.02]",
+          border: "border-white/[0.05]",
+          text: "text-gray-7",
           dim: true,
         };
       }
@@ -162,28 +164,29 @@ function pillConfig(p: StripPhase): {
           label,
           dot: "bg-[#FF4D4D]",
           bg: "bg-[#E80000]/[0.1]",
-          border: "border-[#E80000]/45",
+          border: "border-[#E80000]/50",
           text: "text-white",
           dim: false,
         };
       }
+      // Pending = neutre, légèrement plus visible que done.
       return {
         label,
-        dot: "bg-white/30",
-        bg: "bg-white/[0.02]",
-        border: "border-white/[0.06]",
-        text: "text-gray-8",
+        dot: null,
+        bg: "bg-white/[0.025]",
+        border: "border-white/[0.08]",
+        text: "text-gray-9",
         dim: false,
       };
     }
     case "rest":
       return {
         label: "Repos",
-        dot: "bg-[#FF6D6D]",
+        dot: p.active ? "bg-[#FF6D6D]" : null,
         bg: p.active ? "bg-[#E80000]/[0.08]" : "bg-white/[0.02]",
-        border: p.active ? "border-[#E80000]/30" : "border-white/[0.06]",
-        text: p.active ? "text-[#FF6D6D]" : "text-gray-8",
-        dim: false,
+        border: p.active ? "border-[#E80000]/30" : "border-white/[0.05]",
+        text: p.active ? "text-[#FF6D6D]" : "text-gray-7",
+        dim: !p.active,
       };
   }
 }
