@@ -17,6 +17,58 @@ export type ExerciseVideo = {
   src: string;
   /** Poster JPEG 720w, frame à t=1s */
   poster: string;
+  /**
+   * Offset en secondes auquel démarrer (et reboucler). Utile quand le clip
+   * source contient une intro/setup qu'on veut sauter.
+   */
+  start?: number;
+};
+
+const VIDEO_IDS = [
+  "australian-row",
+  "band-reverse-fly",
+  "bb-curl",
+  "bb-incline-press",
+  "bb-shrug",
+  "bb-supinated-row",
+  "bench-triceps-ext",
+  "bulgarian-split-squat",
+  "bw-sumo-squat",
+  "chest-raise",
+  "crunch-controlled",
+  "db-curl",
+  "db-incline-fly",
+  "db-incline-press",
+  "db-incline-row",
+  "db-pullover",
+  "farmer-walk",
+  "front-plank",
+  "full-squat",
+  "goblet-squat-bb",
+  "hammer-curl",
+  "hanging-leg-raise",
+  "high-pull",
+  "incline-center-press",
+  "jump-rope",
+  "lateral-raise-full",
+  "lymphatic-hops",
+  "mid-up-raise",
+  "power-clean-push-press",
+  "pull-up",
+  "push-up-knees",
+  "romanian-deadlift-db",
+  "sit-squats",
+  "static-lunge",
+  "step-up",
+  "trap-bar-deadlift",
+  "walking-lunge",
+  "wall-sit",
+  "warmup-full",
+] as const;
+
+/** Offsets de démarrage spécifiques (secondes). Par défaut : 0. */
+const VIDEO_START_OVERRIDES: Partial<Record<(typeof VIDEO_IDS)[number], number>> = {
+  "db-incline-row": 4,
 };
 
 /**
@@ -24,51 +76,14 @@ export type ExerciseVideo = {
  * Les clés correspondent aux IDs utilisés dans `training-programs.ts`.
  */
 export const EXERCISE_VIDEOS: Record<string, ExerciseVideo> = Object.fromEntries(
-  [
-    "australian-row",
-    "band-reverse-fly",
-    "bb-curl",
-    "bb-incline-press",
-    "bb-shrug",
-    "bb-supinated-row",
-    "bench-triceps-ext",
-    "bulgarian-split-squat",
-    "bw-sumo-squat",
-    "chest-raise",
-    "crunch-controlled",
-    "db-curl",
-    "db-incline-fly",
-    "db-incline-press",
-    "db-incline-row",
-    "db-pullover",
-    "farmer-walk",
-    "front-plank",
-    "full-squat",
-    "goblet-squat-bb",
-    "hammer-curl",
-    "hanging-leg-raise",
-    "high-pull",
-    "incline-center-press",
-    "jump-rope",
-    "lateral-raise-full",
-    "lymphatic-hops",
-    "mid-up-raise",
-    "power-clean-push-press",
-    "pull-up",
-    "push-up-knees",
-    "romanian-deadlift-db",
-    "sit-squats",
-    "static-lunge",
-    "step-up",
-    "trap-bar-deadlift",
-    "walking-lunge",
-    "wall-sit",
-    "warmup-full",
-  ].map((id) => [
+  VIDEO_IDS.map((id) => [
     id,
     {
       src: `${BASE}/videos/${id}.mp4`,
       poster: `${BASE}/posters/${id}.jpg`,
+      ...(VIDEO_START_OVERRIDES[id] !== undefined
+        ? { start: VIDEO_START_OVERRIDES[id] }
+        : {}),
     } satisfies ExerciseVideo,
   ]),
 );

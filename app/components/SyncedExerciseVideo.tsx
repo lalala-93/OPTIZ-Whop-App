@@ -1,11 +1,9 @@
 "use client";
 
 import {
-  useCallback,
   useEffect,
   useImperativeHandle,
   useRef,
-  useState,
   forwardRef,
 } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -44,6 +42,8 @@ interface Props {
   src: string | null;
   poster: string | null;
   phase: VideoPhase;
+  /** Offset de démarrage (secondes). Le clip rebouclera depuis ce point. */
+  start?: number;
   /** Optional badge text (ex: "Démo", "Série 2/4"). Défaut: dérivé de la phase. */
   badge?: string;
   /** Désactiver les overlays (utile pour preview standalone dans library). */
@@ -53,11 +53,10 @@ interface Props {
 
 export const SyncedExerciseVideo = forwardRef<SyncedExerciseVideoHandle, Props>(
   function SyncedExerciseVideo(
-    { src, poster, phase, badge, bare = false, className },
+    { src, poster, phase, start = 0, badge, bare = false, className },
     ref,
   ) {
     const videoRef = useRef<HTMLVideoElement | null>(null);
-    const [ready, setReady] = useState(false);
 
     useImperativeHandle(
       ref,
@@ -65,20 +64,29 @@ export const SyncedExerciseVideo = forwardRef<SyncedExerciseVideoHandle, Props>(
         restart: () => {
           const v = videoRef.current;
           if (!v) return;
-          v.currentTime = 0;
+          v.currentTime = start;
           v.play().catch(() => {});
         },
         get el() {
           return videoRef.current;
         },
       }),
-      [],
+      [start],
     );
 
-    // Reset ready quand src change (changement d'exercice).
+    // Seek au point de départ dès que les métadonnées sont prêtes.
+    // Et boucle manuelle (`onEnded`) pour reboucler depuis `start` plutôt
+    // que depuis 0 — évite l'intro/setup qu'on veut sauter.
     useEffect(() => {
-      setReady(false);
-    }, [src]);
+      const v = videoRef.current;
+      if (!v) return;
+      const seekStart = () => {
+        if (start > 0 && v.currentTime < start) v.currentTime = start;
+      };
+      if (v.readyState >= 1) seekStart();
+      else v.addEventListener("loadedmetadata", seekStart, { once: true });
+      return () => v.removeEventListener("loadedmetadata", seekStart);
+    }, [src, start]);
 
     // Sync play/pause selon phase. Re-synchronise aussi quand `src` change pour
     // garantir que la nouvelle vidéo démarre bien après le reload natif.
@@ -106,8 +114,6 @@ export const SyncedExerciseVideo = forwardRef<SyncedExerciseVideoHandle, Props>(
           break;
       }
     }, [phase, src]);
-
-    const onLoadedData = useCallback(() => setReady(true), []);
 
     const overlayCfg = computeOverlay(phase, badge);
 
@@ -156,24 +162,23 @@ export const SyncedExerciseVideo = forwardRef<SyncedExerciseVideoHandle, Props>(
         <video
           key={src}
           ref={videoRef}
-          src={src}
+          src={start > 0 ? `${src}#t=${start}` : src}
           poster={poster ?? undefined}
           autoPlay={phase !== "idle" && phase !== "rest"}
           muted
-          loop
+          loop={start === 0}
           playsInline
           preload="auto"
-          onLoadedData={onLoadedData}
-          className={cn(
-            "absolute inset-0 w-full h-full object-cover transition-opacity duration-300",
-            ready ? "opacity-100" : "opacity-0",
-          )}
+          onEnded={() => {
+            // Boucle manuelle quand `start > 0` : `loop` natif rejoue depuis 0
+            // et zappe l'offset, donc on relance nous-mêmes.
+            const v = videoRef.current;
+            if (!v) return;
+            v.currentTime = start;
+            v.play().catch(() => {});
+          }}
+          className="absolute inset-0 w-full h-full object-cover"
         />
-
-        {/* Skeleton tant que la vidéo n'est pas prête. */}
-        {!ready && (
-          <div className="absolute inset-0 bg-gradient-to-br from-white/[0.04] to-white/[0.01] animate-pulse" />
-        )}
 
         {bare ? null : (
           <>

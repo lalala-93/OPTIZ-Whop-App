@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Check, Minus, Plus, RotateCcw, Sparkles } from "lucide-react";
+import { Check, Minus, Plus, Sparkles } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
@@ -204,7 +204,7 @@ function NumberCell({
     );
   }
 
-  // done — bouton undo
+  // done — numéro grisé, click pour annuler
   return (
     <div className="relative flex items-center justify-center">
       <button
@@ -213,16 +213,11 @@ function NumberCell({
         aria-label="Annuler la validation"
         className={cn(
           baseCls,
-          "group bg-white/[0.04] border border-white/[0.06] text-gray-9",
-          "hover:bg-white/[0.07] hover:text-gray-11 active:scale-[0.94]",
+          "bg-white/[0.04] border border-white/[0.06] text-gray-8",
+          "hover:bg-white/[0.07] hover:text-gray-10 active:scale-[0.94]",
         )}
       >
-        <Check size={16} strokeWidth={2.5} className="group-hover:hidden" />
-        <RotateCcw
-          size={14}
-          strokeWidth={2.25}
-          className="hidden group-hover:block"
-        />
+        {idx + 1}
       </button>
       {isPr && (
         <Sparkles

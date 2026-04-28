@@ -295,27 +295,26 @@ function WorkoutFunnel({
 
   // ── Completion ──
   if (done && result) {
+    const hasRecord = result.improvedSets > 0;
     return (
-      <motion.div className="pb-8 flex flex-col items-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-        {/* Session complete image — compact */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.4 }}
-          className="w-full rounded-2xl overflow-hidden mb-6 relative"
-          style={{ aspectRatio: "16/10" }}
+      <div className="pb-8 flex flex-col items-center">
+        {/* Session complete image — taille raisonnable, plus carré qu'avant */}
+        <div
+          className="w-full max-w-[280px] rounded-2xl overflow-hidden mb-5 relative"
+          style={{ aspectRatio: "1/1" }}
         >
           <Image
             src="/images/session-complete.png"
             alt="Session Complete"
             fill
+            sizes="280px"
             className="object-cover"
             priority
           />
-        </motion.div>
+        </div>
 
-        {/* Stats row */}
-        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="w-full grid grid-cols-3 gap-2.5 mb-6">
+        {/* Stats row — 3 cards, records mis en valeur si > 0 */}
+        <div className="w-full grid grid-cols-3 gap-2.5 mb-5">
           <Card className="border-white/[0.06] bg-white/[0.03]">
             <CardContent className="p-3 text-center">
               <Clock size={14} className="text-gray-7 mx-auto mb-1" />
@@ -330,30 +329,43 @@ function WorkoutFunnel({
               <p className="text-[10px] text-gray-7 mt-0.5">{t("trainingKg")}</p>
             </CardContent>
           </Card>
-          <Card className="border-white/[0.06] bg-white/[0.03]">
+          <Card
+            className={cn(
+              "border-white/[0.06] bg-white/[0.03]",
+              hasRecord && "border-[#FFD700]/30 bg-[#FFD700]/[0.04]",
+            )}
+          >
             <CardContent className="p-3 text-center">
-              <Sparkles size={14} className="text-[#FFD700] mx-auto mb-1" />
-              <p className="text-[15px] font-bold text-gray-12 tabular-nums">{result.improvedSets}</p>
-              <p className="text-[10px] text-gray-7 mt-0.5">{t("trainingRecordsLabel")}</p>
+              <Sparkles
+                size={14}
+                className={cn(
+                  "mx-auto mb-1",
+                  hasRecord ? "text-[#FFD700]" : "text-gray-7",
+                )}
+              />
+              <p
+                className={cn(
+                  "text-[15px] font-bold tabular-nums",
+                  hasRecord ? "text-[#FFD700]" : "text-gray-12",
+                )}
+              >
+                {result.improvedSets}
+              </p>
+              <p className="text-[10px] text-gray-7 mt-0.5">
+                {t("trainingRecordsLabel")}
+              </p>
             </CardContent>
           </Card>
-        </motion.div>
+        </div>
 
         {/* CTA */}
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.35 }}
-          className="w-full"
+        <Button
+          onClick={() => onSave(result)}
+          className="w-full h-12 rounded-2xl optiz-gradient-bg text-white font-semibold text-[15px] active:scale-[0.97] transition-transform border-0 hover:opacity-90"
         >
-          <Button
-            onClick={() => onSave(result)}
-            className="w-full h-12 rounded-2xl optiz-gradient-bg text-white font-semibold text-[15px] active:scale-[0.97] transition-transform border-0 hover:opacity-90"
-          >
-            {t("trainingClaimXp", { xp: "100" })}
-          </Button>
-        </motion.div>
-      </motion.div>
+          {t("trainingClaimXp", { xp: "100" })}
+        </Button>
+      </div>
     );
   }
 
@@ -491,13 +503,7 @@ function WorkoutFunnel({
       </div>
 
       {ex && (
-        <motion.div
-          key={ex.id}
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ type: "spring", stiffness: 380, damping: 32 }}
-          className="mt-4"
-        >
+        <div key={ex.id} className="mt-4">
           {/* Exercise hero card — vidéo Hakim synchronisée + meta + phases */}
           {(() => {
             // ⚠️ Utiliser `libraryId`, pas `id`. `id` est composite
@@ -520,6 +526,7 @@ function WorkoutFunnel({
                   <SyncedExerciseVideo
                     src={video?.src ?? null}
                     poster={video?.poster ?? null}
+                    start={video?.start}
                     phase={videoPhase}
                   />
                   {/* Vignette bas — ancre visuellement le titre sous la vidéo.
@@ -584,7 +591,7 @@ function WorkoutFunnel({
               })}
             </div>
           </div>
-        </motion.div>
+        </div>
       )}
 
       {/* Rest popup — fullscreen blur backdrop + carte élargie avec contexte. */}
@@ -599,10 +606,6 @@ function WorkoutFunnel({
             minutes > 0
               ? `${minutes}:${String(seconds).padStart(2, "0")}`
               : String(seconds);
-          // Prochaine série après le repos = la première pas encore done.
-          const nextSetIdx = rows.findIndex((r) => !r.done);
-          const nextSetNum = nextSetIdx === -1 ? null : nextSetIdx + 1;
-
           return (
             <motion.div
               key="rest-overlay"
@@ -610,32 +613,19 @@ function WorkoutFunnel({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.18 }}
-              className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-lg px-4"
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md px-4"
             >
               <motion.div
-                initial={{ y: 24, opacity: 0, scale: 0.96 }}
-                animate={{ y: 0, opacity: 1, scale: 1 }}
-                exit={{ y: 24, opacity: 0, scale: 0.96 }}
-                transition={{ type: "spring", stiffness: 380, damping: 32 }}
-                className="relative w-full max-w-sm rounded-2xl border border-white/[0.08] bg-[#0E0E0F] overflow-hidden"
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+                className="w-full max-w-sm rounded-2xl border border-white/[0.08] bg-[#0E0E0F]"
               >
-                <div className="relative px-6 pt-7 pb-6 flex flex-col items-center text-center gap-5">
-                  {/* Header — context série suivante */}
-                  {nextSetNum && (
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[9.5px] uppercase tracking-[0.22em] text-gray-7 font-semibold">
-                        Prochaine série
-                      </span>
-                      <span className="text-[11px] tabular-nums font-bold text-[#FF6D6D]">
-                        {nextSetNum}/{rows.length}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Big countdown ring — texte parfaitement centré sur le
-                      centre géométrique du cercle ; SEC ancré en absolu pour
-                      ne pas pousser le digit hors-axe. */}
-                  <div className="relative w-[136px] h-[136px]">
+                <div className="px-7 pt-8 pb-6 flex flex-col items-center text-center gap-7">
+                  {/* Timer — grand, centré, propre. SEC ancré en absolu pour
+                      ne pas décaler le digit hors-axe. */}
+                  <div className="relative w-[156px] h-[156px]">
                     <svg viewBox="0 0 80 80" className="w-full h-full -rotate-90">
                       <circle
                         cx="40"
@@ -659,51 +649,27 @@ function WorkoutFunnel({
                       />
                     </svg>
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-[44px] font-semibold text-gray-12 tabular-nums leading-none tracking-[-0.04em]">
+                      <span className="text-[52px] font-semibold text-gray-12 tabular-nums leading-none tracking-[-0.04em]">
                         {timeStr}
                       </span>
                     </div>
-                    <span className="absolute left-1/2 bottom-[26px] -translate-x-1/2 text-[9px] text-gray-7 uppercase tracking-[0.22em] font-semibold">
+                    <span className="absolute left-1/2 bottom-[30px] -translate-x-1/2 text-[9px] text-gray-7 uppercase tracking-[0.22em] font-semibold">
                       sec
                     </span>
                   </div>
 
-                  {/* Motivation block — titre fort + citation Hakim */}
-                  <div className="space-y-2.5 pt-1">
-                    <p className="text-[18px] font-semibold text-gray-12 leading-tight tracking-tight [text-wrap:balance]">
-                      Récupère bien.
-                      <br />
-                      <span className="text-[#FF6D6D]">Reviens plus fort.</span>
-                    </p>
-                    <motion.p
-                      key={rest.quote}
-                      initial={{ opacity: 0, y: 3 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className="text-[13px] italic text-gray-9 leading-snug max-w-[280px] mx-auto"
-                    >
-                      &ldquo;{rest.quote}&rdquo;
-                    </motion.p>
-                  </div>
+                  {/* Motivation — citation Hakim qui rotate */}
+                  <motion.p
+                    key={rest.quote}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.25 }}
+                    className="text-[15px] text-gray-11 leading-snug max-w-[280px] tracking-tight [text-wrap:balance]"
+                  >
+                    &ldquo;{rest.quote}&rdquo;
+                  </motion.p>
 
-                  {/* Exercise reminder — petit footer pour ancrer l'action suivante */}
-                  <div className="w-full pt-1 pb-1">
-                    <p className="text-[11px] text-gray-7 truncate">
-                      <span className="text-gray-9 font-medium">{ex.name}</span>
-                      {ex.defaultLoad ? (
-                        <>
-                          <span className="mx-1.5 text-gray-6">·</span>
-                          <span className="tabular-nums">{ex.defaultLoad} kg</span>
-                          <span className="mx-1 text-gray-6">×</span>
-                          <span className="tabular-nums">
-                            {ex.perSetReps?.[nextSetIdx] ?? ex.reps}
-                          </span>
-                        </>
-                      ) : null}
-                    </p>
-                  </div>
-
-                  {/* Actions */}
+                  {/* Actions — flat shadcn, pas de glow */}
                   <div className="flex items-center gap-2 w-full">
                     <button
                       type="button"
@@ -715,7 +681,7 @@ function WorkoutFunnel({
                     <button
                       type="button"
                       onClick={skipRest}
-                      className="flex-1 h-11 rounded-xl bg-gradient-to-b from-[#FF1414] to-[#C40000] text-white text-[13.5px] font-semibold tracking-[0.02em] shadow-[0_4px_14px_-3px_rgba(232,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.18)] hover:shadow-[0_5px_16px_-3px_rgba(232,0,0,0.65)] active:scale-[0.98] transition-all"
+                      className="flex-1 h-11 rounded-xl bg-[#E80000] text-white text-[13.5px] font-semibold hover:bg-[#FF1414] active:scale-[0.98] transition-colors"
                     >
                       {t("trainingRestSkip")}
                     </button>
