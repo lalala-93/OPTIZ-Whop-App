@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import Image from "next/image";
 import { Home, Dumbbell, Footprints, Apple, Wind, User } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -114,6 +114,12 @@ function DashboardInner({ userId, initialData, initialEngagementStats }: Experie
   const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<TabType>("home");
   const [, startTransition] = useTransition();
+
+  // Reset scroll position when switching tabs — sinon on reste au milieu de l'écran précédent.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }, [activeTab]);
 
   const [userName, setUserName] = useState(initialData.profile.displayName);
   const [userPhoto, setUserPhoto] = useState<string | null>(initialData.profile.avatarUrl);

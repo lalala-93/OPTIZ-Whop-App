@@ -422,18 +422,46 @@ function WorkoutFunnel({
         </div>
       </div>
 
-      {/* Paused banner */}
+      {/* Paused fullscreen overlay — blurred backdrop, modal carte centrée */}
       <AnimatePresence>
         {paused && (
           <motion.div
-            key="paused-banner"
-            initial={{ opacity: 0, y: -4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
+            key="paused-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             transition={{ duration: 0.18 }}
-            className="mb-3 flex items-center justify-center gap-2 h-8 rounded-lg bg-[#E80000]/[0.06] border border-[#E80000]/15 text-[11.5px] text-[#FF6D6D] font-semibold tracking-[0.08em] uppercase"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md px-4"
+            onClick={togglePause}
           >
-            <Pause size={11} /> Séance en pause
+            <motion.div
+              initial={{ scale: 0.94, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.94, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 320, damping: 28 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-sm rounded-2xl border border-white/[0.08] bg-[#0F0F10]/95 p-6 shadow-[0_24px_60px_-12px_rgba(0,0,0,0.7)]"
+            >
+              <div className="flex flex-col items-center text-center gap-4">
+                <div className="w-14 h-14 rounded-full bg-[#E80000]/[0.12] border border-[#E80000]/30 flex items-center justify-center">
+                  <Pause size={22} className="text-[#FF6D6D]" />
+                </div>
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.18em] text-[#FF6D6D] font-semibold mb-1">
+                    Séance en pause
+                  </div>
+                  <div className="text-[15px] text-gray-11">
+                    Le chrono est gelé. Reprends quand t'es prêt.
+                  </div>
+                </div>
+                <Button
+                  onClick={togglePause}
+                  className="w-full h-11 rounded-xl bg-gradient-to-b from-[#FF1414] to-[#C40000] text-white font-semibold tracking-[0.04em] shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]"
+                >
+                  <Play size={14} className="mr-1.5" fill="currentColor" /> Reprendre
+                </Button>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -471,9 +499,9 @@ function WorkoutFunnel({
           transition={{ type: "spring", stiffness: 380, damping: 32 }}
           className="mt-4"
         >
-          {/* Exercise hero card — vidéo native synchronisée + meta + phases */}
+          {/* Exercise hero card — vidéo Hakim synchronisée + meta + phases */}
           {(() => {
-            const native = getExerciseVideo(ex.id);
+            const video = getExerciseVideo(ex.id);
             // Dérive la phase vidéo depuis l'état du funnel.
             const videoPhase: VideoPhase = resting
               ? "rest"
@@ -520,30 +548,12 @@ function WorkoutFunnel({
 
             return (
               <Card className="border-white/[0.05] bg-white/[0.02] mb-3 overflow-hidden">
-                {/* Hero video — pleine largeur, ratio 16:9, native si dispo */}
-                {native ? (
-                  <SyncedExerciseVideo
-                    src={native.src}
-                    poster={native.poster}
-                    phase={videoPhase}
-                  />
-                ) : (
-                  // Fallback YouTube — vignette cliquable
-                  <a
-                    href={ex.videoUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={t("trainingVideoAria")}
-                    className="relative aspect-video w-full bg-gradient-to-br from-white/[0.04] to-black flex items-center justify-center group"
-                  >
-                    <div className="w-14 h-14 rounded-full bg-black/55 backdrop-blur-md border border-white/10 flex items-center justify-center group-hover:scale-105 transition-transform">
-                      <Play size={20} className="text-white ml-0.5" fill="currentColor" />
-                    </div>
-                    <span className="absolute bottom-3 right-3 text-[10px] uppercase tracking-[0.16em] text-white/70 font-semibold">
-                      YouTube
-                    </span>
-                  </a>
-                )}
+                {/* Hero video Hakim — pleine largeur, 16:9 */}
+                <SyncedExerciseVideo
+                  src={video.src}
+                  poster={video.poster}
+                  phase={videoPhase}
+                />
 
                 {/* Phases strip — directement sous la vidéo, fond sombre */}
                 <div className="bg-black/40 border-y border-white/[0.04]">
@@ -606,9 +616,7 @@ function WorkoutFunnel({
         </motion.div>
       )}
 
-      {/* Rest panel v2 — compact bottom-sticky, no backdrop : la vidéo reste visible
-          en tâche de fond (phase="rest" → dim auto). Layout horizontal :
-          ring countdown à gauche, citation Hakim + actions à droite. */}
+      {/* Rest popup — fullscreen blur backdrop + compact card centrée */}
       <AnimatePresence>
         {rest && ex && (() => {
           const progressPct = 1 - rest.secondsLeft / rest.total;
@@ -617,14 +625,20 @@ function WorkoutFunnel({
 
           return (
             <motion.div
-              key="rest-panel"
-              initial={{ y: 80, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 80, opacity: 0 }}
-              transition={{ type: "spring", stiffness: 380, damping: 32 }}
-              className="fixed left-3 right-3 z-40 bottom-[calc(env(safe-area-inset-bottom)+86px)] sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:w-[min(calc(100%-1.5rem),28rem)] pointer-events-none"
+              key="rest-overlay"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.18 }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md px-4"
             >
-              <div className="pointer-events-auto rounded-2xl border border-white/[0.08] bg-[#0F0F10]/95 backdrop-blur-xl shadow-[0_18px_48px_-16px_rgba(0,0,0,0.7)] overflow-hidden">
+              <motion.div
+                initial={{ y: 24, opacity: 0, scale: 0.96 }}
+                animate={{ y: 0, opacity: 1, scale: 1 }}
+                exit={{ y: 24, opacity: 0, scale: 0.96 }}
+                transition={{ type: "spring", stiffness: 380, damping: 32 }}
+                className="w-full max-w-sm rounded-2xl border border-white/[0.08] bg-[#0F0F10]/95 shadow-[0_24px_64px_-16px_rgba(0,0,0,0.8)] overflow-hidden"
+              >
                 <div className="flex items-stretch gap-3 p-3">
                   {/* Compact countdown ring */}
                   <div className="relative shrink-0 w-[76px] h-[76px]">
@@ -704,7 +718,7 @@ function WorkoutFunnel({
                     </div>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             </motion.div>
           );
         })()}
@@ -720,7 +734,7 @@ function WorkoutFunnel({
               "w-full h-12 rounded-2xl font-semibold text-[15px] flex items-center justify-center gap-1.5 transition-all",
               allDone && !resting
                 ? "optiz-gradient-bg text-white active:scale-[0.97] border-0 hover:opacity-90"
-                : "bg-gray-3 border border-gray-5/35 text-gray-7 hover:bg-gray-3"
+                : "bg-white/[0.05] border border-white/[0.12] text-gray-9 hover:bg-white/[0.05] cursor-not-allowed"
             )}
           >
             {isLast ? t("trainingValidateSession") : t("trainingNextExercise")}
@@ -927,7 +941,7 @@ function ProgramDetailView({
                     className={cn(
                       "w-full h-11 rounded-xl text-[13.5px] font-semibold gap-2",
                       done
-                        ? "bg-gray-3 border border-gray-5/30 text-gray-7 hover:bg-gray-3"
+                        ? "bg-emerald-500/[0.08] border border-emerald-400/25 text-emerald-300/85 hover:bg-emerald-500/[0.08] cursor-default"
                         : "optiz-gradient-bg text-white border-0 hover:opacity-95 active:scale-[0.98] transition-transform"
                     )}
                   >
