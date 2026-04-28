@@ -500,7 +500,10 @@ function WorkoutFunnel({
         >
           {/* Exercise hero card — vidéo Hakim synchronisée + meta + phases */}
           {(() => {
-            const video = getExerciseVideo(ex.id);
+            // ⚠️ Utiliser `libraryId`, pas `id`. `id` est composite
+            // (`mid-high-raise-4x15`) et ne match jamais EXERCISE_VIDEOS,
+            // ce qui faisait tomber 100% des exos sur le warmup-full fallback.
+            const video = getExerciseVideo(ex.libraryId);
             // Dérive la phase vidéo depuis l'état du funnel.
             const videoPhase: VideoPhase = resting
               ? "rest"

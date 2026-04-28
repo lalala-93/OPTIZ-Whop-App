@@ -4,7 +4,12 @@
 // ═══════════════════════════════════════════════════════
 
 export interface ProgramExerciseTemplate {
+  /** Composite id unique au sein d'une session — `${libraryId}-${sets}x${reps}…`.
+   *  Sert pour les clés React et le tracking des sets. */
   id: string;
+  /** Id de référence dans `BASE_LIBRARY` — utiliser pour résoudre la vidéo,
+   *  pas `id` (qui est suffixé par sets/reps et ne match aucun mapping vidéo). */
+  libraryId: string;
   name: string;
   sets: number;
   reps: number;
@@ -167,6 +172,7 @@ function ex(
   if (!base) throw new Error(`Missing exercise: ${id}`);
   return {
     id: `${id}-${sets}x${reps}${opts?.repsLabel ? "-" + opts.repsLabel.replace(/\s+/g, "") : ""}`,
+    libraryId: id,
     name: base.name,
     sets,
     reps,
