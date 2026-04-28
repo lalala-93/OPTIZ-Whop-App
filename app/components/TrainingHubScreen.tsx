@@ -10,7 +10,6 @@ import {
   ChevronRight,
   Clock,
   Dumbbell,
-  Minus,
   Pause,
   Play,
   Plus,
@@ -29,6 +28,10 @@ import {
   type ProgramSessionTemplate,
   type ProgramTemplate,
 } from "@/app/lib/training-programs";
+import { getExerciseVideo } from "@/app/lib/training-videos";
+import { SyncedExerciseVideo, type VideoPhase } from "./SyncedExerciseVideo";
+import { PhasesStrip, type StripPhase } from "./PhasesStrip";
+import { SetRow } from "./SetRow";
 import {
   isSoundEnabled,
   playCompleteSound,
@@ -168,19 +171,28 @@ function WorkoutFunnel({
   const pausedAt = useRef<number | null>(null);
 
   const REST_DEFAULT = 45;
-  const REST_QUOTES = [
-    "Respire. Ton corps se reconstruit.",
-    "La récupération fait la performance.",
-    "Chaque série te rapproche.",
-    "Reste concentré. Visualise la suivante.",
-    "La constance bat l'intensité.",
-    "Hydrate-toi. Ajuste ta posture.",
-    "Tu es plus fort qu'à la série précédente.",
-    "Discipline > motivation. Tu y es.",
-    "Un set de plus, une excuse de moins.",
-    "Contracte le core. Prépare-toi.",
+  // Citations Hakim — voix directe, FR, no-nonsense, tough-love motivante.
+  const HAKIM_QUOTES = [
+    "Respire. Tu te reconstruis là, maintenant.",
+    "La récup' fait la perf. Pas l'inverse.",
+    "Chaque série te rapproche. Reste là.",
+    "Visualise la suivante. Tu sais ce que tu fais.",
+    "La constance bat l'intensité. Toujours.",
+    "Hydrate. Pose. Concentre.",
+    "Plus fort qu'à la série d'avant. C'est ça la règle.",
+    "Discipline d'abord. La motivation suit.",
+    "Une série de plus, une excuse de moins.",
+    "Contracte le core. Prépare la prochaine.",
+    "On est pas là pour rigoler. Mais on est là.",
+    "Le mental se construit dans le repos. Tiens-le.",
+    "Tu vises pas le confort. Tu vises la transformation.",
+    "Le corps s'adapte. À toi de pousser le curseur.",
+    "Pas de raccourci. Que de la rigueur.",
+    "Tu paies maintenant ce que tu kiffes après.",
+    "Souffle long. Reste calme. Reste prêt.",
+    "C'est dans ces 45 secondes que ça se joue.",
   ];
-  const pickQuote = () => REST_QUOTES[Math.floor(Math.random() * REST_QUOTES.length)];
+  const pickQuote = () => HAKIM_QUOTES[Math.floor(Math.random() * HAKIM_QUOTES.length)];
 
   // Elapsed timer — pauses when `paused`
   useEffect(() => {
@@ -459,44 +471,112 @@ function WorkoutFunnel({
           transition={{ type: "spring", stiffness: 380, damping: 32 }}
           className="mt-4"
         >
-          {/* Exercise hero card — minimalist */}
-          <Card className="border-white/[0.05] bg-white/[0.02] mb-3 overflow-hidden">
-            <CardContent className="p-4">
-              <div className="flex items-start gap-3">
-                <div className="min-w-0 flex-1">
-                  <h3 className="text-[18px] font-semibold text-gray-12 leading-[1.15] tracking-tight">{ex.name}</h3>
-                  <p className="text-[11.5px] text-gray-8 mt-1">
-                    {ex.muscles} <span className="text-gray-6">·</span>{" "}
-                    <span className="text-gray-9 font-medium tabular-nums">{totalSetsInEx}×{ex.repsLabel ?? ex.reps}</span>
-                  </p>
-                </div>
-                <a
-                  href={ex.videoUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={t("trainingVideoAria")}
-                  className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center shrink-0 hover:bg-white/[0.08] active:scale-95 transition-all"
-                >
-                  <Play size={14} className="text-[#FF6D6D] ml-0.5" fill="currentColor" />
-                </a>
-              </div>
-              {ex.note && (
-                <p className="text-[11px] text-gray-8 mt-2.5 pt-2.5 border-t border-white/[0.05] leading-relaxed">
-                  {ex.note}
-                </p>
-              )}
-            </CardContent>
-          </Card>
+          {/* Exercise hero card — vidéo native synchronisée + meta + phases */}
+          {(() => {
+            const native = getExerciseVideo(ex.id);
+            // Dérive la phase vidéo depuis l'état du funnel.
+            const videoPhase: VideoPhase = resting
+              ? "rest"
+              : doneCount === 0
+              ? "preview"
+              : allDone
+              ? "set_done"
+              : "set_active";
 
-          {/* Set tracker — cohérent avec le reste de l'app, français */}
+            // Construit la timeline des phases pour le strip.
+            const stripPhases: StripPhase[] = [];
+            stripPhases.push({ kind: "preview", active: doneCount === 0 && !resting });
+            for (let i = 0; i < totalSetsInEx; i++) {
+              const setStatus: "pending" | "active" | "done" =
+                rows[i]?.done
+                  ? "done"
+                  : i === activeSetIdx && !resting
+                  ? "active"
+                  : "pending";
+              stripPhases.push({ kind: "set", idx: i, status: setStatus });
+              // Insert rest pill between sets (sauf après la dernière)
+              if (i < totalSetsInEx - 1) {
+                stripPhases.push({
+                  kind: "rest",
+                  afterSetIdx: i,
+                  active: resting && i === Math.max(0, activeSetIdx - 1),
+                });
+              }
+            }
+            // Active index calculation
+            const activeStripIdx = (() => {
+              if (doneCount === 0 && !resting) return 0; // preview
+              if (resting) {
+                // rest after activeSetIdx-1 (the just-completed set)
+                const justDone = Math.max(0, activeSetIdx - 1);
+                return stripPhases.findIndex(
+                  (p) => p.kind === "rest" && p.afterSetIdx === justDone,
+                );
+              }
+              return stripPhases.findIndex(
+                (p) => p.kind === "set" && p.idx === activeSetIdx,
+              );
+            })();
+
+            return (
+              <Card className="border-white/[0.05] bg-white/[0.02] mb-3 overflow-hidden">
+                {/* Hero video — pleine largeur, ratio 16:9, native si dispo */}
+                {native ? (
+                  <SyncedExerciseVideo
+                    src={native.src}
+                    poster={native.poster}
+                    phase={videoPhase}
+                  />
+                ) : (
+                  // Fallback YouTube — vignette cliquable
+                  <a
+                    href={ex.videoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={t("trainingVideoAria")}
+                    className="relative aspect-video w-full bg-gradient-to-br from-white/[0.04] to-black flex items-center justify-center group"
+                  >
+                    <div className="w-14 h-14 rounded-full bg-black/55 backdrop-blur-md border border-white/10 flex items-center justify-center group-hover:scale-105 transition-transform">
+                      <Play size={20} className="text-white ml-0.5" fill="currentColor" />
+                    </div>
+                    <span className="absolute bottom-3 right-3 text-[10px] uppercase tracking-[0.16em] text-white/70 font-semibold">
+                      YouTube
+                    </span>
+                  </a>
+                )}
+
+                {/* Phases strip — directement sous la vidéo, fond sombre */}
+                <div className="bg-black/40 border-y border-white/[0.04]">
+                  <PhasesStrip phases={stripPhases} activeIndex={activeStripIdx} />
+                </div>
+
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-[18px] font-semibold text-gray-12 leading-[1.15] tracking-tight">{ex.name}</h3>
+                      <p className="text-[11.5px] text-gray-8 mt-1">
+                        {ex.muscles} <span className="text-gray-6">·</span>{" "}
+                        <span className="text-gray-9 font-medium tabular-nums">{totalSetsInEx}×{ex.repsLabel ?? ex.reps}</span>
+                      </p>
+                    </div>
+                  </div>
+                  {ex.note && (
+                    <p className="text-[11px] text-gray-8 mt-2.5 pt-2.5 border-t border-white/[0.05] leading-relaxed">
+                      {ex.note}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })()}
+
+          {/* Set tracker — swipe-to-validate, RPE post-set */}
           <div className="rounded-2xl border border-white/[0.05] bg-white/[0.02] overflow-hidden">
-            {/* Header — copy court pour tenir sur 1 ligne */}
-            <div className="grid grid-cols-[2.75rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem_2.75rem] items-center gap-x-2 px-3 py-2.5 border-b border-white/[0.05]">
+            {/* Header simplifié 3 cols */}
+            <div className="grid grid-cols-[2.75rem_minmax(0,1fr)_minmax(0,1fr)] items-center gap-x-2 px-3 py-2.5 border-b border-white/[0.05]">
               <span className="text-[10px] uppercase tracking-[0.1em] text-gray-7 font-semibold text-center whitespace-nowrap">N°</span>
-              <span className="text-[10px] uppercase tracking-[0.1em] text-gray-7 font-semibold text-center whitespace-nowrap">Poids</span>
+              <span className="text-[10px] uppercase tracking-[0.1em] text-gray-7 font-semibold text-center whitespace-nowrap">Poids · kg</span>
               <span className="text-[10px] uppercase tracking-[0.1em] text-gray-7 font-semibold text-center whitespace-nowrap">Reps</span>
-              <span className="text-[10px] uppercase tracking-[0.1em] text-gray-7 font-semibold text-center whitespace-nowrap">RPE</span>
-              <span className="text-[10px] uppercase tracking-[0.1em] text-gray-7 font-semibold text-center whitespace-nowrap">Fait</span>
             </div>
 
             {/* Rows */}
@@ -505,187 +585,19 @@ function WorkoutFunnel({
                 const isPr = prKeys.includes(`${ex.id}-${i}`);
                 const isActive = i === activeSetIdx && !row.done;
                 const targetReps = ex.perSetReps?.[i] ?? ex.reps;
-
-                const bumpLoad = (delta: number) => {
-                  const cur = parseNum(row.load, 0);
-                  const next = Math.max(0, cur + delta);
-                  upd(ex.id, i, { load: next === 0 ? "" : String(next) });
-                };
-                const bumpReps = (delta: number) => {
-                  const cur = parseNum(row.reps, targetReps);
-                  upd(ex.id, i, { reps: String(Math.max(0, cur + delta)) });
-                };
-
                 return (
-                  <div
+                  <SetRow
                     key={i}
-                    className={cn(
-                      "grid grid-cols-[2.75rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem_2.75rem] items-center gap-x-2 px-3 py-2.5",
-                      i > 0 && "border-t border-white/[0.04]",
-                      row.done && "opacity-55"
-                    )}
-                  >
-                    {/* N° — même hauteur que les champs (44px) */}
-                    <div className="relative flex items-center justify-center">
-                      <span
-                        className={cn(
-                          "inline-flex items-center justify-center w-11 h-11 rounded-xl text-[16px] font-semibold tabular-nums tracking-tight transition-colors",
-                          row.done
-                            ? "bg-white/[0.04] text-gray-8"
-                            : isActive
-                            ? "bg-[#E80000] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]"
-                            : "bg-white/[0.04] text-gray-9"
-                        )}
-                      >
-                        {i + 1}
-                      </span>
-                      {isPr && <Sparkles size={10} className="text-[#FFD700] shrink-0 absolute -top-0.5 -right-0.5" />}
-                    </div>
-
-                    {/* Poids — stepper ±1, tap cibles 36px */}
-                    <div
-                      className={cn(
-                        "flex items-center h-11 rounded-xl border overflow-hidden transition-colors",
-                        row.done
-                          ? "bg-white/[0.02] border-white/[0.05]"
-                          : isActive
-                          ? "bg-white/[0.03] border-[#E80000]/40 focus-within:border-[#E80000]/65"
-                          : "bg-white/[0.03] border-white/[0.06] focus-within:border-white/[0.15]"
-                      )}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => bumpLoad(-1)}
-                        disabled={row.done}
-                        className="shrink-0 h-full w-9 flex items-center justify-center text-gray-8 hover:text-gray-12 hover:bg-white/[0.04] active:bg-white/[0.07] disabled:opacity-40 transition-colors"
-                        aria-label="−1 kg"
-                      >
-                        <Minus size={14} strokeWidth={2.25} />
-                      </button>
-                      <Input
-                        type="number"
-                        value={row.load}
-                        inputMode="decimal"
-                        step="1"
-                        onChange={(e) => upd(ex.id, i, { load: e.target.value })}
-                        disabled={row.done}
-                        placeholder="0"
-                        className="flex-1 min-w-0 h-full border-0 bg-transparent text-center text-[16px] font-semibold text-gray-12 placeholder:text-gray-6 tabular-nums tracking-tight p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => bumpLoad(1)}
-                        disabled={row.done}
-                        className="shrink-0 h-full w-9 flex items-center justify-center text-gray-8 hover:text-gray-12 hover:bg-white/[0.04] active:bg-white/[0.07] disabled:opacity-40 transition-colors"
-                        aria-label="+1 kg"
-                      >
-                        <Plus size={14} strokeWidth={2.25} />
-                      </button>
-                    </div>
-
-                    {/* Reps — stepper ±1, tap cibles 36px */}
-                    <div
-                      className={cn(
-                        "flex items-center h-11 rounded-xl border overflow-hidden transition-colors",
-                        row.done
-                          ? "bg-white/[0.02] border-white/[0.05]"
-                          : isActive
-                          ? "bg-white/[0.03] border-[#E80000]/40 focus-within:border-[#E80000]/65"
-                          : "bg-white/[0.03] border-white/[0.06] focus-within:border-white/[0.15]"
-                      )}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => bumpReps(-1)}
-                        disabled={row.done}
-                        className="shrink-0 h-full w-9 flex items-center justify-center text-gray-8 hover:text-gray-12 hover:bg-white/[0.04] active:bg-white/[0.07] disabled:opacity-40 transition-colors"
-                        aria-label="−1 rep"
-                      >
-                        <Minus size={14} strokeWidth={2.25} />
-                      </button>
-                      <Input
-                        type="number"
-                        value={row.reps}
-                        inputMode="numeric"
-                        onChange={(e) => upd(ex.id, i, { reps: e.target.value })}
-                        disabled={row.done}
-                        placeholder={String(targetReps > 0 ? targetReps : 5)}
-                        className="flex-1 min-w-0 h-full border-0 bg-transparent text-center text-[16px] font-semibold text-gray-12 placeholder:text-gray-6 tabular-nums tracking-tight p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => bumpReps(1)}
-                        disabled={row.done}
-                        className="shrink-0 h-full w-9 flex items-center justify-center text-gray-8 hover:text-gray-12 hover:bg-white/[0.04] active:bg-white/[0.07] disabled:opacity-40 transition-colors"
-                        aria-label="+1 rep"
-                      >
-                        <Plus size={14} strokeWidth={2.25} />
-                      </button>
-                    </div>
-
-                    {/* RPE — chip uniforme */}
-                    <select
-                      value={row.rpe || ""}
-                      onChange={(e) => upd(ex.id, i, { rpe: e.target.value })}
-                      disabled={row.done}
-                      aria-label="RPE"
-                      className={cn(
-                        "h-11 w-full rounded-xl border text-center text-[14px] font-semibold tabular-nums appearance-none transition-colors cursor-pointer focus:outline-none px-0.5",
-                        row.done
-                          ? "bg-white/[0.02] border-white/[0.05] text-gray-8"
-                          : row.rpe
-                          ? "bg-white/[0.04] border-white/[0.08] text-gray-12"
-                          : "bg-white/[0.02] border-white/[0.05] text-gray-6"
-                      )}
-                    >
-                      <option value="">–</option>
-                      {[6, 7, 8, 9, 10].map((v) => (
-                        <option key={v} value={v}>{v}</option>
-                      ))}
-                    </select>
-
-                    {/* Fait — 44×44, aligné aux champs */}
-                    <button
-                      type="button"
-                      onClick={() => check(i)}
-                      className={cn(
-                        "relative w-11 h-11 rounded-xl flex items-center justify-center mx-auto transition-all duration-150 active:scale-[0.92]",
-                        row.done
-                          ? "bg-gradient-to-b from-[#FF1414] to-[#C40000] text-white shadow-[0_4px_12px_-3px_rgba(232,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.18)] hover:shadow-[0_5px_14px_-3px_rgba(232,0,0,0.65),inset_0_1px_0_rgba(255,255,255,0.2)]"
-                          : isActive
-                          ? "border-[1.5px] border-[#E80000]/70 bg-[#E80000]/[0.04] text-[#FF6D6D] hover:bg-[#E80000]/[0.1] hover:border-[#E80000]"
-                          : "border border-white/[0.08] bg-white/[0.01] text-gray-7 hover:border-white/20 hover:bg-white/[0.04] hover:text-gray-9"
-                      )}
-                      aria-label={row.done ? "Série complétée — décocher" : isActive ? "Valider la série" : "Série en attente"}
-                    >
-                      <AnimatePresence initial={false} mode="wait">
-                        {row.done ? (
-                          <motion.span
-                            key="done"
-                            initial={{ scale: 0.35, opacity: 0, rotate: -30 }}
-                            animate={{ scale: 1, opacity: 1, rotate: 0 }}
-                            exit={{ scale: 0.35, opacity: 0 }}
-                            transition={{ type: "spring", stiffness: 520, damping: 22 }}
-                            className="flex"
-                          >
-                            <Check size={18} strokeWidth={3} />
-                          </motion.span>
-                        ) : isActive ? (
-                          <motion.span
-                            key="active"
-                            initial={{ scale: 0.5, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.5, opacity: 0 }}
-                            transition={{ duration: 0.2 }}
-                            className="relative inline-flex"
-                          >
-                            <span className="w-2 h-2 rounded-full bg-[#FF6D6D]" />
-                            <span className="absolute inset-0 w-2 h-2 rounded-full bg-[#FF6D6D] animate-ping opacity-60" />
-                          </motion.span>
-                        ) : null}
-                      </AnimatePresence>
-                    </button>
-                  </div>
+                    row={row}
+                    idx={i}
+                    isPr={isPr}
+                    isActive={isActive}
+                    isFirst={i === 0}
+                    targetReps={targetReps}
+                    onUpdate={(patch) => upd(ex.id, i, patch)}
+                    onValidate={() => check(i)}
+                    onUndo={() => check(i)}
+                  />
                 );
               })}
             </div>
@@ -693,133 +605,105 @@ function WorkoutFunnel({
         </motion.div>
       )}
 
-      {/* Rest overlay — minimalist */}
+      {/* Rest panel v2 — compact bottom-sticky, no backdrop : la vidéo reste visible
+          en tâche de fond (phase="rest" → dim auto). Layout horizontal :
+          ring countdown à gauche, citation Hakim + actions à droite. */}
       <AnimatePresence>
         {rest && ex && (() => {
-          const nextSetIdx = rows.findIndex((r) => !r.done);
-          const nextSet = nextSetIdx >= 0 ? rows[nextSetIdx] : null;
-          const nextTargetReps = nextSetIdx >= 0 ? (ex.perSetReps?.[nextSetIdx] ?? ex.reps) : 0;
           const progressPct = 1 - rest.secondsLeft / rest.total;
-          const RADIUS = 46;
+          const RADIUS = 32;
           const CIRC = 2 * Math.PI * RADIUS;
 
           return (
             <motion.div
-              key="rest-overlay"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/85 backdrop-blur-md px-4 pb-[calc(env(safe-area-inset-bottom)+90px)] sm:pb-0"
+              key="rest-panel"
+              initial={{ y: 80, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 80, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 380, damping: 32 }}
+              className="fixed left-3 right-3 z-40 bottom-[calc(env(safe-area-inset-bottom)+86px)] sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:w-[min(calc(100%-1.5rem),28rem)] pointer-events-none"
             >
-              <motion.div
-                initial={{ y: 24, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={{ y: 24, opacity: 0 }}
-                transition={{ type: "spring", stiffness: 380, damping: 32 }}
-                className="relative w-full max-w-sm rounded-[24px] border border-white/[0.06] bg-[#0F0F10]"
-              >
-                {/* Close */}
-                <button
-                  type="button"
-                  onClick={skipRest}
-                  aria-label={t("trainingRestSkip")}
-                  className="absolute top-3.5 right-3.5 w-8 h-8 rounded-full flex items-center justify-center text-gray-7 hover:text-gray-11 hover:bg-white/[0.04] transition-colors z-10"
-                >
-                  <X size={14} />
-                </button>
-
-                <div className="p-6 pt-7">
-                  {/* Label */}
-                  <p className="text-center text-[10.5px] uppercase tracking-[0.22em] text-gray-7 font-semibold mb-5">
-                    {t("trainingRestTitle")}
-                  </p>
-
-                  {/* Ring */}
-                  <div className="flex items-center justify-center mb-6">
-                    <div className="relative w-44 h-44">
-                      <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-                        <circle cx="50" cy="50" r={RADIUS} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="2.5" />
-                        <circle
-                          cx="50"
-                          cy="50"
-                          r={RADIUS}
-                          fill="none"
-                          stroke="#E80000"
-                          strokeWidth="3"
-                          strokeLinecap="round"
-                          strokeDasharray={CIRC}
-                          strokeDashoffset={CIRC * progressPct}
-                          style={{ transition: "stroke-dashoffset 1s linear" }}
-                        />
-                      </svg>
-                      <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <motion.p
-                          key={rest.secondsLeft}
-                          initial={{ opacity: 0.6, y: -2 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.18 }}
-                          className="text-[64px] font-semibold text-gray-12 tabular-nums leading-none tracking-[-0.04em]"
-                        >
-                          {rest.secondsLeft}
-                        </motion.p>
-                        <p className="text-[10.5px] text-gray-7 font-medium mt-2 uppercase tracking-[0.22em]">
-                          secondes
-                        </p>
-                      </div>
+              <div className="pointer-events-auto rounded-2xl border border-white/[0.08] bg-[#0F0F10]/95 backdrop-blur-xl shadow-[0_18px_48px_-16px_rgba(0,0,0,0.7)] overflow-hidden">
+                <div className="flex items-stretch gap-3 p-3">
+                  {/* Compact countdown ring */}
+                  <div className="relative shrink-0 w-[76px] h-[76px]">
+                    <svg viewBox="0 0 80 80" className="w-full h-full -rotate-90">
+                      <circle cx="40" cy="40" r={RADIUS} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="3" />
+                      <circle
+                        cx="40"
+                        cy="40"
+                        r={RADIUS}
+                        fill="none"
+                        stroke="#E80000"
+                        strokeWidth="3.5"
+                        strokeLinecap="round"
+                        strokeDasharray={CIRC}
+                        strokeDashoffset={CIRC * progressPct}
+                        style={{ transition: "stroke-dashoffset 1s linear" }}
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <motion.span
+                        key={rest.secondsLeft}
+                        initial={{ opacity: 0.5, y: -1 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.16 }}
+                        className="text-[24px] font-semibold text-gray-12 tabular-nums leading-none tracking-[-0.03em]"
+                      >
+                        {rest.secondsLeft}
+                      </motion.span>
+                      <span className="text-[8.5px] text-gray-7 mt-1 uppercase tracking-[0.18em] font-semibold">
+                        sec
+                      </span>
                     </div>
                   </div>
 
-                  {/* Motivational quote — rotates each rest */}
-                  <motion.p
-                    key={rest.quote}
-                    initial={{ opacity: 0, y: 4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                    className="text-center text-[12.5px] italic text-gray-9 leading-snug mb-5 px-2"
-                  >
-                    &ldquo;{rest.quote}&rdquo;
-                  </motion.p>
-
-                  {/* Next-up preview */}
-                  {nextSet && (
-                    <div className="flex items-center gap-3 rounded-xl border border-white/[0.05] bg-white/[0.02] px-3 py-2.5 mb-5">
-                      <span className="shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-md bg-[#E80000]/10 text-[#FF6D6D] text-[11.5px] font-semibold tabular-nums">
-                        {nextSetIdx + 1}
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[9.5px] uppercase tracking-[0.16em] text-gray-7 font-semibold leading-none">
-                          Prochaine série
+                  {/* Quote + actions */}
+                  <div className="flex flex-col justify-between min-w-0 flex-1 py-0.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-[9px] uppercase tracking-[0.18em] text-[#FF6D6D] font-semibold leading-none mb-1">
+                          {t("trainingRestTitle")}
                         </p>
-                        <p className="text-[12.5px] text-gray-11 font-medium truncate mt-1">{ex.name}</p>
+                        <motion.p
+                          key={rest.quote}
+                          initial={{ opacity: 0, y: 3 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.3 }}
+                          className="text-[12px] italic text-gray-10 leading-snug line-clamp-2"
+                        >
+                          &ldquo;{rest.quote}&rdquo;
+                        </motion.p>
                       </div>
-                      <p className="shrink-0 text-[12.5px] font-semibold text-gray-12 tabular-nums">
-                        {nextSet.load && parseNum(nextSet.load, 0) > 0 ? `${nextSet.load}×` : ""}
-                        {nextTargetReps > 0 ? nextTargetReps : nextSet.reps}
-                      </p>
+                      <button
+                        type="button"
+                        onClick={skipRest}
+                        aria-label={t("trainingRestSkip")}
+                        className="shrink-0 w-7 h-7 -mt-0.5 -mr-1 rounded-full flex items-center justify-center text-gray-7 hover:text-gray-11 hover:bg-white/[0.05] transition-colors"
+                      >
+                        <X size={13} />
+                      </button>
                     </div>
-                  )}
 
-                  {/* Actions */}
-                  <div className="flex items-center gap-2">
-                    <Button
-                      type="button"
-                      onClick={() => addRest(15)}
-                      variant="outline"
-                      className="h-11 flex-1 rounded-xl bg-white/[0.03] border-white/[0.07] text-gray-11 text-[13px] font-semibold hover:bg-white/[0.06]"
-                    >
-                      +15 s
-                    </Button>
-                    <Button
-                      type="button"
-                      onClick={skipRest}
-                      className="h-11 flex-[1.3] rounded-xl optiz-gradient-bg border-0 text-white text-[13px] font-semibold hover:opacity-95 active:scale-[0.97] transition-transform"
-                    >
-                      {t("trainingRestSkip")}
-                    </Button>
+                    <div className="flex items-center gap-1.5 mt-2">
+                      <button
+                        type="button"
+                        onClick={() => addRest(15)}
+                        className="h-8 px-2.5 rounded-lg bg-white/[0.04] border border-white/[0.07] text-gray-11 text-[11.5px] font-semibold hover:bg-white/[0.07] active:scale-95 transition-all"
+                      >
+                        +15 s
+                      </button>
+                      <button
+                        type="button"
+                        onClick={skipRest}
+                        className="flex-1 h-8 rounded-lg optiz-gradient-bg text-white text-[11.5px] font-semibold hover:opacity-95 active:scale-[0.97] transition-all"
+                      >
+                        {t("trainingRestSkip")}
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </motion.div>
+              </div>
             </motion.div>
           );
         })()}
