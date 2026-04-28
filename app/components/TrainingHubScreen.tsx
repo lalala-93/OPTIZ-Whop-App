@@ -367,7 +367,7 @@ function WorkoutFunnel({
     : 0;
 
   return (
-    <div className="pb-[200px]">
+    <div className="pb-[100px]">
       {/* Top bar */}
       <div className="flex items-center justify-between mb-4">
         <Button
@@ -514,28 +514,41 @@ function WorkoutFunnel({
               : "set_active";
 
             return (
-              <Card className="border-white/[0.05] bg-white/[0.02] mb-3 overflow-hidden">
-                {/* Hero video Hakim — pleine largeur, 16:9 */}
-                <SyncedExerciseVideo
-                  src={video.src}
-                  poster={video.poster}
-                  phase={videoPhase}
-                />
+              <Card className="relative border-white/[0.05] bg-white/[0.02] mb-3 overflow-hidden">
+                {/* Hero video Hakim + gradient soft pour fondre dans la card */}
+                <div className="relative">
+                  <SyncedExerciseVideo
+                    src={video.src}
+                    poster={video.poster}
+                    phase={videoPhase}
+                  />
+                  {/* Vignette bas — ancre visuellement le titre sous la vidéo */}
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/45 to-transparent"
+                  />
+                </div>
 
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="min-w-0 flex-1">
-                      <h3 className="text-[18px] font-semibold text-gray-12 leading-[1.15] tracking-tight">{ex.name}</h3>
-                      <p className="text-[11.5px] text-gray-8 mt-1">
-                        {ex.muscles} <span className="text-gray-6">·</span>{" "}
-                        <span className="text-gray-9 font-medium tabular-nums">{totalSetsInEx}×{ex.repsLabel ?? ex.reps}</span>
-                      </p>
-                    </div>
+                <CardContent className="p-4 pt-3.5">
+                  <h3 className="text-[18px] font-semibold text-gray-12 leading-[1.15] tracking-tight [text-wrap:balance]">
+                    {ex.name}
+                  </h3>
+                  {/* Meta line scannable — muscles • sets×reps en pill */}
+                  <div className="mt-1.5 flex items-center gap-2 flex-wrap">
+                    <span className="text-[11.5px] text-gray-8 leading-none">
+                      {ex.muscles}
+                    </span>
+                    <span className="inline-flex items-center h-[18px] px-1.5 rounded-md bg-white/[0.05] border border-white/[0.06] text-[10.5px] font-semibold tabular-nums text-gray-10 tracking-tight">
+                      {totalSetsInEx}×{ex.repsLabel ?? ex.reps}
+                    </span>
                   </div>
                   {ex.note && (
-                    <p className="text-[11px] text-gray-8 mt-2.5 pt-2.5 border-t border-white/[0.05] leading-relaxed">
-                      {ex.note}
-                    </p>
+                    <div className="mt-3 flex items-start gap-2 px-2.5 py-2 rounded-lg bg-white/[0.02] border border-white/[0.04]">
+                      <span className="mt-[3px] block w-1 h-1 rounded-full bg-[#FF6D6D]/70 shrink-0" />
+                      <p className="text-[11.5px] text-gray-8 leading-relaxed">
+                        {ex.note}
+                      </p>
+                    </div>
                   )}
                 </CardContent>
               </Card>
@@ -567,6 +580,7 @@ function WorkoutFunnel({
                     isActive={isActive}
                     isFirst={i === 0}
                     targetReps={targetReps}
+                    defaultLoad={ex.defaultLoad}
                     onUpdate={(patch) => upd(ex.id, i, patch)}
                     onValidate={() => check(i)}
                     onUndo={() => check(i)}
@@ -578,12 +592,21 @@ function WorkoutFunnel({
         </motion.div>
       )}
 
-      {/* Rest popup — fullscreen blur backdrop + compact card centrée */}
+      {/* Rest popup — fullscreen blur backdrop + carte élargie avec contexte. */}
       <AnimatePresence>
         {rest && ex && (() => {
           const progressPct = 1 - rest.secondsLeft / rest.total;
           const RADIUS = 32;
           const CIRC = 2 * Math.PI * RADIUS;
+          const minutes = Math.floor(rest.secondsLeft / 60);
+          const seconds = rest.secondsLeft % 60;
+          const timeStr =
+            minutes > 0
+              ? `${minutes}:${String(seconds).padStart(2, "0")}`
+              : String(seconds);
+          // Prochaine série après le repos = la première pas encore done.
+          const nextSetIdx = rows.findIndex((r) => !r.done);
+          const nextSetNum = nextSetIdx === -1 ? null : nextSetIdx + 1;
 
           return (
             <motion.div
@@ -592,18 +615,36 @@ function WorkoutFunnel({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.18 }}
-              className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md px-4"
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-lg px-4"
             >
               <motion.div
                 initial={{ y: 24, opacity: 0, scale: 0.96 }}
                 animate={{ y: 0, opacity: 1, scale: 1 }}
                 exit={{ y: 24, opacity: 0, scale: 0.96 }}
                 transition={{ type: "spring", stiffness: 380, damping: 32 }}
-                className="w-full max-w-sm rounded-3xl border border-white/[0.08] bg-[#0F0F10]/95 shadow-[0_24px_64px_-16px_rgba(0,0,0,0.8)] overflow-hidden"
+                className="relative w-full max-w-sm rounded-3xl border border-white/[0.08] bg-[#0E0E0F] shadow-[0_24px_64px_-16px_rgba(0,0,0,0.85)] overflow-hidden"
               >
-                <div className="px-6 pt-7 pb-5 flex flex-col items-center text-center gap-5">
-                  {/* Big countdown ring — focus visuel */}
-                  <div className="relative w-[124px] h-[124px]">
+                {/* Halo rouge subtil derrière le ring — donne de la profondeur */}
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute -top-20 left-1/2 -translate-x-1/2 w-[280px] h-[280px] rounded-full bg-[#E80000]/[0.08] blur-3xl"
+                />
+
+                <div className="relative px-6 pt-7 pb-6 flex flex-col items-center text-center gap-5">
+                  {/* Header — context série suivante */}
+                  {nextSetNum && (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[9.5px] uppercase tracking-[0.22em] text-gray-7 font-semibold">
+                        Prochaine série
+                      </span>
+                      <span className="text-[11px] tabular-nums font-bold text-[#FF6D6D]">
+                        {nextSetNum}/{rows.length}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Big countdown ring */}
+                  <div className="relative w-[136px] h-[136px]">
                     <svg viewBox="0 0 80 80" className="w-full h-full -rotate-90">
                       <circle cx="40" cy="40" r={RADIUS} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="3" />
                       <circle
@@ -627,7 +668,7 @@ function WorkoutFunnel({
                         transition={{ duration: 0.16 }}
                         className="text-[44px] font-semibold text-gray-12 tabular-nums leading-none tracking-[-0.04em]"
                       >
-                        {rest.secondsLeft}
+                        {timeStr}
                       </motion.span>
                       <span className="text-[9px] text-gray-7 mt-1.5 uppercase tracking-[0.22em] font-semibold">
                         sec
@@ -635,35 +676,54 @@ function WorkoutFunnel({
                     </div>
                   </div>
 
-                  {/* Title + quote */}
-                  <div className="space-y-2">
-                    <p className="text-[10px] uppercase tracking-[0.22em] text-[#FF6D6D] font-semibold">
-                      {t("trainingRestTitle")}
+                  {/* Motivation block — titre fort + citation Hakim */}
+                  <div className="space-y-2.5 pt-1">
+                    <p className="text-[18px] font-semibold text-gray-12 leading-tight tracking-tight [text-wrap:balance]">
+                      Récupère bien.
+                      <br />
+                      <span className="text-[#FF6D6D]">Reviens plus fort.</span>
                     </p>
                     <motion.p
                       key={rest.quote}
                       initial={{ opacity: 0, y: 3 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.3 }}
-                      className="text-[14px] italic text-gray-10 leading-snug max-w-[260px] mx-auto"
+                      className="text-[13px] italic text-gray-9 leading-snug max-w-[280px] mx-auto"
                     >
                       &ldquo;{rest.quote}&rdquo;
                     </motion.p>
                   </div>
 
-                  {/* Actions — bouton primaire pleine largeur, +15s en secondaire */}
-                  <div className="flex items-center gap-2 w-full pt-1">
+                  {/* Exercise reminder — petit footer pour ancrer l'action suivante */}
+                  <div className="w-full pt-1 pb-1">
+                    <p className="text-[11px] text-gray-7 truncate">
+                      <span className="text-gray-9 font-medium">{ex.name}</span>
+                      {ex.defaultLoad ? (
+                        <>
+                          <span className="mx-1.5 text-gray-6">·</span>
+                          <span className="tabular-nums">{ex.defaultLoad} kg</span>
+                          <span className="mx-1 text-gray-6">×</span>
+                          <span className="tabular-nums">
+                            {ex.perSetReps?.[nextSetIdx] ?? ex.reps}
+                          </span>
+                        </>
+                      ) : null}
+                    </p>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-2 w-full">
                     <button
                       type="button"
                       onClick={() => addRest(15)}
-                      className="h-11 px-4 rounded-xl bg-white/[0.04] border border-white/[0.08] text-gray-11 text-[13px] font-semibold hover:bg-white/[0.07] active:scale-95 transition-all"
+                      className="h-11 px-4 rounded-xl bg-white/[0.04] border border-white/[0.08] text-gray-11 text-[13px] font-semibold hover:bg-white/[0.07] active:scale-95 transition-all whitespace-nowrap"
                     >
                       +15 s
                     </button>
                     <button
                       type="button"
                       onClick={skipRest}
-                      className="flex-1 h-11 rounded-xl bg-gradient-to-b from-[#FF1414] to-[#C40000] text-white text-[13.5px] font-semibold tracking-[0.02em] shadow-[inset_0_1px_0_rgba(255,255,255,0.18)] hover:opacity-95 active:scale-[0.98] transition-all"
+                      className="flex-1 h-11 rounded-xl bg-gradient-to-b from-[#FF1414] to-[#C40000] text-white text-[13.5px] font-semibold tracking-[0.02em] shadow-[0_4px_14px_-3px_rgba(232,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.18)] hover:shadow-[0_5px_16px_-3px_rgba(232,0,0,0.65)] active:scale-[0.98] transition-all"
                     >
                       {t("trainingRestSkip")}
                     </button>
@@ -679,7 +739,7 @@ function WorkoutFunnel({
       <div className="fixed inset-x-0 bottom-0 z-40 pointer-events-none">
         {/* Soft fade au-dessus pour adoucir la jonction sans laisser bleeding */}
         <div className="h-6 bg-gradient-to-t from-[var(--gray-1)] to-transparent" />
-        <div className="px-4 sm:px-6 pt-3 pb-[calc(env(safe-area-inset-bottom)+70px)] bg-[var(--gray-1)] pointer-events-auto">
+        <div className="px-4 sm:px-6 pt-3 pb-[calc(env(safe-area-inset-bottom)+12px)] bg-[var(--gray-1)] pointer-events-auto">
           <div className="mx-auto max-w-4xl">
             <Button
               onClick={next}

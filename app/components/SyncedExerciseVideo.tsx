@@ -157,37 +157,11 @@ export const SyncedExerciseVideo = forwardRef<SyncedExerciseVideoHandle, Props>(
               transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
             />
 
-            {/* Phase ring (set_active only) */}
-            <AnimatePresence>
-              {phase === "set_active" && (
-                <motion.div
-                  key="ring"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="absolute inset-0 pointer-events-none rounded-2xl ring-2 ring-inset ring-[#E80000]/40"
-                />
-              )}
-            </AnimatePresence>
-
-            {/* Badge en haut à gauche */}
-            <AnimatePresence>
-              {overlayCfg.badge && (
-                <motion.div
-                  key={`badge-${overlayCfg.badge}`}
-                  initial={{ opacity: 0, y: -6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
-                  transition={{ duration: 0.2 }}
-                  className="absolute top-3 left-3 px-2.5 h-7 flex items-center gap-1.5 rounded-full bg-black/55 backdrop-blur-md border border-white/10 text-[11px] font-semibold uppercase tracking-[0.1em] text-white/90"
-                >
-                  {overlayCfg.badgeDot && (
-                    <span className={cn("w-1.5 h-1.5 rounded-full", overlayCfg.badgeDot)} />
-                  )}
-                  {overlayCfg.badge}
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {/* Note : on n'affiche plus de ring rouge ni de badge "EN SÉRIE"
+                pendant set_active — l'info était redondante avec le set tracker
+                (qui marque déjà la série active en rouge) et le ring rouge sur
+                la vidéo surchargeait visuellement la card. Le seul overlay
+                conservé est le checkmark "Validée" sur set_done. */}
 
             {/* set_done overlay — checkmark splash */}
             <AnimatePresence>

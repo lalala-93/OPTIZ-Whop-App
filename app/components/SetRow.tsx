@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { Check, Minus, Plus, RotateCcw, Sparkles } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -19,6 +19,7 @@ interface Props {
   isActive: boolean;
   isFirst: boolean;
   targetReps: number;
+  defaultLoad?: number;
   onUpdate: (patch: Partial<DraftSet>) => void;
   onValidate: () => void;
   onUndo: () => void;
@@ -27,14 +28,26 @@ interface Props {
 /**
  * SetRow — ligne d'une série dans le set tracker.
  *
- * Layout :
- *  [N°] [Poids stepper] [Reps stepper] [Check button]
+ * Trois états visuels distincts pour clarifier la hiérarchie :
  *
- * Done state : ligne se collapse en résumé compact (poids × reps), bouton undo
- * et chips RPE (6-10) qui apparaissent en slide-down. RPE caché tant que la
- * série n'est pas validée → moins de friction pré-set, default = 8 appliqué
- * automatiquement à la validation.
+ * - **queued** (`!done && !isActive`) : ligne future, dim, read-only.
+ *   Affiche les valeurs cible (perSetReps / defaultLoad) sans steppers ni
+ *   bouton actif. Aucune interaction — visuellement "en attente".
+ *
+ * - **active** (`!done && isActive`) : ligne en cours. Steppers complets,
+ *   accent rouge, fond légèrement teinté, bouton check primary gradient.
+ *   C'est le point focal de la screen.
+ *
+ * - **done** (`row.done`) : ligne validée. Valeurs affichées en gris calme,
+ *   tap sur le badge OU le check à droite pour annuler. Sparkles si PR.
+ *
+ * Toutes les variantes partagent la même grille 4 colonnes et la même
+ * hauteur cellulaire (h-11) pour un rythme visuel parfait avec le header.
  */
+
+const GRID_CLS =
+  "grid grid-cols-[2.75rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem] items-center gap-x-2 px-3 py-2.5";
+
 export function SetRow({
   row,
   idx,
@@ -42,10 +55,54 @@ export function SetRow({
   isActive,
   isFirst,
   targetReps,
+  defaultLoad,
   onUpdate,
   onValidate,
   onUndo,
 }: Props) {
+  // ── DONE ──────────────────────────────────────────────────────────────
+  if (row.done) {
+    return (
+      <motion.div
+        layout
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.2 }}
+        className={cn(
+          GRID_CLS,
+          isPr && "bg-[#FFD700]/[0.025]",
+          !isFirst && "border-t border-white/[0.04]",
+        )}
+      >
+        <NumberCell variant="done" idx={idx} isPr={isPr} onClick={onUndo} />
+        <DisplayCell value={row.load && parseFloat(row.load) > 0 ? row.load : "—"} variant="done" />
+        <DisplayCell value={row.reps || String(targetReps)} variant="done" />
+        <ActionCell variant="done-undo" onClick={onUndo} />
+      </motion.div>
+    );
+  }
+
+  // ── QUEUED (pending non-active) ───────────────────────────────────────
+  if (!isActive) {
+    const previewLoad = row.load || (defaultLoad ? String(defaultLoad) : "—");
+    const previewReps = row.reps || String(targetReps > 0 ? targetReps : 5);
+    return (
+      <div
+        className={cn(
+          GRID_CLS,
+          "opacity-50",
+          !isFirst && "border-t border-white/[0.04]",
+        )}
+      >
+        <NumberCell variant="queued" idx={idx} isPr={false} />
+        <DisplayCell value={previewLoad} variant="queued" />
+        <DisplayCell value={previewReps} variant="queued" />
+        <ActionCell variant="queued" />
+      </div>
+    );
+  }
+
+  // ── ACTIVE ────────────────────────────────────────────────────────────
   const bumpLoad = (delta: number) => {
     const cur = parseFloat(row.load) || 0;
     const next = Math.max(0, cur + delta);
@@ -55,183 +112,186 @@ export function SetRow({
     const cur = parseFloat(row.reps) || targetReps;
     onUpdate({ reps: String(Math.max(0, cur + delta)) });
   };
-
   const handleValidate = () => {
     if (!row.rpe) onUpdate({ rpe: "8" });
     onValidate();
   };
 
-  // ── Done state : MÊME grille 4 cols que pending pour conserver le rythme
-  //    visuel (alignement N° / Poids / Reps / Action). On remplace les steppers
-  //    par des cellules d'affichage à la même hauteur (h-11) et la 4ᵉ col passe
-  //    sur la pill RPE. Le badge N° devient le bouton "annuler" (tap → undo).
-  if (row.done) {
-    return (
-      <motion.div
-        layout
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className={cn(
-          "grid grid-cols-[2.75rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem] items-center gap-x-2 px-3 py-2.5",
-          !isFirst && "border-t border-white/[0.04]",
-        )}
-      >
-        {/* N° badge → bouton undo. Même taille que pending (w-11 h-11). */}
-        <div className="relative flex items-center justify-center">
-          <button
-            type="button"
-            onClick={onUndo}
-            aria-label="Annuler la validation"
-            className="group w-11 h-11 rounded-xl bg-white/[0.04] border border-white/[0.06] text-gray-9 flex items-center justify-center hover:bg-white/[0.07] hover:text-gray-11 active:scale-[0.94] transition-all"
-          >
-            <Check
-              size={16}
-              strokeWidth={2.5}
-              className="group-hover:hidden"
-            />
-            <RotateCcw
-              size={14}
-              strokeWidth={2.25}
-              className="hidden group-hover:block"
-            />
-          </button>
-          {isPr && (
-            <Sparkles
-              size={10}
-              className="text-[#FFD700] absolute -top-0.5 -right-0.5 pointer-events-none"
-            />
-          )}
-        </div>
-
-        {/* Poids — affichage centré, h-11, mêmes proportions que le stepper. */}
-        <div className="h-11 flex items-center justify-center rounded-xl bg-white/[0.015] border border-white/[0.04]">
-          <span className="text-[15px] font-semibold tabular-nums tracking-tight text-gray-10">
-            {row.load && parseFloat(row.load) > 0 ? row.load : "—"}
-            <span className="text-gray-7 text-[11px] font-medium ml-1">kg</span>
-          </span>
-        </div>
-
-        {/* Reps — idem. */}
-        <div className="h-11 flex items-center justify-center rounded-xl bg-white/[0.015] border border-white/[0.04]">
-          <span className="text-[15px] font-semibold tabular-nums tracking-tight text-gray-10">
-            {row.reps || targetReps}
-            <span className="text-gray-7 text-[11px] font-medium ml-1">rep</span>
-          </span>
-        </div>
-
-        {/* Col 4 — Check validé, en miroir du bouton "Fait" de la ligne pending.
-            Cliquable aussi pour annuler (mêmes affordances que le badge à gauche). */}
-        <button
-          type="button"
-          onClick={onUndo}
-          aria-label="Annuler la validation"
-          className="w-11 h-11 rounded-xl bg-white/[0.04] border border-white/[0.06] text-gray-9 hover:bg-white/[0.07] hover:text-gray-11 active:scale-[0.94] transition-all flex items-center justify-center"
-        >
-          <Check size={16} strokeWidth={2.5} />
-        </button>
-      </motion.div>
-    );
-  }
-
-  // ── Pending / Active state : 4 cols avec bouton Check explicite ─────────
   return (
-    <div
+    <motion.div
+      layout
+      initial={false}
       className={cn(
-        "grid grid-cols-[2.75rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem] items-center gap-x-2 px-3 py-2.5",
+        GRID_CLS,
+        // Fond rouge subtil pour ancrer visuellement la ligne active.
+        "bg-[#E80000]/[0.045]",
         !isFirst && "border-t border-white/[0.04]",
       )}
     >
-      {/* N° */}
-      <div className="relative flex items-center justify-center">
-        <span
-          className={cn(
-            "inline-flex items-center justify-center w-11 h-11 rounded-xl text-[16px] font-semibold tabular-nums tracking-tight transition-colors",
-            isActive
-              ? "bg-[#E80000] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]"
-              : "bg-white/[0.04] text-gray-9",
-          )}
-        >
-          {idx + 1}
-        </span>
-        {isPr && (
-          <Sparkles
-            size={10}
-            className="text-[#FFD700] absolute -top-0.5 -right-0.5"
-          />
-        )}
-      </div>
+      <NumberCell variant="active" idx={idx} isPr={isPr} />
 
-      {/* Poids stepper */}
       <Stepper
         value={row.load}
-        placeholder="0"
+        placeholder={defaultLoad ? String(defaultLoad) : "0"}
         inputMode="decimal"
-        isActive={isActive}
         unit="kg"
         onMinus={() => bumpLoad(-1)}
         onPlus={() => bumpLoad(1)}
         onChange={(v) => onUpdate({ load: v })}
       />
 
-      {/* Reps stepper */}
       <Stepper
         value={row.reps}
         placeholder={String(targetReps > 0 ? targetReps : 5)}
         inputMode="numeric"
-        isActive={isActive}
         unit="rep"
         onMinus={() => bumpReps(-1)}
         onPlus={() => bumpReps(1)}
         onChange={(v) => onUpdate({ reps: v })}
       />
 
-      {/* Check button — gros, visible, primary */}
       <button
         type="button"
         onClick={handleValidate}
         aria-label="Valider la série"
+        className="w-11 h-11 rounded-xl flex items-center justify-center bg-gradient-to-b from-[#FF1414] to-[#C40000] text-white shadow-[0_4px_12px_-3px_rgba(232,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.18)] hover:shadow-[0_5px_14px_-3px_rgba(232,0,0,0.7)] active:scale-[0.92] transition-all duration-150"
+      >
+        <Check size={18} strokeWidth={3} />
+      </button>
+    </motion.div>
+  );
+}
+
+// ── Sub-components ──────────────────────────────────────────────────────
+
+function NumberCell({
+  variant,
+  idx,
+  isPr,
+  onClick,
+}: {
+  variant: "active" | "queued" | "done";
+  idx: number;
+  isPr: boolean;
+  onClick?: () => void;
+}) {
+  const baseCls =
+    "relative inline-flex items-center justify-center w-11 h-11 rounded-xl text-[16px] font-semibold tabular-nums tracking-tight transition-all";
+
+  if (variant === "active") {
+    return (
+      <div className="relative flex items-center justify-center">
+        <span
+          className={cn(
+            baseCls,
+            "bg-[#E80000] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.14),0_2px_8px_-2px_rgba(232,0,0,0.55)]",
+          )}
+        >
+          {idx + 1}
+        </span>
+        {isPr && (
+          <Sparkles
+            size={11}
+            className="text-[#FFD700] absolute -top-0.5 -right-0.5 pointer-events-none drop-shadow-[0_0_4px_rgba(255,215,0,0.5)]"
+          />
+        )}
+      </div>
+    );
+  }
+
+  if (variant === "queued") {
+    return (
+      <div className="flex items-center justify-center">
+        <span className={cn(baseCls, "bg-white/[0.025] text-gray-7")}>
+          {idx + 1}
+        </span>
+      </div>
+    );
+  }
+
+  // done — bouton undo
+  return (
+    <div className="relative flex items-center justify-center">
+      <button
+        type="button"
+        onClick={onClick}
+        aria-label="Annuler la validation"
         className={cn(
-          "relative w-11 h-11 rounded-xl flex items-center justify-center mx-auto transition-all duration-150 active:scale-[0.92]",
-          isActive
-            ? "bg-gradient-to-b from-[#FF1414] to-[#C40000] text-white shadow-[0_4px_12px_-3px_rgba(232,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.18)] hover:shadow-[0_5px_14px_-3px_rgba(232,0,0,0.65)]"
-            : "border-[1.5px] border-white/[0.1] bg-white/[0.02] text-gray-7 hover:border-white/20 hover:bg-white/[0.04] hover:text-gray-9",
+          baseCls,
+          "group bg-white/[0.04] border border-white/[0.06] text-gray-9",
+          "hover:bg-white/[0.07] hover:text-gray-11 active:scale-[0.94]",
         )}
       >
-        <AnimatePresence initial={false} mode="wait">
-          {isActive ? (
-            <motion.span
-              key="active"
-              initial={{ scale: 0.5, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.5, opacity: 0 }}
-              transition={{ duration: 0.18 }}
-            >
-              <Check size={18} strokeWidth={3} />
-            </motion.span>
-          ) : (
-            <motion.span
-              key="pending"
-              initial={{ scale: 0.5, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.5, opacity: 0 }}
-              transition={{ duration: 0.18 }}
-            >
-              <Check size={16} strokeWidth={2} />
-            </motion.span>
-          )}
-        </AnimatePresence>
+        <Check size={16} strokeWidth={2.5} className="group-hover:hidden" />
+        <RotateCcw
+          size={14}
+          strokeWidth={2.25}
+          className="hidden group-hover:block"
+        />
       </button>
+      {isPr && (
+        <Sparkles
+          size={11}
+          className="text-[#FFD700] absolute -top-0.5 -right-0.5 pointer-events-none drop-shadow-[0_0_4px_rgba(255,215,0,0.5)]"
+        />
+      )}
     </div>
   );
 }
 
-// ── Stepper réutilisable ────────────────────────────────────────────────────
+function DisplayCell({
+  value,
+  variant,
+}: {
+  value: string;
+  variant: "done" | "queued";
+}) {
+  return (
+    <div
+      className={cn(
+        "h-11 flex items-center justify-center rounded-xl border tabular-nums tracking-tight",
+        variant === "done"
+          ? "bg-white/[0.015] border-white/[0.04] text-[15px] font-semibold text-gray-10"
+          : "bg-transparent border-white/[0.03] text-[15px] font-medium text-gray-7",
+      )}
+    >
+      {value}
+    </div>
+  );
+}
+
+function ActionCell({
+  variant,
+  onClick,
+}: {
+  variant: "done-undo" | "queued";
+  onClick?: () => void;
+}) {
+  if (variant === "queued") {
+    return (
+      <div className="w-11 h-11 rounded-xl border border-dashed border-white/[0.06] flex items-center justify-center">
+        <Check size={14} strokeWidth={2} className="text-gray-6" />
+      </div>
+    );
+  }
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label="Annuler la validation"
+      className="w-11 h-11 rounded-xl bg-white/[0.04] border border-white/[0.06] text-gray-9 hover:bg-white/[0.07] hover:text-gray-11 active:scale-[0.94] transition-all flex items-center justify-center"
+    >
+      <Check size={16} strokeWidth={2.5} />
+    </button>
+  );
+}
+
+// ── Stepper réutilisable ────────────────────────────────────────────────
 
 function Stepper({
   value,
   placeholder,
   inputMode,
-  isActive,
   unit,
   onMinus,
   onPlus,
@@ -240,25 +300,17 @@ function Stepper({
   value: string;
   placeholder: string;
   inputMode: "decimal" | "numeric";
-  isActive: boolean;
   unit: string;
   onMinus: () => void;
   onPlus: () => void;
   onChange: (v: string) => void;
 }) {
   return (
-    <div
-      className={cn(
-        "flex items-center h-11 rounded-xl border overflow-hidden transition-colors",
-        isActive
-          ? "bg-white/[0.03] border-[#E80000]/40 focus-within:border-[#E80000]/65"
-          : "bg-white/[0.03] border-white/[0.06] focus-within:border-white/[0.15]",
-      )}
-    >
+    <div className="flex items-center h-11 rounded-xl border bg-white/[0.03] border-[#E80000]/35 focus-within:border-[#E80000]/65 overflow-hidden transition-colors">
       <button
         type="button"
         onClick={onMinus}
-        className="shrink-0 h-full w-9 flex items-center justify-center text-gray-8 hover:text-gray-12 hover:bg-white/[0.04] active:bg-white/[0.07] transition-colors"
+        className="shrink-0 h-full w-9 flex items-center justify-center text-gray-8 hover:text-gray-12 hover:bg-white/[0.04] active:bg-white/[0.08] transition-colors"
         aria-label={`−1 ${unit}`}
       >
         <Minus size={14} strokeWidth={2.25} />
@@ -275,7 +327,7 @@ function Stepper({
       <button
         type="button"
         onClick={onPlus}
-        className="shrink-0 h-full w-9 flex items-center justify-center text-gray-8 hover:text-gray-12 hover:bg-white/[0.04] active:bg-white/[0.07] transition-colors"
+        className="shrink-0 h-full w-9 flex items-center justify-center text-gray-8 hover:text-gray-12 hover:bg-white/[0.04] active:bg-white/[0.08] transition-colors"
         aria-label={`+1 ${unit}`}
       >
         <Plus size={14} strokeWidth={2.25} />
