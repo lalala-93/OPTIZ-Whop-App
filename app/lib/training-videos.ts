@@ -73,12 +73,30 @@ export const EXERCISE_VIDEOS: Record<string, ExerciseVideo> = Object.fromEntries
   ]),
 );
 
-/** Renvoie la vidéo native si dispo, sinon `null` (utiliser le fallback YouTube). */
+/**
+ * Aliases : plusieurs IDs de la library pointent sur le même mouvement
+ * (doublons historiques). On réutilise les vidéos Hakim existantes.
+ */
+const VIDEO_ALIASES: Record<string, string> = {
+  "full-amplitude-raise": "lateral-raise-full",
+  "mid-high-raise": "mid-up-raise",
+  "goblet-squat": "goblet-squat-bb",
+  "plank": "front-plank",
+  "stationary-lunge": "static-lunge",
+  "rear-delt-fly": "band-reverse-fly",
+  "bw-lunge": "static-lunge",
+};
+
+/** Renvoie la vidéo native si dispo (direct ou via alias), sinon `null`. */
 export function getExerciseVideo(exerciseId: string): ExerciseVideo | null {
-  return EXERCISE_VIDEOS[exerciseId] ?? null;
+  const direct = EXERCISE_VIDEOS[exerciseId];
+  if (direct) return direct;
+  const aliased = VIDEO_ALIASES[exerciseId];
+  if (aliased) return EXERCISE_VIDEOS[aliased] ?? null;
+  return null;
 }
 
-/** True si l'exercice a une vidéo native (utile pour conditionner l'UI). */
+/** True si l'exercice a une vidéo native (direct ou via alias). */
 export function hasNativeVideo(exerciseId: string): boolean {
-  return exerciseId in EXERCISE_VIDEOS;
+  return exerciseId in EXERCISE_VIDEOS || exerciseId in VIDEO_ALIASES;
 }

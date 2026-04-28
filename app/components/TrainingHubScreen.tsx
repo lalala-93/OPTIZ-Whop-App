@@ -570,13 +570,14 @@ function WorkoutFunnel({
             );
           })()}
 
-          {/* Set tracker — swipe-to-validate, RPE post-set */}
+          {/* Set tracker — RPE post-set, check button explicite */}
           <div className="rounded-2xl border border-white/[0.05] bg-white/[0.02] overflow-hidden">
-            {/* Header simplifié 3 cols */}
-            <div className="grid grid-cols-[2.75rem_minmax(0,1fr)_minmax(0,1fr)] items-center gap-x-2 px-3 py-2.5 border-b border-white/[0.05]">
+            {/* Header 4 cols */}
+            <div className="grid grid-cols-[2.75rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem] items-center gap-x-2 px-3 py-2.5 border-b border-white/[0.05]">
               <span className="text-[10px] uppercase tracking-[0.1em] text-gray-7 font-semibold text-center whitespace-nowrap">N°</span>
               <span className="text-[10px] uppercase tracking-[0.1em] text-gray-7 font-semibold text-center whitespace-nowrap">Poids · kg</span>
               <span className="text-[10px] uppercase tracking-[0.1em] text-gray-7 font-semibold text-center whitespace-nowrap">Reps</span>
+              <span className="text-[10px] uppercase tracking-[0.1em] text-gray-7 font-semibold text-center whitespace-nowrap">Fait</span>
             </div>
 
             {/* Rows */}

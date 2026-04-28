@@ -1,13 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import {
-  motion,
-  useMotionValue,
-  useTransform,
-  type PanInfo,
-} from "framer-motion";
-import { Check, ChevronRight, Minus, Plus, RotateCcw, Sparkles } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Check, Minus, Plus, RotateCcw, Sparkles } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
@@ -30,21 +24,16 @@ interface Props {
   onUndo: () => void;
 }
 
-const SWIPE_THRESHOLD = 64; // px → trigger validate
-const SWIPE_MAX = 110;
-
 /**
  * SetRow — ligne d'une série dans le set tracker.
  *
- * Interactions :
- * - Pending/Active : drag horizontal vers la droite pour valider la série.
- *   Un fond rouge apparaît progressivement, un checkmark devient visible
- *   à mi-drag, validation au-delà de 64 px.
- * - Done : la ligne se collapse en résumé compact (poids × reps) avec un
- *   sélecteur RPE en chips (6-10) et un bouton undo.
+ * Layout :
+ *  [N°] [Poids stepper] [Reps stepper] [Check button]
  *
- * RPE caché tant que la série n'est pas validée → moins de friction pré-set.
- * Default RPE = 8 appliqué à la validation si pas encore renseigné.
+ * Done state : ligne se collapse en résumé compact (poids × reps), bouton undo
+ * et chips RPE (6-10) qui apparaissent en slide-down. RPE caché tant que la
+ * série n'est pas validée → moins de friction pré-set, default = 8 appliqué
+ * automatiquement à la validation.
  */
 export function SetRow({
   row,
@@ -57,31 +46,6 @@ export function SetRow({
   onValidate,
   onUndo,
 }: Props) {
-  const x = useMotionValue(0);
-  const bgOpacity = useTransform(x, [0, SWIPE_THRESHOLD], [0, 1]);
-  const checkOpacity = useTransform(x, [28, SWIPE_THRESHOLD], [0, 1]);
-  const checkScale = useTransform(x, [28, SWIPE_THRESHOLD], [0.6, 1.05]);
-  const hintOpacity = useTransform(x, [0, 30], [1, 0]);
-  const triggered = useRef(false);
-
-  // Reset triggered flag whenever drag re-starts (i.e. row becomes active again).
-  useEffect(() => {
-    if (isActive) {
-      triggered.current = false;
-      x.set(0);
-    }
-  }, [isActive, x]);
-
-  const handleDragEnd = (_e: unknown, info: PanInfo) => {
-    if (info.offset.x > SWIPE_THRESHOLD && !triggered.current) {
-      triggered.current = true;
-      // Default RPE if not set yet
-      if (!row.rpe) onUpdate({ rpe: "8" });
-      onValidate();
-    }
-    x.set(0);
-  };
-
   const bumpLoad = (delta: number) => {
     const cur = parseFloat(row.load) || 0;
     const next = Math.max(0, cur + delta);
@@ -90,6 +54,11 @@ export function SetRow({
   const bumpReps = (delta: number) => {
     const cur = parseFloat(row.reps) || targetReps;
     onUpdate({ reps: String(Math.max(0, cur + delta)) });
+  };
+
+  const handleValidate = () => {
+    if (!row.rpe) onUpdate({ rpe: "8" });
+    onValidate();
   };
 
   // ── Done state : résumé compact + RPE chips ─────────────────────────────
@@ -176,96 +145,94 @@ export function SetRow({
     );
   }
 
-  // ── Pending / Active state : 3 cols + swipe-to-validate ─────────────────
+  // ── Pending / Active state : 4 cols avec bouton Check explicite ─────────
   return (
     <div
       className={cn(
-        "relative overflow-hidden",
+        "grid grid-cols-[2.75rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem] items-center gap-x-2 px-3 py-2.5",
         !isFirst && "border-t border-white/[0.04]",
       )}
     >
-      {/* Fond drag — gradient rouge qui se révèle */}
-      <motion.div
-        aria-hidden
-        style={{ opacity: bgOpacity }}
-        className="absolute inset-0 bg-gradient-to-r from-[#E80000]/0 via-[#E80000]/30 to-[#E80000]/55 pointer-events-none"
-      />
-      <motion.div
-        aria-hidden
-        style={{ opacity: checkOpacity, scale: checkScale }}
-        className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-[#E80000] flex items-center justify-center text-white pointer-events-none shadow-[0_2px_10px_-2px_rgba(232,0,0,0.6)]"
-      >
-        <Check size={18} strokeWidth={3} />
-      </motion.div>
-
-      {/* Hint chevron (pending only) */}
-      {isActive && (
-        <motion.div
-          aria-hidden
-          style={{ opacity: hintOpacity }}
-          className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-0.5 text-[9.5px] uppercase tracking-[0.18em] text-[#FF6D6D]/70 font-semibold pointer-events-none"
+      {/* N° */}
+      <div className="relative flex items-center justify-center">
+        <span
+          className={cn(
+            "inline-flex items-center justify-center w-11 h-11 rounded-xl text-[16px] font-semibold tabular-nums tracking-tight transition-colors",
+            isActive
+              ? "bg-[#E80000] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]"
+              : "bg-white/[0.04] text-gray-9",
+          )}
         >
-          Glisser
-          <ChevronRight size={12} />
-        </motion.div>
-      )}
+          {idx + 1}
+        </span>
+        {isPr && (
+          <Sparkles
+            size={10}
+            className="text-[#FFD700] absolute -top-0.5 -right-0.5"
+          />
+        )}
+      </div>
 
-      <motion.div
-        drag={isActive ? "x" : false}
-        dragConstraints={{ left: 0, right: SWIPE_MAX }}
-        dragElastic={0.08}
-        dragMomentum={false}
-        style={{ x }}
-        onDragEnd={handleDragEnd}
+      {/* Poids stepper */}
+      <Stepper
+        value={row.load}
+        placeholder="0"
+        inputMode="decimal"
+        isActive={isActive}
+        unit="kg"
+        onMinus={() => bumpLoad(-1)}
+        onPlus={() => bumpLoad(1)}
+        onChange={(v) => onUpdate({ load: v })}
+      />
+
+      {/* Reps stepper */}
+      <Stepper
+        value={row.reps}
+        placeholder={String(targetReps > 0 ? targetReps : 5)}
+        inputMode="numeric"
+        isActive={isActive}
+        unit="rep"
+        onMinus={() => bumpReps(-1)}
+        onPlus={() => bumpReps(1)}
+        onChange={(v) => onUpdate({ reps: v })}
+      />
+
+      {/* Check button — gros, visible, primary */}
+      <button
+        type="button"
+        onClick={handleValidate}
+        aria-label="Valider la série"
         className={cn(
-          "relative grid grid-cols-[2.75rem_minmax(0,1fr)_minmax(0,1fr)] items-center gap-x-2 px-3 py-2.5 bg-[var(--gray-1)]",
-          isActive && "cursor-grab active:cursor-grabbing",
+          "relative w-11 h-11 rounded-xl flex items-center justify-center mx-auto transition-all duration-150 active:scale-[0.92]",
+          isActive
+            ? "bg-gradient-to-b from-[#FF1414] to-[#C40000] text-white shadow-[0_4px_12px_-3px_rgba(232,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.18)] hover:shadow-[0_5px_14px_-3px_rgba(232,0,0,0.65)]"
+            : "border-[1.5px] border-white/[0.1] bg-white/[0.02] text-gray-7 hover:border-white/20 hover:bg-white/[0.04] hover:text-gray-9",
         )}
       >
-        {/* N° */}
-        <div className="relative flex items-center justify-center">
-          <span
-            className={cn(
-              "inline-flex items-center justify-center w-11 h-11 rounded-xl text-[16px] font-semibold tabular-nums tracking-tight transition-colors",
-              isActive
-                ? "bg-[#E80000] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]"
-                : "bg-white/[0.04] text-gray-9",
-            )}
-          >
-            {idx + 1}
-          </span>
-          {isPr && (
-            <Sparkles
-              size={10}
-              className="text-[#FFD700] absolute -top-0.5 -right-0.5"
-            />
+        <AnimatePresence initial={false} mode="wait">
+          {isActive ? (
+            <motion.span
+              key="active"
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.5, opacity: 0 }}
+              transition={{ duration: 0.18 }}
+            >
+              <Check size={18} strokeWidth={3} />
+            </motion.span>
+          ) : (
+            <motion.span
+              key="pending"
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.5, opacity: 0 }}
+              transition={{ duration: 0.18 }}
+            >
+              <Check size={16} strokeWidth={2} />
+            </motion.span>
           )}
-        </div>
-
-        {/* Poids stepper */}
-        <Stepper
-          value={row.load}
-          placeholder="0"
-          inputMode="decimal"
-          isActive={isActive}
-          unit="kg"
-          onMinus={() => bumpLoad(-1)}
-          onPlus={() => bumpLoad(1)}
-          onChange={(v) => onUpdate({ load: v })}
-        />
-
-        {/* Reps stepper */}
-        <Stepper
-          value={row.reps}
-          placeholder={String(targetReps > 0 ? targetReps : 5)}
-          inputMode="numeric"
-          isActive={isActive}
-          unit="rep"
-          onMinus={() => bumpReps(-1)}
-          onPlus={() => bumpReps(1)}
-          onChange={(v) => onUpdate({ reps: v })}
-        />
-      </motion.div>
+        </AnimatePresence>
+      </button>
     </div>
   );
 }
@@ -302,7 +269,6 @@ function Stepper({
     >
       <button
         type="button"
-        onPointerDown={(e) => e.stopPropagation()}
         onClick={onMinus}
         className="shrink-0 h-full w-9 flex items-center justify-center text-gray-8 hover:text-gray-12 hover:bg-white/[0.04] active:bg-white/[0.07] transition-colors"
         aria-label={`−1 ${unit}`}
@@ -315,13 +281,11 @@ function Stepper({
         inputMode={inputMode}
         step="1"
         onChange={(e) => onChange(e.target.value)}
-        onPointerDown={(e) => e.stopPropagation()}
         placeholder={placeholder}
         className="flex-1 min-w-0 h-full border-0 bg-transparent text-center text-[16px] font-semibold text-gray-12 placeholder:text-gray-6 tabular-nums tracking-tight p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
       />
       <button
         type="button"
-        onPointerDown={(e) => e.stopPropagation()}
         onClick={onPlus}
         className="shrink-0 h-full w-9 flex items-center justify-center text-gray-8 hover:text-gray-12 hover:bg-white/[0.04] active:bg-white/[0.07] transition-colors"
         aria-label={`+1 ${unit}`}
