@@ -75,11 +75,14 @@ export const EXERCISE_VIDEOS: Record<string, ExerciseVideo> = Object.fromEntries
 
 /**
  * Aliases : plusieurs IDs de la library pointent sur le même mouvement
- * (doublons historiques) ou un mouvement similaire. Toute exercice de la
- * library est mappé vers une vidéo Hakim — pas de fallback YouTube.
+ * (doublons historiques exacts). On ne mappe **que** les doublons fidèles —
+ * les "mouvements proches" ont été retirés car ils trompaient l'utilisateur
+ * (ex. `bike-cardio` → vidéo de corde à sauter).
+ *
+ * Les exos sans entrée directe ni alias affichent un placeholder
+ * "Démonstration actuellement indisponible".
  */
 const VIDEO_ALIASES: Record<string, string> = {
-  // Doublons exacts
   "full-amplitude-raise": "lateral-raise-full",
   "mid-high-raise": "mid-up-raise",
   "goblet-squat": "goblet-squat-bb",
@@ -87,32 +90,19 @@ const VIDEO_ALIASES: Record<string, string> = {
   "stationary-lunge": "static-lunge",
   "rear-delt-fly": "band-reverse-fly",
   "bw-lunge": "static-lunge",
-  // Mouvements proches → vidéo Hakim la plus pertinente
-  "bb-shoulder-press": "power-clean-push-press",
-  "bike-cardio": "jump-rope",
-  "push-up": "push-up-knees",
-  "push-up-diamond": "push-up-knees",
-  "reverse-curl": "bb-curl",
-  "standing-triceps-ext": "bench-triceps-ext",
-  "step-bench-continuous": "step-up",
-  // Mobilités → renvoie sur la vidéo échauffement complet
-  "mob-hips-adductors-ankles": "warmup-full",
-  "mob-hips-glutes-rot": "warmup-full",
-  "mob-hips-squat-hold": "warmup-full",
 };
 
 /**
- * Renvoie la vidéo Hakim pour un exercice. Tente direct, alias, puis
- * fallback ultime sur la vidéo d'échauffement complet (toujours du Hakim
- * de qualité, mieux que rien). **Ne renvoie jamais null** dans le flow normal.
+ * Renvoie la vidéo Hakim pour un exercice, ou `null` si aucune démo fidèle
+ * n'est disponible. Le composant vidéo doit alors afficher un placeholder
+ * plutôt qu'une vidéo trompeuse.
  */
-export function getExerciseVideo(exerciseId: string): ExerciseVideo {
+export function getExerciseVideo(exerciseId: string): ExerciseVideo | null {
   const direct = EXERCISE_VIDEOS[exerciseId];
   if (direct) return direct;
   const aliased = VIDEO_ALIASES[exerciseId];
   if (aliased && EXERCISE_VIDEOS[aliased]) return EXERCISE_VIDEOS[aliased];
-  // Fallback final : warmup complet — au moins c'est du Hakim
-  return EXERCISE_VIDEOS["warmup-full"];
+  return null;
 }
 
 /** True si l'exercice a une vidéo native (direct ou via alias). */

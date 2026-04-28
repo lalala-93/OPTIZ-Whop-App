@@ -9,7 +9,7 @@ import {
   forwardRef,
 } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check } from "lucide-react";
+import { Check, VideoOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -40,8 +40,9 @@ export interface SyncedExerciseVideoHandle {
 }
 
 interface Props {
-  src: string;
-  poster: string;
+  /** `null` = pas de vidéo Hakim disponible → placeholder affiché. */
+  src: string | null;
+  poster: string | null;
   phase: VideoPhase;
   /** Optional badge text (ex: "Démo", "Série 2/4"). Défaut: dérivé de la phase. */
   badge?: string;
@@ -110,6 +111,36 @@ export const SyncedExerciseVideo = forwardRef<SyncedExerciseVideoHandle, Props>(
 
     const overlayCfg = computeOverlay(phase, badge);
 
+    // Pas de vidéo native fidèle pour cet exercice → placeholder explicite
+    // plutôt qu'une démo trompeuse (ex. cardio vélo qui jouait corde à sauter).
+    if (!src) {
+      return (
+        <div
+          className={cn(
+            "relative w-full overflow-hidden rounded-2xl",
+            "aspect-video select-none",
+            "bg-gradient-to-br from-white/[0.03] to-white/[0.01]",
+            "border border-white/[0.05]",
+            className,
+          )}
+        >
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center">
+            <div className="w-12 h-12 rounded-full bg-white/[0.04] border border-white/[0.06] flex items-center justify-center">
+              <VideoOff size={20} className="text-gray-8" strokeWidth={2} />
+            </div>
+            <div>
+              <p className="text-[13px] font-semibold text-gray-10 tracking-tight">
+                Démonstration actuellement indisponible
+              </p>
+              <p className="mt-1 text-[11.5px] text-gray-7 leading-relaxed">
+                La vidéo Hakim pour cet exercice arrive bientôt.
+              </p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div
         className={cn(
@@ -126,7 +157,7 @@ export const SyncedExerciseVideo = forwardRef<SyncedExerciseVideoHandle, Props>(
           key={src}
           ref={videoRef}
           src={src}
-          poster={poster}
+          poster={poster ?? undefined}
           autoPlay={phase !== "idle" && phase !== "rest"}
           muted
           loop

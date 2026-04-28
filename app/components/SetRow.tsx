@@ -154,7 +154,7 @@ export function SetRow({
         type="button"
         onClick={handleValidate}
         aria-label="Valider la série"
-        className="w-11 h-11 rounded-xl flex items-center justify-center bg-gradient-to-b from-[#FF1414] to-[#C40000] text-white shadow-[0_4px_12px_-3px_rgba(232,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.18)] hover:shadow-[0_5px_14px_-3px_rgba(232,0,0,0.7)] active:scale-[0.92] transition-all duration-150"
+        className="w-11 h-11 rounded-xl flex items-center justify-center bg-[#E80000] text-white hover:bg-[#FF1414] active:scale-[0.96] transition-colors duration-150"
       >
         <Check size={18} strokeWidth={3} />
       </button>
@@ -181,18 +181,13 @@ function NumberCell({
   if (variant === "active") {
     return (
       <div className="relative flex items-center justify-center">
-        <span
-          className={cn(
-            baseCls,
-            "bg-[#E80000] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.14),0_2px_8px_-2px_rgba(232,0,0,0.55)]",
-          )}
-        >
+        <span className={cn(baseCls, "bg-[#E80000] text-white")}>
           {idx + 1}
         </span>
         {isPr && (
           <Sparkles
             size={11}
-            className="text-[#FFD700] absolute -top-0.5 -right-0.5 pointer-events-none drop-shadow-[0_0_4px_rgba(255,215,0,0.5)]"
+            className="text-[#FFD700] absolute -top-0.5 -right-0.5 pointer-events-none"
           />
         )}
       </div>
@@ -232,7 +227,7 @@ function NumberCell({
       {isPr && (
         <Sparkles
           size={11}
-          className="text-[#FFD700] absolute -top-0.5 -right-0.5 pointer-events-none drop-shadow-[0_0_4px_rgba(255,215,0,0.5)]"
+          className="text-[#FFD700] absolute -top-0.5 -right-0.5 pointer-events-none"
         />
       )}
     </div>
@@ -306,7 +301,7 @@ function Stepper({
   onChange: (v: string) => void;
 }) {
   return (
-    <div className="flex items-center h-11 rounded-xl border bg-white/[0.03] border-[#E80000]/35 focus-within:border-[#E80000]/65 overflow-hidden transition-colors">
+    <div className="flex items-center h-11 rounded-xl border bg-white/[0.02] border-white/[0.08] focus-within:border-white/[0.14] overflow-hidden transition-colors">
       <button
         type="button"
         onClick={onMinus}

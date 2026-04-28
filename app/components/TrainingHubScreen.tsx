@@ -518,15 +518,18 @@ function WorkoutFunnel({
                 {/* Hero video Hakim + gradient soft pour fondre dans la card */}
                 <div className="relative">
                   <SyncedExerciseVideo
-                    src={video.src}
-                    poster={video.poster}
+                    src={video?.src ?? null}
+                    poster={video?.poster ?? null}
                     phase={videoPhase}
                   />
-                  {/* Vignette bas — ancre visuellement le titre sous la vidéo */}
-                  <div
-                    aria-hidden
-                    className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/45 to-transparent"
-                  />
+                  {/* Vignette bas — ancre visuellement le titre sous la vidéo.
+                      Inutile (et un peu sale) sur le placeholder "indispo". */}
+                  {video && (
+                    <div
+                      aria-hidden
+                      className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/45 to-transparent"
+                    />
+                  )}
                 </div>
 
                 <CardContent className="p-4 pt-3.5">
@@ -542,14 +545,6 @@ function WorkoutFunnel({
                       {totalSetsInEx}×{ex.repsLabel ?? ex.reps}
                     </span>
                   </div>
-                  {ex.note && (
-                    <div className="mt-3 flex items-start gap-2 px-2.5 py-2 rounded-lg bg-white/[0.02] border border-white/[0.04]">
-                      <span className="mt-[3px] block w-1 h-1 rounded-full bg-[#FF6D6D]/70 shrink-0" />
-                      <p className="text-[11.5px] text-gray-8 leading-relaxed">
-                        {ex.note}
-                      </p>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             );
@@ -622,14 +617,8 @@ function WorkoutFunnel({
                 animate={{ y: 0, opacity: 1, scale: 1 }}
                 exit={{ y: 24, opacity: 0, scale: 0.96 }}
                 transition={{ type: "spring", stiffness: 380, damping: 32 }}
-                className="relative w-full max-w-sm rounded-3xl border border-white/[0.08] bg-[#0E0E0F] shadow-[0_24px_64px_-16px_rgba(0,0,0,0.85)] overflow-hidden"
+                className="relative w-full max-w-sm rounded-2xl border border-white/[0.08] bg-[#0E0E0F] overflow-hidden"
               >
-                {/* Halo rouge subtil derrière le ring — donne de la profondeur */}
-                <div
-                  aria-hidden
-                  className="pointer-events-none absolute -top-20 left-1/2 -translate-x-1/2 w-[280px] h-[280px] rounded-full bg-[#E80000]/[0.08] blur-3xl"
-                />
-
                 <div className="relative px-6 pt-7 pb-6 flex flex-col items-center text-center gap-5">
                   {/* Header — context série suivante */}
                   {nextSetNum && (
@@ -643,37 +632,40 @@ function WorkoutFunnel({
                     </div>
                   )}
 
-                  {/* Big countdown ring */}
+                  {/* Big countdown ring — texte parfaitement centré sur le
+                      centre géométrique du cercle ; SEC ancré en absolu pour
+                      ne pas pousser le digit hors-axe. */}
                   <div className="relative w-[136px] h-[136px]">
                     <svg viewBox="0 0 80 80" className="w-full h-full -rotate-90">
-                      <circle cx="40" cy="40" r={RADIUS} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="3" />
+                      <circle
+                        cx="40"
+                        cy="40"
+                        r={RADIUS}
+                        fill="none"
+                        stroke="rgba(255,255,255,0.06)"
+                        strokeWidth="3"
+                      />
                       <circle
                         cx="40"
                         cy="40"
                         r={RADIUS}
                         fill="none"
                         stroke="#E80000"
-                        strokeWidth="3.5"
+                        strokeWidth="3"
                         strokeLinecap="round"
                         strokeDasharray={CIRC}
                         strokeDashoffset={CIRC * progressPct}
                         style={{ transition: "stroke-dashoffset 1s linear" }}
                       />
                     </svg>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <motion.span
-                        key={rest.secondsLeft}
-                        initial={{ opacity: 0.5, y: -1 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.16 }}
-                        className="text-[44px] font-semibold text-gray-12 tabular-nums leading-none tracking-[-0.04em]"
-                      >
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-[44px] font-semibold text-gray-12 tabular-nums leading-none tracking-[-0.04em]">
                         {timeStr}
-                      </motion.span>
-                      <span className="text-[9px] text-gray-7 mt-1.5 uppercase tracking-[0.22em] font-semibold">
-                        sec
                       </span>
                     </div>
+                    <span className="absolute left-1/2 bottom-[26px] -translate-x-1/2 text-[9px] text-gray-7 uppercase tracking-[0.22em] font-semibold">
+                      sec
+                    </span>
                   </div>
 
                   {/* Motivation block — titre fort + citation Hakim */}
