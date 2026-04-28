@@ -30,7 +30,6 @@ import {
 } from "@/app/lib/training-programs";
 import { getExerciseVideo } from "@/app/lib/training-videos";
 import { SyncedExerciseVideo, type VideoPhase } from "./SyncedExerciseVideo";
-import { PhasesStrip, type StripPhase } from "./PhasesStrip";
 import { SetRow } from "./SetRow";
 import {
   isSoundEnabled,
@@ -511,39 +510,6 @@ function WorkoutFunnel({
               ? "set_done"
               : "set_active";
 
-            // Construit la timeline des phases pour le strip.
-            // (Pas de pill "Démo" — on commence direct à la série 1.)
-            const stripPhases: StripPhase[] = [];
-            for (let i = 0; i < totalSetsInEx; i++) {
-              const setStatus: "pending" | "active" | "done" =
-                rows[i]?.done
-                  ? "done"
-                  : i === activeSetIdx && !resting
-                  ? "active"
-                  : "pending";
-              stripPhases.push({ kind: "set", idx: i, status: setStatus });
-              // Insert rest pill between sets (sauf après la dernière)
-              if (i < totalSetsInEx - 1) {
-                stripPhases.push({
-                  kind: "rest",
-                  afterSetIdx: i,
-                  active: resting && i === Math.max(0, activeSetIdx - 1),
-                });
-              }
-            }
-            // Active index calculation
-            const activeStripIdx = (() => {
-              if (resting) {
-                const justDone = Math.max(0, activeSetIdx - 1);
-                return stripPhases.findIndex(
-                  (p) => p.kind === "rest" && p.afterSetIdx === justDone,
-                );
-              }
-              return stripPhases.findIndex(
-                (p) => p.kind === "set" && p.idx === activeSetIdx,
-              );
-            })();
-
             return (
               <Card className="border-white/[0.05] bg-white/[0.02] mb-3 overflow-hidden">
                 {/* Hero video Hakim — pleine largeur, 16:9 */}
@@ -552,11 +518,6 @@ function WorkoutFunnel({
                   poster={video.poster}
                   phase={videoPhase}
                 />
-
-                {/* Phases strip — directement sous la vidéo, fond sombre */}
-                <div className="bg-black/40 border-y border-white/[0.04]">
-                  <PhasesStrip phases={stripPhases} activeIndex={activeStripIdx} />
-                </div>
 
                 <CardContent className="p-4">
                   <div className="flex items-start gap-3">
