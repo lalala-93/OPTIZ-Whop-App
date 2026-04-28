@@ -119,23 +119,15 @@ export function SetRow({
           </span>
         </div>
 
-        {/* RPE pill — col 4, prend la place du Check button. Tap pour cycler. */}
+        {/* Col 4 — Check validé, en miroir du bouton "Fait" de la ligne pending.
+            Cliquable aussi pour annuler (mêmes affordances que le badge à gauche). */}
         <button
           type="button"
-          onClick={() => {
-            const cur = parseInt(row.rpe || "8", 10);
-            const next = cur >= 10 ? 6 : cur + 1;
-            onUpdate({ rpe: String(next) });
-          }}
-          aria-label={`RPE ${row.rpe || 8} — appuyer pour modifier`}
-          className="w-11 h-11 rounded-xl bg-white/[0.03] border border-white/[0.07] text-gray-9 hover:bg-white/[0.05] hover:text-gray-11 active:scale-[0.94] transition-all flex flex-col items-center justify-center leading-none"
+          onClick={onUndo}
+          aria-label="Annuler la validation"
+          className="w-11 h-11 rounded-xl bg-white/[0.04] border border-white/[0.06] text-gray-9 hover:bg-white/[0.07] hover:text-gray-11 active:scale-[0.94] transition-all flex items-center justify-center"
         >
-          <span className="text-[8.5px] uppercase tracking-[0.1em] text-gray-7 font-semibold">
-            RPE
-          </span>
-          <span className="text-[14px] font-semibold tabular-nums text-gray-11 mt-0.5">
-            {row.rpe || 8}
-          </span>
+          <Check size={16} strokeWidth={2.5} />
         </button>
       </motion.div>
     );

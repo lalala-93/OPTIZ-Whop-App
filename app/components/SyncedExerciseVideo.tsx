@@ -74,39 +74,33 @@ export const SyncedExerciseVideo = forwardRef<SyncedExerciseVideoHandle, Props>(
       [],
     );
 
-    // Reset ready quand src change (changement d'exercice) + force le navigateur
-    // à recharger la nouvelle source. Sans .load() explicite, certains navigateurs
-    // continuent à boucler la vidéo précédente même après mise à jour de l'attribut.
+    // Reset ready quand src change (changement d'exercice).
     useEffect(() => {
       setReady(false);
-      const v = videoRef.current;
-      if (!v) return;
-      v.load();
     }, [src]);
 
     // Sync play/pause selon phase. Re-synchronise aussi quand `src` change pour
-    // garantir que la nouvelle vidéo démarre bien (sinon elle reste en pause
-    // après le .load() ci-dessus si la phase n'a pas changé).
+    // garantir que la nouvelle vidéo démarre bien après le reload natif.
     useEffect(() => {
       const v = videoRef.current;
       if (!v) return;
 
       switch (phase) {
         case "idle":
+        case "rest":
+          // Pendant le repos l'utilisateur ne regarde plus la démo — on pause
+          // pour économiser la bande passante et réduire le bruit visuel.
           v.pause();
-          v.currentTime = 0;
           break;
         case "preview":
         case "set_active":
-        case "rest":
           v.playbackRate = 1;
           v.play().catch(() => {
             // Autoplay refusé (rare avec muted=true), pas grave.
           });
           break;
         case "set_done":
-          // On laisse la vidéo finir sa boucle courante puis on pause.
-          // Pour un effet net : pause immédiate.
+          // Pause immédiate pour effet net.
           v.pause();
           break;
       }
@@ -124,11 +118,16 @@ export const SyncedExerciseVideo = forwardRef<SyncedExerciseVideoHandle, Props>(
           className,
         )}
       >
+        {/* key={src} : garantit un <video> tout neuf à chaque changement
+            d'exercice. Sans ça, certains navigateurs (Safari iOS notamment)
+            gardent le buffer de la vidéo précédente et continuent à la
+            lire/boucler malgré la mise à jour de l'attribut `src`. */}
         <video
+          key={src}
           ref={videoRef}
           src={src}
           poster={poster}
-          autoPlay={phase !== "idle"}
+          autoPlay={phase !== "idle" && phase !== "rest"}
           muted
           loop
           playsInline
