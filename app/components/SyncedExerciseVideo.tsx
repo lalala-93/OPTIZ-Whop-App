@@ -74,12 +74,19 @@ export const SyncedExerciseVideo = forwardRef<SyncedExerciseVideoHandle, Props>(
       [],
     );
 
-    // Reset ready quand src change (changement d'exercice).
+    // Reset ready quand src change (changement d'exercice) + force le navigateur
+    // à recharger la nouvelle source. Sans .load() explicite, certains navigateurs
+    // continuent à boucler la vidéo précédente même après mise à jour de l'attribut.
     useEffect(() => {
       setReady(false);
+      const v = videoRef.current;
+      if (!v) return;
+      v.load();
     }, [src]);
 
-    // Sync play/pause selon phase.
+    // Sync play/pause selon phase. Re-synchronise aussi quand `src` change pour
+    // garantir que la nouvelle vidéo démarre bien (sinon elle reste en pause
+    // après le .load() ci-dessus si la phase n'a pas changé).
     useEffect(() => {
       const v = videoRef.current;
       if (!v) return;
@@ -103,7 +110,7 @@ export const SyncedExerciseVideo = forwardRef<SyncedExerciseVideoHandle, Props>(
           v.pause();
           break;
       }
-    }, [phase]);
+    }, [phase, src]);
 
     const onLoadedData = useCallback(() => setReady(true), []);
 

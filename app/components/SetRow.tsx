@@ -61,7 +61,10 @@ export function SetRow({
     onValidate();
   };
 
-  // ── Done state : ligne unique, grise, calme. RPE = pill discrète à droite.
+  // ── Done state : MÊME grille 4 cols que pending pour conserver le rythme
+  //    visuel (alignement N° / Poids / Reps / Action). On remplace les steppers
+  //    par des cellules d'affichage à la même hauteur (h-11) et la 4ᵉ col passe
+  //    sur la pill RPE. Le badge N° devient le bouton "annuler" (tap → undo).
   if (row.done) {
     return (
       <motion.div
@@ -69,36 +72,54 @@ export function SetRow({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         className={cn(
-          "flex items-center gap-3 px-3 py-2.5",
+          "grid grid-cols-[2.75rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem] items-center gap-x-2 px-3 py-2.5",
           !isFirst && "border-t border-white/[0.04]",
         )}
       >
-        {/* N° avec checkmark — gris neutre, plus le focus rouge. */}
-        <div className="relative shrink-0">
-          <div className="w-9 h-9 rounded-lg bg-white/[0.05] border border-white/[0.08] text-gray-9 flex items-center justify-center">
-            <Check size={14} strokeWidth={2.5} />
-          </div>
+        {/* N° badge → bouton undo. Même taille que pending (w-11 h-11). */}
+        <div className="relative flex items-center justify-center">
+          <button
+            type="button"
+            onClick={onUndo}
+            aria-label="Annuler la validation"
+            className="group w-11 h-11 rounded-xl bg-white/[0.04] border border-white/[0.06] text-gray-9 flex items-center justify-center hover:bg-white/[0.07] hover:text-gray-11 active:scale-[0.94] transition-all"
+          >
+            <Check
+              size={16}
+              strokeWidth={2.5}
+              className="group-hover:hidden"
+            />
+            <RotateCcw
+              size={14}
+              strokeWidth={2.25}
+              className="hidden group-hover:block"
+            />
+          </button>
           {isPr && (
             <Sparkles
               size={10}
-              className="text-[#FFD700] absolute -top-0.5 -right-0.5"
+              className="text-[#FFD700] absolute -top-0.5 -right-0.5 pointer-events-none"
             />
           )}
         </div>
 
-        {/* Résumé série — texte calme, gris. */}
-        <div className="flex-1 min-w-0 flex items-baseline gap-1.5">
-          <span className="text-[10px] uppercase tracking-[0.14em] text-gray-7 font-semibold shrink-0">
-            Série {idx + 1}
-          </span>
-          <span className="text-[14px] font-semibold text-gray-10 tabular-nums">
-            {row.load && parseFloat(row.load) > 0 ? `${row.load} kg` : "—"}
-            <span className="text-gray-7 mx-1">×</span>
-            {row.reps || targetReps}
+        {/* Poids — affichage centré, h-11, mêmes proportions que le stepper. */}
+        <div className="h-11 flex items-center justify-center rounded-xl bg-white/[0.015] border border-white/[0.04]">
+          <span className="text-[15px] font-semibold tabular-nums tracking-tight text-gray-10">
+            {row.load && parseFloat(row.load) > 0 ? row.load : "—"}
+            <span className="text-gray-7 text-[11px] font-medium ml-1">kg</span>
           </span>
         </div>
 
-        {/* RPE pill cyclable — un seul tap pour changer 6→7→8→9→10→6 */}
+        {/* Reps — idem. */}
+        <div className="h-11 flex items-center justify-center rounded-xl bg-white/[0.015] border border-white/[0.04]">
+          <span className="text-[15px] font-semibold tabular-nums tracking-tight text-gray-10">
+            {row.reps || targetReps}
+            <span className="text-gray-7 text-[11px] font-medium ml-1">rep</span>
+          </span>
+        </div>
+
+        {/* RPE pill — col 4, prend la place du Check button. Tap pour cycler. */}
         <button
           type="button"
           onClick={() => {
@@ -106,20 +127,15 @@ export function SetRow({
             const next = cur >= 10 ? 6 : cur + 1;
             onUpdate({ rpe: String(next) });
           }}
-          className="shrink-0 h-7 px-2.5 rounded-md bg-white/[0.03] border border-white/[0.07] text-[10.5px] font-semibold tabular-nums text-gray-9 hover:text-gray-11 hover:bg-white/[0.05] transition-colors"
           aria-label={`RPE ${row.rpe || 8} — appuyer pour modifier`}
+          className="w-11 h-11 rounded-xl bg-white/[0.03] border border-white/[0.07] text-gray-9 hover:bg-white/[0.05] hover:text-gray-11 active:scale-[0.94] transition-all flex flex-col items-center justify-center leading-none"
         >
-          RPE <span className="text-gray-11 ml-0.5">{row.rpe || 8}</span>
-        </button>
-
-        {/* Undo */}
-        <button
-          type="button"
-          onClick={onUndo}
-          aria-label="Annuler la validation"
-          className="shrink-0 w-7 h-7 rounded-md flex items-center justify-center text-gray-7 hover:text-gray-11 hover:bg-white/[0.04] active:scale-95 transition-all"
-        >
-          <RotateCcw size={12} />
+          <span className="text-[8.5px] uppercase tracking-[0.1em] text-gray-7 font-semibold">
+            RPE
+          </span>
+          <span className="text-[14px] font-semibold tabular-nums text-gray-11 mt-0.5">
+            {row.rpe || 8}
+          </span>
         </button>
       </motion.div>
     );
