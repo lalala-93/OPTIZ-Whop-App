@@ -193,6 +193,15 @@ function WorkoutFunnel({
   ];
   const pickQuote = () => HAKIM_QUOTES[Math.floor(Math.random() * HAKIM_QUOTES.length)];
 
+  // Scroll-to-top à chaque changement d'écran (mount, changement d'exo,
+  // success screen). Évite que la nouvelle vue apparaisse à mi-hauteur quand
+  // l'utilisateur a scrollé sur l'exo précédent.
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "auto" });
+    }
+  }, [exIdx, done]);
+
   // Elapsed timer — pauses when `paused`
   useEffect(() => {
     if (done) return;
@@ -382,14 +391,27 @@ function WorkoutFunnel({
     <div className="pb-[100px]">
       {/* Top bar */}
       <div className="flex items-center justify-between mb-4">
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={onBack}
-          className="w-10 h-10 rounded-full border-white/10 bg-white/[0.03] text-gray-10 hover:bg-white/[0.06]"
-        >
-          <ArrowLeft size={16} />
-        </Button>
+        <div className="flex items-center gap-1.5">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setExIdx((i) => Math.max(0, i - 1))}
+            disabled={exIdx === 0}
+            aria-label="Exercice précédent"
+            className="w-10 h-10 rounded-full border-white/10 bg-white/[0.03] text-gray-10 hover:bg-white/[0.06] disabled:opacity-40 disabled:hover:bg-white/[0.03]"
+          >
+            <ArrowLeft size={16} />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={onBack}
+            aria-label="Quitter la séance"
+            className="w-10 h-10 rounded-full border-white/10 bg-white/[0.03] text-gray-10 hover:bg-white/[0.06]"
+          >
+            <X size={16} />
+          </Button>
+        </div>
         <div className="flex items-center gap-1.5">
           <div
             className={cn(
