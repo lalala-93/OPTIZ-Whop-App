@@ -123,7 +123,7 @@ export const SyncedExerciseVideo = forwardRef<SyncedExerciseVideoHandle, Props>(
       return (
         <div
           className={cn(
-            "relative w-full overflow-hidden rounded-2xl",
+            "relative w-full overflow-hidden",
             "aspect-video select-none",
             "bg-gradient-to-br from-white/[0.03] to-white/[0.01]",
             "border border-white/[0.05]",
@@ -150,7 +150,7 @@ export const SyncedExerciseVideo = forwardRef<SyncedExerciseVideoHandle, Props>(
     return (
       <div
         className={cn(
-          "relative w-full overflow-hidden rounded-2xl bg-black",
+          "relative w-full overflow-hidden bg-black",
           "aspect-video select-none",
           className,
         )}

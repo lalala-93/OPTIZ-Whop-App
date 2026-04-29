@@ -389,69 +389,84 @@ function WorkoutFunnel({
 
   return (
     <div className="pb-[100px]">
-      {/* Top bar */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-1.5">
-          <Button
-            variant="outline"
-            size="icon"
+      {/* Top bar — segmented controls (nav | timer | utils) pour réduire le
+          bruit visuel et grouper les actions par fonction. */}
+      <div className="flex items-center justify-between gap-2 mb-4">
+        {/* Nav segmenté : précédent | quitter */}
+        <div className="inline-flex items-center h-10 rounded-full border border-white/10 bg-white/[0.03] overflow-hidden">
+          <button
+            type="button"
             onClick={() => setExIdx((i) => Math.max(0, i - 1))}
             disabled={exIdx === 0}
             aria-label="Exercice précédent"
-            className="w-10 h-10 rounded-full border-white/10 bg-white/[0.03] text-gray-10 hover:bg-white/[0.06] disabled:opacity-40 disabled:hover:bg-white/[0.03]"
+            className="h-full w-10 flex items-center justify-center text-gray-10 hover:bg-white/[0.05] disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
           >
-            <ArrowLeft size={16} />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
+            <ArrowLeft size={15} />
+          </button>
+          <span aria-hidden className="block w-px h-5 bg-white/[0.08]" />
+          <button
+            type="button"
             onClick={onBack}
             aria-label="Quitter la séance"
-            className="w-10 h-10 rounded-full border-white/10 bg-white/[0.03] text-gray-10 hover:bg-white/[0.06]"
+            className="h-full w-10 flex items-center justify-center text-gray-10 hover:bg-white/[0.05] transition-colors"
           >
-            <X size={16} />
-          </Button>
+            <X size={15} />
+          </button>
         </div>
-        <div className="flex items-center gap-1.5">
+
+        {/* Timer + utils (pause | son) */}
+        <div className="flex items-center gap-2">
           <div
             className={cn(
-              "flex items-center gap-1.5 px-3 h-9 rounded-full border backdrop-blur-sm transition-colors",
+              "inline-flex items-center gap-1.5 px-3 h-10 rounded-full border transition-colors",
               paused
                 ? "bg-[#E80000]/[0.08] border-[#E80000]/25"
-                : "bg-white/[0.04] border-white/[0.08]"
+                : "bg-white/[0.03] border-white/10",
             )}
           >
-            <Clock size={11} className={paused ? "text-[#FF6D6D]/70" : "text-[#FF6D6D]"} />
-            <span className={cn(
-              "text-[13px] font-semibold tabular-nums tracking-tight",
-              paused ? "text-gray-10" : "text-gray-12"
-            )}>
+            <Clock size={12} className={paused ? "text-[#FF6D6D]/70" : "text-[#FF6D6D]"} />
+            <span
+              className={cn(
+                "text-[13px] font-semibold tabular-nums tracking-tight",
+                paused ? "text-gray-10" : "text-gray-12",
+              )}
+            >
               {fmtTimer(elapsed)}
             </span>
           </div>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={togglePause}
-            aria-label={paused ? "Reprendre" : "Pause"}
-            className={cn(
-              "w-10 h-10 rounded-full transition-colors",
-              paused
-                ? "border-[#E80000]/30 bg-[#E80000]/[0.08] text-[#FF6D6D] hover:bg-[#E80000]/[0.12]"
-                : "border-white/10 bg-white/[0.03] text-gray-9 hover:bg-white/[0.06]"
-            )}
-          >
-            {paused ? <Play size={14} className="ml-0.5" fill="currentColor" /> : <Pause size={14} />}
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => { const n = !soundOn; setSoundOn(n); setSoundEnabled(n); }}
-            aria-label={soundOn ? "Muet" : "Son"}
-            className="w-10 h-10 rounded-full border-white/10 bg-white/[0.03] text-gray-9 hover:bg-white/[0.06]"
-          >
-            {soundOn ? <Volume2 size={14} /> : <VolumeX size={14} />}
-          </Button>
+
+          <div className="inline-flex items-center h-10 rounded-full border border-white/10 bg-white/[0.03] overflow-hidden">
+            <button
+              type="button"
+              onClick={togglePause}
+              aria-label={paused ? "Reprendre" : "Pause"}
+              className={cn(
+                "h-full w-10 flex items-center justify-center transition-colors",
+                paused
+                  ? "bg-[#E80000]/[0.10] text-[#FF6D6D] hover:bg-[#E80000]/[0.16]"
+                  : "text-gray-9 hover:bg-white/[0.05]",
+              )}
+            >
+              {paused ? (
+                <Play size={14} className="ml-0.5" fill="currentColor" />
+              ) : (
+                <Pause size={14} />
+              )}
+            </button>
+            <span aria-hidden className="block w-px h-5 bg-white/[0.08]" />
+            <button
+              type="button"
+              onClick={() => {
+                const n = !soundOn;
+                setSoundOn(n);
+                setSoundEnabled(n);
+              }}
+              aria-label={soundOn ? "Muet" : "Son"}
+              className="h-full w-10 flex items-center justify-center text-gray-9 hover:bg-white/[0.05] transition-colors"
+            >
+              {soundOn ? <Volume2 size={14} /> : <VolumeX size={14} />}
+            </button>
+          </div>
         </div>
       </div>
 
