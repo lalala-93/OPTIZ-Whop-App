@@ -277,15 +277,15 @@ const TRANSFORMATION: ProgramTemplate = {
 };
 
 // ═══════════════════════════════════════════════════════
-// Programme 02 — Accent sur Pectoraux & Biceps
-// Pour ceux qui ont besoin de pectoraux et de biceps
+// Programme 02 — Spécialisation Push (Pecs & Biceps)
+// Pour ceux qui veulent rattraper pectoraux et biceps
 // Athletic look · Build muscle · Correction des faiblesses
 // ═══════════════════════════════════════════════════════
 
 const PECS_BICEPS: ProgramTemplate = {
   id: "shred-pecs-biceps",
-  title: "Accent sur Pectoraux & Biceps",
-  subtitle: "4 séances · Intermédiaire · Pour ceux qui ont besoin de pectoraux et de biceps.",
+  title: "Spécialisation Push — Pecs & Biceps",
+  subtitle: "4 séances · Intermédiaire · Rattrape tes pectoraux et tes biceps.",
   objective: "Athletic look · Build muscle · Correction des faiblesses",
   level: "intermediate",
   location: "gym",
@@ -317,11 +317,11 @@ const PECS_BICEPS: ProgramTemplate = {
         ex("push-up", 3, 0, { repsLabel: "3× Max", note: "Échauffement poussée" }),
         ex("trap-bar-deadlift", 4, 10, { perSetReps: [20, 15, 10, 10], defaultLoad: 60, note: REST("1 min · 4 tours") }),
         ex("bb-supinated-row", 4, 15, { perSetReps: [15, 15, 15, 15], defaultLoad: 30, note: REST("1 min · 4 tours") }),
-        ex("bb-shrug", 4, 20, { perSetReps: [20, 20, 20, 20], defaultLoad: 40, note: PL_PR + " · superset élévations arrière · " + REST("1 min · 4 tours") }),
-        ex("rear-delt-fly", 4, 20, { perSetReps: [20, 20, 20, 20], defaultLoad: 4, note: "Superset shrugs" }),
+        ex("bb-shrug", 4, 20, { perSetReps: [20, 20, 20, 20], defaultLoad: 40, note: PL_PR + " · superset écarté inversé · " + REST("1 min · 4 tours") }),
+        ex("band-reverse-fly", 4, 20, { perSetReps: [20, 20, 20, 20], defaultLoad: 4, note: "Superset shrugs · élastique tendu" }),
         ex("high-pull", 4, 20, { perSetReps: [20, 20, 20, 20], defaultLoad: 20, note: PL_PR + " · " + REST("1 min · 4 tours") }),
-        ex("band-reverse-fly", 4, 20, { perSetReps: [20, 20, 20, 20], note: "Superset curl marteau · " + REST("1 min · 4 tours") }),
-        ex("hammer-curl", 4, 20, { perSetReps: [20, 20, 20, 20], defaultLoad: 10, note: "Superset écarté inversé" }),
+        ex("lateral-raise-full", 4, 20, { perSetReps: [20, 20, 20, 20], defaultLoad: 5, note: "Superset curl marteau · amplitude complète · " + REST("1 min · 4 tours") }),
+        ex("hammer-curl", 4, 20, { perSetReps: [20, 20, 20, 20], defaultLoad: 10, note: "Superset élévations latérales" }),
       ],
     },
     {
@@ -360,15 +360,15 @@ const PECS_BICEPS: ProgramTemplate = {
 };
 
 // ═══════════════════════════════════════════════════════
-// Programme 03 — Accent sur Dos & Triceps
-// Pour ceux qui ont besoin de dos et triceps
+// Programme 03 — Spécialisation Pull (Dos & Triceps)
+// Pour ceux qui veulent rattraper dos et triceps
 // Athletic look · Build muscle · Correction des faiblesses
 // ═══════════════════════════════════════════════════════
 
 const DOS_TRICEPS: ProgramTemplate = {
   id: "shred-dos-triceps",
-  title: "Accent sur Dos & Triceps",
-  subtitle: "4 séances · Intermédiaire · Pour ceux qui ont besoin de dos et triceps.",
+  title: "Spécialisation Pull — Dos & Triceps",
+  subtitle: "4 séances · Intermédiaire · Rattrape ton dos et tes triceps.",
   objective: "Athletic look · Build muscle · Correction des faiblesses",
   level: "intermediate",
   location: "gym",
@@ -400,11 +400,11 @@ const DOS_TRICEPS: ProgramTemplate = {
         ex("push-up", 3, 0, { repsLabel: "3× Max" }),
         ex("trap-bar-deadlift", 4, 10, { perSetReps: [20, 15, 10, 10], defaultLoad: 60, note: REST("1 min · 4 tours") }),
         ex("bb-supinated-row", 4, 15, { perSetReps: [15, 15, 15, 15], defaultLoad: 30, note: REST("1 min · 4 tours") }),
-        ex("bb-shrug", 4, 20, { perSetReps: [20, 20, 20, 20], defaultLoad: 40, note: PL_PR + " · superset élévations arrière · " + REST("1 min · 4 tours") }),
-        ex("rear-delt-fly", 4, 20, { perSetReps: [20, 20, 20, 20], defaultLoad: 4, note: "Superset shrugs" }),
+        ex("bb-shrug", 4, 20, { perSetReps: [20, 20, 20, 20], defaultLoad: 40, note: PL_PR + " · superset écarté inversé · " + REST("1 min · 4 tours") }),
+        ex("band-reverse-fly", 4, 20, { perSetReps: [20, 20, 20, 20], defaultLoad: 4, note: "Superset shrugs · élastique tendu" }),
         ex("high-pull", 4, 20, { perSetReps: [20, 20, 20, 20], defaultLoad: 20, note: PL_PR + " · " + REST("1 min · 4 tours") }),
-        ex("band-reverse-fly", 4, 20, { perSetReps: [20, 20, 20, 20], note: "Superset extensions triceps debout · " + REST("1 min · 4 tours") }),
-        ex("standing-triceps-ext", 4, 20, { perSetReps: [20, 20, 20, 20], defaultLoad: 10, note: "Superset écarté inversé" }),
+        ex("lateral-raise-full", 4, 20, { perSetReps: [20, 20, 20, 20], defaultLoad: 5, note: "Superset extensions triceps debout · amplitude complète · " + REST("1 min · 4 tours") }),
+        ex("standing-triceps-ext", 4, 20, { perSetReps: [20, 20, 20, 20], defaultLoad: 10, note: "Superset élévations latérales" }),
       ],
     },
     {
@@ -443,15 +443,15 @@ const DOS_TRICEPS: ProgramTemplate = {
 };
 
 // ═══════════════════════════════════════════════════════
-// Programme 04 — Complément sportif
-// Pour ceux qui font déjà du sport à côté
+// Programme 04 — Performance Athlétique
+// Pour ceux qui ont déjà un sport principal
 // Maintien performance · Coordination · Mobilité
 // ═══════════════════════════════════════════════════════
 
 const COMPLEMENT: ProgramTemplate = {
   id: "shred-complement",
-  title: "Complément sportif",
-  subtitle: "3 séances · Intermédiaire · Pour ceux qui ont déjà un sport principal.",
+  title: "Performance Athlétique",
+  subtitle: "3 séances · Intermédiaire · Complément pour athlètes avec un sport principal.",
   objective: "Maintien performance · Coordination · Mobilité",
   level: "intermediate",
   location: "gym",
@@ -483,8 +483,8 @@ const COMPLEMENT: ProgramTemplate = {
         ex("mob-hips-glutes-rot", 1, 0, { repsLabel: "5–8 min", note: "Échauffement hanches + rotation" }),
         ex("trap-bar-deadlift", 3, 8, { perSetReps: [12, 10, 8], defaultLoad: 60, note: "Superset pompes · " + REST("1 min 30 · 3 tours") }),
         ex("push-up", 3, 0, { repsLabel: "Max −3", note: "Superset trap bar" }),
-        ex("bb-shrug", 3, 15, { perSetReps: [15, 15, 15], defaultLoad: 40, note: "Superset élévations arrière · " + REST("1 min · 3 tours") }),
-        ex("rear-delt-fly", 3, 15, { perSetReps: [15, 15, 15], defaultLoad: 4, note: "Superset shrugs" }),
+        ex("bb-shrug", 3, 15, { perSetReps: [15, 15, 15], defaultLoad: 40, note: "Superset écarté inversé · " + REST("1 min · 3 tours") }),
+        ex("band-reverse-fly", 3, 15, { perSetReps: [15, 15, 15], defaultLoad: 4, note: "Superset shrugs · élastique tendu" }),
         ex("high-pull", 3, 12, { perSetReps: [12, 12, 12], defaultLoad: 20, note: "Superset step-ups · " + REST("1 min · 3 tours") }),
         ex("step-up", 3, 10, { perSetReps: [10, 10, 10], defaultLoad: 10, note: PL_PR + " · superset high pull" }),
         ex("hammer-curl", 2, 15, { perSetReps: [15, 15], defaultLoad: 8, note: "Superset extensions triceps" }),

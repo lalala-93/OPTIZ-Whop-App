@@ -103,7 +103,6 @@ const VIDEO_ALIASES: Record<string, string> = {
   "goblet-squat": "goblet-squat-bb",
   "plank": "front-plank",
   "stationary-lunge": "static-lunge",
-  "rear-delt-fly": "band-reverse-fly",
   "bw-lunge": "static-lunge",
 };
 
